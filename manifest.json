@@ -1,8 +1,8 @@
 {
-  "id": "/tilavet-studyosu",
-  "name": "Tilâvet · Ayet & Senaryo Video Stüdyosu",
-  "short_name": "Tilâvet",
-  "description": "Kesintisiz Kur'an-ı Kerim tilaveti ve Türkçe seslendirmeli senaryo videosu hazırlama stüdyosu.",
+  "id": "/tilawah-world-studio",
+  "name": "Tilawah World · Ayet & Sosyal Medya Video Stüdyosu",
+  "short_name": "Tilawah World",
+  "description": "YouTube Shorts, Instagram Reels ve TikTok için kesintisiz Kur'an-ı Kerim tilaveti ve ayet videosu hazırlama stüdyosu.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
