@@ -1,0 +1,26 @@
+{
+  "id": "/tilavet-studyosu",
+  "name": "Tilâvet · Ayet & Senaryo Video Stüdyosu",
+  "short_name": "Tilâvet",
+  "description": "Kesintisiz Kur'an-ı Kerim tilaveti ve Türkçe seslendirmeli senaryo videosu hazırlama stüdyosu.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#090a0d",
+  "theme_color": "#090a0d",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
