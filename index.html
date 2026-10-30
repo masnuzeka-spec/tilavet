@@ -33,6 +33,7 @@
       --success: #10B981;
       --safe-top: env(safe-area-inset-top, 0px);
       --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --app-height: 100dvh;
     }
 
     * {
@@ -55,7 +56,7 @@
       margin: 0;
       padding: 0;
       width: 100%;
-      height: 100dvh;
+      height: var(--app-height);
       overflow: hidden;
       background-color: var(--bg-main);
       color: var(--text-main);
@@ -69,9 +70,8 @@
       display: flex;
       flex-direction: column;
       width: 100%;
-      height: 100dvh;
+      height: var(--app-height);
       padding-top: var(--safe-top);
-      padding-bottom: var(--safe-bottom);
       background: radial-gradient(circle at 50% 0%, #151924 0%, #090A0D 70%);
     }
 
@@ -146,7 +146,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 8px 12px;
+      padding: 6px 12px;
       overflow: hidden;
     }
     .canvas-container {
@@ -285,7 +285,7 @@
     .transport-bar {
       width: 100%;
       max-width: 520px;
-      padding: 6px 14px 8px;
+      padding: 4px 14px 8px;
       display: flex;
       flex-direction: column;
       gap: 6px;
@@ -370,7 +370,9 @@
     .bottom-nav {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      height: 62px;
+      min-height: calc(64px + var(--safe-bottom));
+      padding-top: 6px;
+      padding-bottom: calc(12px + var(--safe-bottom));
       background: var(--bg-panel);
       border-top: 1px solid var(--border);
       flex-shrink: 0;
@@ -385,10 +387,12 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
+      padding: 4px 2px;
       font-size: 11px;
+      line-height: 1.2;
       font-weight: 600;
       cursor: pointer;
-      min-height: 44px;
+      min-height: 48px;
       position: relative;
       transition: color 0.15s ease;
     }
@@ -396,6 +400,11 @@
       width: 20px;
       height: 20px;
       stroke-width: 1.9;
+      flex-shrink: 0;
+    }
+    .nav-tab span {
+      display: block;
+      white-space: nowrap;
     }
     .nav-tab.active {
       color: var(--gold-light);
@@ -403,7 +412,7 @@
     .nav-tab.active::after {
       content: "";
       position: absolute;
-      top: 0;
+      top: -6px;
       width: 28px;
       height: 3px;
       border-radius: 0 0 4px 4px;
@@ -427,7 +436,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: calc(62px + var(--safe-bottom));
+      bottom: calc(68px + var(--safe-bottom));
       max-height: 64dvh;
       background: var(--bg-panel);
       border-top: 1px solid var(--border-gold);
@@ -1253,6 +1262,21 @@
   <script>
     "use strict";
 
+    function syncAppViewportHeight() {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      document.documentElement.style.setProperty("--app-height", `${vh}px`);
+    }
+    window.addEventListener("resize", syncAppViewportHeight);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", syncAppViewportHeight);
+    }
+    syncAppViewportHeight();
+
+    function toArabicIndicDigits(num) {
+      const map = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
+      return String(num).replace(/\d/g, d => map[Number(d)]);
+    }
+
     const SURAHS = [
       [1, "Fâtiha", "سُورَةُ الْفَاتِحَةِ", 7],
       [2, "Bakara", "سُورَةُ الْبَقَرَةِ", 286],
@@ -2022,19 +2046,22 @@
 
     function stripLeadingBismillah(arabicText, surahNo, ayahNo) {
       if (surahNo === 1 || surahNo === 9 || ayahNo !== 1) return arabicText;
-      const patterns = [
-        /^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/,
-        /^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/,
-        /^بِسْمِ\s+اللهِ\s+الرَّحْمنِ\s+الرَّحِيمِ\s*/
-      ];
-      let out = arabicText.trim();
-      for (const p of patterns) {
-        if (p.test(out)) {
-          out = out.replace(p, "").trim();
-          break;
+      const text = (arabicText || "").trim();
+      const words = text.split(/\s+/);
+      if (words.length > 4) {
+        const normalizeAr = (s) =>
+          s
+            .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
+            .replace(/[ٱأإآ]/g, "ا");
+        const first4 = normalizeAr(words.slice(0, 4).join(" "));
+        if (first4 === "بسم الله الرحمن الرحيم") {
+          return words.slice(4).join(" ").trim();
         }
       }
-      return out || arabicText;
+      return text.replace(
+        /^بِسْمِ\s+[ٱا]للَّهِ\s+[ٱا]لرَّحْمَـ?ٰنِ\s+[ٱا]لرَّحِيمِ\s*/u,
+        ""
+      ).trim() || text;
     }
 
     async function loadVersesAndPreloadAudio() {
@@ -2080,10 +2107,10 @@
         if (token !== currentLoadToken) return;
         state.verses = [{
           numberInSurah: start,
-          arabic: "وَٱلضُّحَىٰ ۝ وَٱلَّيْلِ إِذَا سَجَىٰ",
+          arabic: "وَٱلضُّحَىٰ",
           hasBismillahHeader: (start === 1 && sNo !== 1 && sNo !== 9),
-          tr: "Kuşluk vaktine ve sükûna erdiğinde geceye andolsun ki Rabbin seni terk etmedi.",
-          en: "By the morning brightness and by the night when it covers with darkness."
+          tr: "Kuşluk vaktine andolsun;",
+          en: "By the morning brightness"
         }];
         showToast("Çevrimdışı mod: Önbellekteki ayet metni kullanılıyor.");
       }
@@ -2367,14 +2394,17 @@
       ctx.shadowColor = "rgba(0,0,0,0.85)";
       ctx.shadowBlur = 16 * scaleFactor;
 
+      ctx.direction = "ltr";
       ctx.fillStyle = tpl.accent;
       ctx.font = `700 ${Math.round(16 * cScale)}px 'Inter', sans-serif`;
       ctx.fillText(tpl.badge, w / 2, centerY - 125 * cScale);
 
+      ctx.direction = "rtl";
       ctx.fillStyle = "#FFFDF7";
       ctx.font = `700 ${Math.round(52 * cScale)}px '${state.arabicFont}', serif`;
       ctx.fillText(surahMeta[2], w / 2, centerY - 52 * cScale);
 
+      ctx.direction = "ltr";
       const mainTitle = state.coverTitle.trim() || `${surahMeta[1]} Sûresi`;
       ctx.fillStyle = tpl.accent;
       ctx.font = `700 ${Math.round(34 * cScale)}px 'Inter', sans-serif`;
@@ -2408,6 +2438,7 @@
       }
 
       ctx.save();
+      ctx.direction = "ltr";
       ctx.shadowColor = "rgba(0,0,0,0.75)";
       ctx.shadowBlur = 10 * scaleFactor;
 
@@ -2515,11 +2546,14 @@
 
           let cursorY = h * 0.42;
 
+          ctx.direction = "ltr";
           const surahMeta = SURAHS.find(s => s[0] === state.surahNo) || SURAHS[92];
           ctx.fillStyle = "#D8B456";
           ctx.font = `600 ${Math.round(16 * scaleFactor)}px 'Inter', sans-serif`;
           ctx.fillText(`${surahMeta[1]} Sûresi · ${verse.numberInSurah}. Ayet`, w / 2, h * 0.17);
 
+          // DÜZELTME: Sağdan sola (RTL) akışta doğru Mushaf parantez dizilimi: ﴾١﴿ (\uFD3E + rakam + \uFD3F)
+          ctx.direction = "rtl";
           if (verse.hasBismillahHeader && state.bismillahMode === "separate") {
             ctx.fillStyle = "#F3D77D";
             ctx.font = `700 ${Math.round(arPx * 0.78)}px '${state.arabicFont}', serif`;
@@ -2528,7 +2562,8 @@
 
           ctx.fillStyle = state.arabicColor;
           ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
-          const arLines = wrapCanvasText(ctx, `${verse.arabic} ﴿${verse.numberInSurah}﴾`, maxTextW);
+          const ayahBadge = `\uFD3E${toArabicIndicDigits(verse.numberInSurah)}\uFD3F`;
+          const arLines = wrapCanvasText(ctx, `${verse.arabic} ${ayahBadge}`, maxTextW);
           const arLineH = arPx * 1.65;
           const totalArH = arLines.length * arLineH;
           let arStartY = cursorY - totalArH / 2;
@@ -2537,6 +2572,7 @@
             ctx.fillText(line, w / 2, arStartY + i * arLineH);
           });
 
+          ctx.direction = "ltr";
           let mealCursorY = arStartY + totalArH + 28 * scaleFactor;
           if (state.subtitleMode === "tr" || state.subtitleMode === "both") {
             ctx.fillStyle = state.mealColor;
