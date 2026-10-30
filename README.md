@@ -1,46 +1,33 @@
-# Tilawah World — geliştirilmiş sürüm
+# Tilawah World — düzeltme paketi (v5.0.2)
 
-## Başlangıç
-Bu proje statik bir web/PWA uygulamasıdır. `index.html` dosyasını doğrudan `file://` ile açmak yerine HTTPS destekleyen bir statik sunucuda yayımlayın. Service Worker ve çevrimdışı özellikler güvenli bağlam (HTTPS veya localhost) gerektirir.
+Bu paket, kullanıcının gönderdiği `tilavet-main.zip` arşivindeki gerçek kaynak dosyaları üzerinde yapılan ilk doğrulanmış düzeltmeleri içerir.
 
-Örnek yerel sunucu:
-```bash
-python -m http.server 8080
-```
-Ardından `http://localhost:8080/tilavet-main/` adresini açın.
+## Bu sürümde gerçekten değiştirilenler
 
-## Bu sürümde yapılanlar
-- Mevcut Tilawah World arayüzü ve Canvas video oluşturma motoru korundu.
-- Ana CSS ve JavaScript, `css/core.css` ve `js/core.js` dosyalarına ayrıldı.
-- Profesyonel araçlar paneli `js/pro-studio.js` ve `css/pro-studio.css` olarak eklendi.
-- Projeleri IndexedDB üzerinde kaydetme, açma, silme ve otomatik taslak kaydı eklendi. IndexedDB kullanılamazsa sınırlı localStorage yedeği denenir.
-- Proje ayarlarını JSON olarak dışa/içe aktarma eklendi. JSON dışa aktarımı özel kullanıcı medya dosyalarını içermez; medya dosyaları mevcut galeri deposunda ayrı tutulur.
-- Çok katmanlı timeline görünümü ve zaman çizelgesinde ayet karesi seçerek görsel önizleme eklendi. Bu, henüz sürükle-bırak klip kırpma veya dalga biçimi düzenleyicisi değildir.
-- Altyazı dili seçimi ve ayet bazında manuel zaman notları eklendi. Kelime kelime senkronizasyon otomatik üretilmez; güvenilir kelime zaman verisi veya manuel zamanlama gerekir.
-- 50 tasarım ön ayarı eklendi; mevcut arka plan kataloğunu ve metin/renk/efekt ayarlarını kullanır.
-- Kayıtlı projeler için sıralı toplu video üretim kuyruğu eklendi. Mobil tarayıcı indirme izinleri nedeniyle her indirme cihaz ve tarayıcı davranışına bağlı olabilir.
-- Ayet API yanıtları Cache Storage'a kaydedilir; yalnızca daha önce başarıyla yüklenmiş aynı sure/ayet aralığı çevrimdışı kullanılabilir.
-- Service Worker önbelleğine yeni CSS/JS/veri dosyaları eklendi ve eski sürüm temizliği sırasında ayet önbelleğinin korunması sağlandı.
-- Arka plan videosunun sesi, kayıt miksajına bağlandı.
-- Ayet API'si erişilemez ve ilgili ayet aralığı önbellekte yoksa yanlış örnek ayet gösterilmesi kaldırıldı.
-- Ses dosyası yüklenemezse uydurma 6 saniyelik süreyle hazır kabul edilmesi kaldırıldı; dışa aktarma devre dışı kalır ve hata bildirilir.
-- Galeri IndexedDB hatası uygulamanın tüm açılışını durdurmayacak şekilde ele alındı.
+1. **Yanlış çevrimdışı ayet kaldırıldı.** Ağ hatasında artık her zaman Duha suresinden sabit bir ayet gösterilmiyor. Yalnızca aynı sure ve ayet aralığı daha önce başarıyla alınmışsa önbellekten kullanılıyor; yoksa açık hata veriliyor.
+2. **Ses yükleme hataları gizlenmiyor.** MP3 yüklenemez veya zaman aşımına uğrarsa 6 saniyelik uydurma süre atanmıyor. Eksik ses varken önizleme ve video oluşturma devre dışı kalıyor.
+3. **Arka plan videosu sesi kayıt miksine bağlandı.** Ses, Web Audio üzerinden hem önizleme çıkışına hem de MediaRecorder ses akışına yönlendiriliyor; ses seviyesi ve sessize alma kazanç düğümüyle kontrol ediliyor.
+4. **Galeri veritabanı hatası uygulama açılışını durdurmuyor.** IndexedDB başlatılamazsa uygulama galerisiz modda devam ediyor ve kullanıcıya bilgi veriyor.
+5. **Tarayıcı kayıt desteği önceden kontrol ediliyor.** MediaRecorder, Canvas captureStream, MediaStream ve desteklenen kayıt MIME türü yoksa kayıt başlamadan açıklayıcı hata gösteriliyor.
+6. **Yerel proje kaydetme/açma/silme eklendi.** Üst bölümdeki “Projeyi Kaydet” ve “Projeler” düğmeleri ile temel düzenleme ayarları cihazın localStorage alanında saklanıyor. Proje listesinde numaranın başına eksi koyarak silme yapılabiliyor.
+7. **Service Worker önbellek sürümü v5.0.2 olarak yükseltildi.** Önceki uygulama kabuğunun yeni kodu göstermesi için eski cache sürümünün temizlenmesi sağlanıyor.
 
-## Bilinen sınırlar / gerçek cihaz testi
-- Bu paket statik kod kontrollerinden geçirildi; burada Android cihazda gerçek video kaydı, ses senkronu, farklı tarayıcı codec desteği ve uzun video bellek performansı uçtan uca test edilemedi.
-- Tarayıcıların `MediaRecorder` MP4/WebM desteği farklıdır. Dışa aktarma biçimi cihazın desteklediği MIME türüne bağlıdır.
-- Gerçek kelime bazlı altyazı vurgusu için ayet/kelime zaman damgası veri kaynağı gerekir. Bu paket zaman damgalarını tahmin etmez.
-- Timeline şu aşamada katman ve zaman görünümü/önizleme sunar; profesyonel NLE düzeyinde serbest klip taşıma, bölme, dalga formu ve çoklu geçiş editörü değildir.
-- Proje JSON dosyası ayarları taşır; büyük medya dosyalarını JSON içine gömmez.
-- Çevrimdışı ses için ilgili tilavet dosyalarının daha önce çevrimiçiyken yüklenmiş olması gerekir. İlk kurulum ve ilk içerik indirme internet ister.
-- Sentetik ambiyans sesleri mevcut ana uygulamanın ürettiği efektlerdir; gerçek yağmur/rüzgâr/ney kayıtları olarak sunulmaz.
+## Kurulum
 
-## Dosya yapısı
-- `index.html`: uygulama kabuğu
-- `css/core.css`: mevcut arayüz stilleri
-- `css/pro-studio.css`: Pro Stüdyo stilleri
-- `js/core.js`: mevcut uygulama/video motoru ve hata düzeltmeleri
-- `js/pro-studio.js`: proje, timeline, şablon, altyazı ve toplu üretim araçları
-- `data/templates.json`: 50 tasarım ön ayarı
-- `sw.js`: PWA ve çevrimdışı önbellek
-- `media/`, `icons/`: mevcut medya ve ikonlar
+- ZIP'i çıkarın.
+- `tilavet-main` klasörünün tamamını HTTPS destekleyen bir web sunucusuna yükleyin.
+- `index.html` dosyasını sunucu üzerinden açın. `file://` üzerinden açmak Service Worker/PWA özelliklerini çalıştırmaz.
+
+## Sürüm sınırları — tamamlanmamış işler
+
+Bu paket, talep edilen tüm profesyonel editör özelliklerinin tamamlandığı anlamına gelmez. Özellikle:
+- Profesyonel sürükle-bırak, çok kanallı timeline henüz uygulanmadı.
+- Kelime bazlı altyazı senkronizasyonu için doğrulanmış zaman damgası kaynağı ve düzenleme arayüzü henüz tamamlanmadı.
+- Çoklu video batch render kuyruğu henüz tamamlanmadı.
+- Şablon kütüphanesinin tam kapsamlı yönetim/önizleme sistemi henüz tamamlanmadı.
+- Proje dosyası JSON içe/dışa aktarma ve bulut eşitleme henüz yok; projeler bu tarayıcı/cihazın localStorage alanında saklanır.
+- Tam cihaz matrisiyle Android Chrome ve diğer tarayıcılarda uçtan uca video kaydı testi yapılmadı.
+
+## Doğrulama
+
+Bu teslimden önce gömülü JavaScript için `node --check` sözdizimi kontrolü, HTML temel yapı kontrolü, dosya bağlantısı kontrolü ve ZIP bütünlük testi yapılmalıdır. Gerçek cihazda video/ses kaydı testi ayrıca gereklidir.

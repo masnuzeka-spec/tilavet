@@ -1,18 +1,12 @@
-const CACHE_VERSION = "v6.0.0";
+const CACHE_VERSION = "v5.0.2";
 const SHELL_CACHE = `tilawah-shell-${CACHE_VERSION}`;
 const MEDIA_CACHE = `tilawah-media-${CACHE_VERSION}`;
 const DATA_CACHE = `tilawah-data-${CACHE_VERSION}`;
-const QURAN_CACHE = "tilawah-quran-data-v2";
 
 const APP_SHELL_FILES = [
   "./",
   "./index.html",
   "./manifest.json",
-  "./css/core.css",
-  "./css/pro-studio.css",
-  "./js/core.js",
-  "./js/pro-studio.js",
-  "./data/templates.json",
   "./media/catalog.json",
   "./icons/logo.png",
   "./icons/icon-192.png",
@@ -38,7 +32,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys.map((key) => {
-          if (![SHELL_CACHE, MEDIA_CACHE, DATA_CACHE, QURAN_CACHE].includes(key)) {
+          if (![SHELL_CACHE, MEDIA_CACHE, DATA_CACHE].includes(key)) {
             return caches.delete(key);
           }
         })
