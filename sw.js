@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v5.0.0";
+const CACHE_VERSION = "v5.0.1";
 const SHELL_CACHE = `tilawah-shell-${CACHE_VERSION}`;
 const MEDIA_CACHE = `tilawah-media-${CACHE_VERSION}`;
 const DATA_CACHE = `tilawah-data-${CACHE_VERSION}`;
