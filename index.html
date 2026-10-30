@@ -67,13 +67,15 @@
     }
 
     .app-shell {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      height: var(--app-height);
-      padding-top: var(--safe-top);
-      background: radial-gradient(circle at 50% 0%, #151924 0%, #090A0D 70%);
-    }
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: var(--app-height);
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  background: radial-gradient(circle at 50% 0%, #151924 0%, #090A0D 70%);
+  overflow: hidden;
+}
 
     .sw-banner {
       display: none;
@@ -368,16 +370,16 @@
     }
 
     .bottom-nav {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      min-height: calc(64px + var(--safe-bottom));
-      padding-top: 6px;
-      padding-bottom: calc(12px + var(--safe-bottom));
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-      z-index: 40;
-    }
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  min-height: 64px;
+  padding-top: 6px;
+  padding-bottom: 12px;
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 40;
+}
     .nav-tab {
       border: none;
       background: transparent;
@@ -436,7 +438,7 @@
       position: fixed;
       left: 0;
       right: 0;
-      bottom: calc(68px + var(--safe-bottom));
+      bottom: 64px;
       max-height: 64dvh;
       background: var(--bg-panel);
       border-top: 1px solid var(--border-gold);
@@ -2562,7 +2564,7 @@
 
           ctx.fillStyle = state.arabicColor;
           ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
-          const ayahBadge = `\uFD3E${toArabicIndicDigits(verse.numberInSurah)}\uFD3F`;
+          const ayahBadge = `\uFD3F${toArabicIndicDigits(verse.numberInSurah)}\uFD3E`;
           const arLines = wrapCanvasText(ctx, `${verse.arabic} ${ayahBadge}`, maxTextW);
           const arLineH = arPx * 1.65;
           const totalArH = arLines.length * arLineH;
