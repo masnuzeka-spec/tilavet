@@ -435,25 +435,23 @@
       pointer-events: auto;
     }
     .bottom-sheet {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 64px;
-  max-height: 64dvh;
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border-gold);
-  border-radius: 20px 20px 0 0;
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.75);
-  transform: translateY(110%);
-  transition: transform 0.26s cubic-bezier(0.2, 0.9, 0.2, 1), visibility 0.26s; /* BURAYA visibility eklendi */
-  display: flex;
-  flex-direction: column;
-  z-index: 50;
-  visibility: hidden; /* BU SATIR EKLENDİ: Kapalıyken tamamen gizler */
-    }
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 64px;
+      max-height: 64dvh;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-gold);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.75);
+      transform: translateY(110%);
+      transition: transform 0.26s cubic-bezier(0.2, 0.9, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+    } 
     .bottom-sheet.open {
   transform: translateY(0%);
-  visibility: visible; /* BU SATIR EKLENDİ: Açılırken görünür yapar */
     }
     .sheet-drag-handle {
       padding: 10px 16px 6px;
