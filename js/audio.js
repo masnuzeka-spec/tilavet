@@ -43,7 +43,6 @@ window.TW_AUDIO = (() => {
     const bgVol = state.videoAudioMode === "unmuted" ? (state.bgVideoVol || 0) / 100 : 0;
     bgVideoGain.gain.setValueAtTime(bgVol, audioCtx.currentTime);
 
-    // Connect Reciter Audio Elements
     (state.audioElements || []).forEach((aud) => {
       if (aud && !connectedNodes.has(aud)) {
         try {
@@ -54,9 +53,7 @@ window.TW_AUDIO = (() => {
       }
     });
 
-    // Hata 7 Düzeltmesi: Zemin videosunun sesini Web Audio mikserine ve kayıt akışına (mixDest) bağla
     connectBgVideoToGraph(activeBgVideo, state);
-
     return { audioCtx, mixDest, masterGain };
   }
 
@@ -74,7 +71,7 @@ window.TW_AUDIO = (() => {
       bgVideoGain.gain.setValueAtTime(bgVol, audioCtx.currentTime);
     }
     videoEl.muted = (state.videoAudioMode === "muted" || bgVol <= 0);
-    videoEl.volume = 1.0; // Gain node controls actual volume so both speaker and recording match
+    videoEl.volume = 1.0;
   }
 
   function updateVolumes(state, activeBgVideo) {
@@ -106,17 +103,18 @@ window.TW_AUDIO = (() => {
 
   function startAmbientSound(state) {
     stopAmbientSound();
-    if (!audioCtx || state.ambientType === "none" || state.ambientVol <= 0) return;
+    if (!audioCtx || !state.ambientType || state.ambientType === "none" || state.ambientVol <= 0) return;
 
-    // First try real ambient MP3 file in media/audio/, with instant synth fallback
     const fileMap = {
       rain: "media/audio/rain.mp3",
+      forest_rain: "media/audio/rain.mp3",
       wind: "media/audio/wind.mp3",
+      tree_wind: "media/audio/wind.mp3",
+      pine_wind: "media/audio/wind.mp3",
       ney: "media/audio/ney.mp3"
     };
     const fileSrc = fileMap[state.ambientType];
 
-    // Always start lush procedural ambient layer immediately so there is zero gap, and layer/replace if file loads
     startProceduralAmbient(state.ambientType);
 
     if (fileSrc && !window.__TW_INLINE_CANVAS_MODE__) {
@@ -142,27 +140,59 @@ window.TW_AUDIO = (() => {
     }
   }
 
+  // Synthesizes all 10 Sebat ambient sound profiles (Kırda yağmur, Koruda yağmur, Dere, Bozkır/Ağaç/Çam rüzgârı, Ocak şömine çıtırtısı, Dalga, Gece, Ney)
   function startProceduralAmbient(type) {
     if (!audioCtx) return;
     const sampleRate = audioCtx.sampleRate;
-    const bufferSize = sampleRate * 4;
+    const bufferSize = sampleRate * 5;
     const buffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
     const data = buffer.getChannelData(0);
 
-    if (type === "ney") {
-      // Warm harmonic contemplative drone (216Hz + 324Hz + 432Hz with gentle breathing LFO)
+    if (type === "ney" || type === "night") {
+      const baseFreq = type === "night" ? 174 : 216;
       for (let i = 0; i < bufferSize; i++) {
         const t = i / sampleRate;
-        const env = 0.75 + 0.25 * Math.sin(2 * Math.PI * 0.25 * t);
-        const w1 = Math.sin(2 * Math.PI * 216 * t) * 0.55;
-        const w2 = Math.sin(2 * Math.PI * 324 * t) * 0.25;
-        const w3 = Math.sin(2 * Math.PI * 432 * t) * 0.15;
-        data[i] = (w1 + w2 + w3) * env * 0.28;
+        const env = 0.72 + 0.28 * Math.sin(2 * Math.PI * 0.2 * t);
+        const w1 = Math.sin(2 * Math.PI * baseFreq * t) * 0.5;
+        const w2 = Math.sin(2 * Math.PI * (baseFreq * 1.5) * t) * 0.22;
+        const softAir = (Math.random() * 2 - 1) * 0.02;
+        data[i] = ((w1 + w2) * env + softAir) * 0.26;
+      }
+    } else if (type === "fireplace") {
+      // Warm low hearth rumble + periodic wood crackle impulses
+      let last = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        last = (last + 0.03 * white) / 1.03;
+        const crackle = Math.random() < 0.0018 ? (Math.random() * 0.9) : 0;
+        data[i] = last * 0.35 + crackle * 0.45;
+      }
+    } else if (type === "waves") {
+      // Rhythmic ocean surf (5s wave cycle)
+      let b0 = 0, b1 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / sampleRate;
+        const swell = 0.25 + 0.75 * Math.pow(0.5 + 0.5 * Math.sin((2 * Math.PI * t) / 5.0), 1.6);
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99 * b0 + white * 0.08;
+        b1 = 0.96 * b1 + b0 * 0.12;
+        data[i] = b1 * swell * 0.22;
+      }
+    } else if (type === "stream") {
+      // Babbling brook water modulation
+      let b0 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const t = i / sampleRate;
+        const ripple = 0.65 + 0.35 * Math.sin(2 * Math.PI * 3.2 * t) * Math.cos(2 * Math.PI * 1.7 * t);
+        const white = Math.random() * 2 - 1;
+        b0 = 0.94 * b0 + white * 0.14;
+        data[i] = b0 * ripple * 0.22;
       }
     } else {
-      // Filtered pink/brown noise for rain or night wind
+      // Rain & Wind varieties
       let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
       for (let i = 0; i < bufferSize; i++) {
+        const t = i / sampleRate;
         const white = Math.random() * 2 - 1;
         b0 = 0.99886 * b0 + white * 0.0555179;
         b1 = 0.99332 * b1 + white * 0.0750759;
@@ -170,7 +200,8 @@ window.TW_AUDIO = (() => {
         b3 = 0.86650 * b3 + white * 0.3104856;
         b4 = 0.55000 * b4 + white * 0.5329522;
         b5 = -0.7616 * b5 - white * 0.0168980;
-        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035;
+        const windMod = type.includes("wind") ? (0.65 + 0.35 * Math.sin(2 * Math.PI * 0.25 * t)) : 1.0;
+        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.035 * windMod;
         b6 = white * 0.115926;
       }
     }
@@ -180,9 +211,21 @@ window.TW_AUDIO = (() => {
     src.loop = true;
 
     const filter = audioCtx.createBiquadFilter();
-    filter.type = type === "ney" ? "lowpass" : type === "rain" ? "bandpass" : "lowpass";
-    filter.frequency.value = type === "rain" ? 980 : type === "wind" ? 380 : 520;
-    filter.Q.value = type === "rain" ? 0.7 : 1.0;
+    const freqMap = {
+      rain: 1050,
+      forest_rain: 780,
+      stream: 1250,
+      wind: 360,
+      tree_wind: 520,
+      pine_wind: 310,
+      fireplace: 680,
+      waves: 480,
+      night: 440,
+      ney: 520
+    };
+    filter.type = (type === "rain" || type === "stream") ? "bandpass" : "lowpass";
+    filter.frequency.value = freqMap[type] || 650;
+    filter.Q.value = 0.7;
 
     src.connect(filter);
     filter.connect(ambientGain);
@@ -211,7 +254,6 @@ window.TW_AUDIO = (() => {
     }
   }
 
-  // Safari & Cross-Browser Offline Audio Cache Helper + Strict Real Duration Loader (Fixes v2-3: NO fake 6.0s!)
   async function loadSingleAyahAudio(surahNo, ayahNo, reciterId) {
     const padS = String(surahNo).padStart(3, "0");
     const padA = String(ayahNo).padStart(3, "0");
@@ -219,7 +261,6 @@ window.TW_AUDIO = (() => {
     let playUrl = remoteUrl;
     let objectUrl = null;
 
-    // Check Cache API first for Safari offline reliability, or fetch with CORS to cache blob
     if ("caches" in window) {
       try {
         const cache = await caches.open("tilawah-audio-7.0.0");
@@ -238,9 +279,7 @@ window.TW_AUDIO = (() => {
             playUrl = objectUrl;
           }
         }
-      } catch (_) {
-        // Fallback to direct Audio element with crossOrigin
-      }
+      } catch (_) {}
     }
 
     return new Promise((resolve) => {
@@ -298,7 +337,7 @@ window.TW_AUDIO = (() => {
           audio: aud,
           objectUrl,
           duration: 0,
-          error: `${surahNo}:${ayahNo}. ayet MP3 dosyası yüklenemedi (CORS veya çevrimdışı).`
+          error: `${surahNo}:${ayahNo}. ayet MP3 dosyası yüklenemedi.`
         });
       };
     });
