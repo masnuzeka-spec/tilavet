@@ -1,15 +1,15 @@
 {
   "name": "Tilawah World · Ayet & Video Stüdyosu",
   "short_name": "Tilawah World",
-  "description": "Kur'ân-ı Kerîm tilâvet videoları ve sosyal medya içerikleri için profesyonel mobil stüdyo.",
+  "description": "Kur'ân-ı Kerîm tilâvet videoları ve sosyal medya içerikleri için profesyonel mobil ve masaüstü stüdyo.",
   "lang": "tr",
   "dir": "ltr",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#090A0D",
-  "theme_color": "#090A0D",
+  "background_color": "#08110E",
+  "theme_color": "#08110E",
   "categories": ["multimedia", "education", "lifestyle"],
   "icons": [
     { "src": "icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
