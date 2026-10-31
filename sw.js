@@ -1,4 +1,4 @@
-const CACHE_VERSION = "7.0.0";
+const CACHE_VERSION = "9.0.0";
 const SHELL_CACHE = `tilawah-shell-${CACHE_VERSION}`;
 const MEDIA_CACHE = `tilawah-media-${CACHE_VERSION}`;
 const API_CACHE = `tilawah-api-${CACHE_VERSION}`;
@@ -30,10 +30,12 @@ const OPTIONAL_PRECACHE_FILES = [
   "./icons/icon-180.png",
   "./icons/icon-384.png",
   "./icons/icon-512-maskable.png",
-  "./media/thumbs/rain_glass.jpg",
-  "./media/thumbs/mosque_dawn.jpg",
-  "./media/thumbs/forest_stream.jpg",
-  "./media/thumbs/starry_night.jpg"
+  "./media/thumbs/forest_stream_loop.jpg",
+  "./media/thumbs/rain_window_loop.jpg",
+  "./media/thumbs/mosque_dawn_loop.jpg",
+  "./media/thumbs/golden_mihrab_loop.jpg",
+  "./media/thumbs/starry_night_loop.jpg",
+  "./media/thumbs/sunset_waves_loop.jpg"
 ];
 
 async function notifyClients(payload) {

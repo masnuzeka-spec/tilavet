@@ -1,10 +1,21 @@
 {
-  "version": "8.0.0",
-  "description": "Tilawah World v4 (Sebat Hibrit Stüdyo) Tek Kaynak Zemin Kataloğu.",
+  "version": "9.0.0",
+  "description": "Tilawah World v6 — Tamamı Hareketli Video ve Canlı Sahnelerden Oluşan Stüdyo Kataloğu.",
   "items": [
     {
+      "id": "vid_forest_stream",
+      "name": "Orman Deresi (Video)",
+      "type": "video",
+      "src": "media/videos/forest_stream_loop.mp4",
+      "thumb": "media/thumbs/forest_stream_loop.jpg",
+      "category": "Hareketli",
+      "recommendedDarkness": 45,
+      "defaultEffect": "none",
+      "palette": ["#0b1d16", "#163829", "#4f8a6b"]
+    },
+    {
       "id": "vid_rain_window",
-      "name": "Yağmurlu Cam 1 (Video)",
+      "name": "Yağmurlu Cam (Video)",
       "type": "video",
       "src": "media/videos/rain_window_loop.mp4",
       "thumb": "media/thumbs/rain_window_loop.jpg",
@@ -25,19 +36,19 @@
       "palette": ["#18121e", "#3d2638", "#d89b56"]
     },
     {
-      "id": "vid_forest_stream",
-      "name": "Orman Deresi 1 (Video)",
+      "id": "vid_golden_mihrab",
+      "name": "Altın Mihrap Nuru (Video)",
       "type": "video",
-      "src": "media/videos/forest_stream_loop.mp4",
-      "thumb": "media/thumbs/forest_stream_loop.jpg",
+      "src": "media/videos/golden_mihrab_loop.mp4",
+      "thumb": "media/thumbs/golden_mihrab_loop.jpg",
       "category": "Hareketli",
-      "recommendedDarkness": 45,
+      "recommendedDarkness": 38,
       "defaultEffect": "none",
-      "palette": ["#0b1d16", "#163829", "#4f8a6b"]
+      "palette": ["#120e07", "#2c2210", "#d8b456"]
     },
     {
       "id": "vid_starry_night",
-      "name": "Yıldızlı Gece 1 (Video)",
+      "name": "Yıldızlı Gece (Video)",
       "type": "video",
       "src": "media/videos/starry_night_loop.mp4",
       "thumb": "media/thumbs/starry_night_loop.jpg",
@@ -58,19 +69,8 @@
       "palette": ["#1a0b12", "#4a1c2a", "#f97316"]
     },
     {
-      "id": "vid_golden_mihrab",
-      "name": "Altın Mihrap Huzmesi (Video)",
-      "type": "video",
-      "src": "media/videos/golden_mihrab_loop.mp4",
-      "thumb": "media/thumbs/golden_mihrab_loop.jpg",
-      "category": "Hareketli",
-      "recommendedDarkness": 38,
-      "defaultEffect": "none",
-      "palette": ["#120e07", "#2c2210", "#d8b456"]
-    },
-    {
       "id": "live_fire_hearth",
-      "name": "Şömine 1 (Ocak Başı)",
+      "name": "Ocak Başı & Kıvılcım",
       "type": "live",
       "scene": "fire_hearth",
       "category": "Hareketli",
@@ -80,7 +80,7 @@
     },
     {
       "id": "live_winter_pines",
-      "name": "Karlı Çamlar 1",
+      "name": "Karlı Çamlar",
       "type": "live",
       "scene": "winter_pines",
       "category": "Hareketli",
@@ -100,7 +100,7 @@
     },
     {
       "id": "live_rain_window",
-      "name": "Yağmurlu Cam 2",
+      "name": "Gece Camda Rahmet",
       "type": "live",
       "scene": "rain_bokeh",
       "category": "Hareketli",
@@ -109,41 +109,8 @@
       "palette": ["#0a111a", "#172536", "#d8b456"]
     },
     {
-      "id": "media_mosque_dawn",
-      "name": "Seher Kubbesi (1080p)",
-      "type": "image",
-      "src": "media/mosque_dawn.jpg",
-      "thumb": "media/thumbs/mosque_dawn.jpg",
-      "category": "Mimari",
-      "recommendedDarkness": 45,
-      "defaultEffect": "none",
-      "palette": ["#18121e", "#3d2638", "#d89b56"]
-    },
-    {
-      "id": "media_medina_emerald",
-      "name": "Yeşil Çinili Kubbe (1080p)",
-      "type": "image",
-      "src": "media/medina_emerald.jpg",
-      "thumb": "media/thumbs/medina_emerald.jpg",
-      "category": "Mimari",
-      "recommendedDarkness": 40,
-      "defaultEffect": "none",
-      "palette": ["#071710", "#103524", "#d8b456"]
-    },
-    {
-      "id": "media_golden_mihrab",
-      "name": "Taş Kemer & Mihrap (1080p)",
-      "type": "image",
-      "src": "media/golden_mihrab.jpg",
-      "thumb": "media/thumbs/golden_mihrab.jpg",
-      "category": "Mimari",
-      "recommendedDarkness": 38,
-      "defaultEffect": "none",
-      "palette": ["#120e07", "#2c2210", "#d8b456"]
-    },
-    {
       "id": "live_arch_mihrab",
-      "name": "Seher Revakı",
+      "name": "Seher Revakı & Kemer",
       "type": "live",
       "scene": "arch_glow",
       "category": "Mimari",
@@ -153,7 +120,7 @@
     },
     {
       "id": "live_arch_dome",
-      "name": "Kubbenin İçi",
+      "name": "Kubbenin İçi & Huzme",
       "type": "live",
       "scene": "dome_rays",
       "category": "Mimari",
@@ -173,7 +140,7 @@
     },
     {
       "id": "live_arch_medina",
-      "name": "Şadırvan Sabahı",
+      "name": "Ravza Yeşil Kubbe Nuru",
       "type": "live",
       "scene": "medina_green",
       "category": "Mimari",
@@ -182,30 +149,8 @@
       "palette": ["#071710", "#103524", "#d8b456"]
     },
     {
-      "id": "media_forest_stream",
-      "name": "Sisli Orman (1080p)",
-      "type": "image",
-      "src": "media/forest_stream.jpg",
-      "thumb": "media/thumbs/forest_stream.jpg",
-      "category": "Doğa",
-      "recommendedDarkness": 45,
-      "defaultEffect": "none",
-      "palette": ["#0b1d16", "#163829", "#4f8a6b"]
-    },
-    {
-      "id": "media_mountain_mist",
-      "name": "Yayla Bulutları (1080p)",
-      "type": "image",
-      "src": "media/mountain_mist.jpg",
-      "thumb": "media/thumbs/mountain_mist.jpg",
-      "category": "Doğa",
-      "recommendedDarkness": 42,
-      "defaultEffect": "none",
-      "palette": ["#0b1612", "#1b3329", "#a7f3d0"]
-    },
-    {
       "id": "live_nature_rays",
-      "name": "Ormanın İçinde",
+      "name": "Orman Işık Huzmeleri",
       "type": "live",
       "scene": "light_rays",
       "category": "Doğa",
@@ -225,7 +170,7 @@
     },
     {
       "id": "live_nature_autumn",
-      "name": "Sonbahar Yolu",
+      "name": "Sonbahar Yaprakları",
       "type": "live",
       "scene": "autumn_leaves",
       "category": "Doğa",
@@ -235,7 +180,7 @@
     },
     {
       "id": "live_nature_valley",
-      "name": "Zeytinlik & Vadi",
+      "name": "Zümrüt Vadi Dalgaları",
       "type": "live",
       "scene": "emerald_valley",
       "category": "Doğa",
@@ -244,30 +189,8 @@
       "palette": ["#061510", "#0f3325", "#6ee7b7"]
     },
     {
-      "id": "media_sunset_sea",
-      "name": "Ufukta Altın (1080p)",
-      "type": "image",
-      "src": "media/sunset_sea.jpg",
-      "thumb": "media/thumbs/sunset_sea.jpg",
-      "category": "Deniz ve Gök",
-      "recommendedDarkness": 42,
-      "defaultEffect": "none",
-      "palette": ["#1a0e22", "#eb7d1c", "#0c1c30"]
-    },
-    {
-      "id": "media_starry_night",
-      "name": "Kumulda Samanyolu (1080p)",
-      "type": "image",
-      "src": "media/starry_night.jpg",
-      "thumb": "media/thumbs/starry_night.jpg",
-      "category": "Deniz ve Gök",
-      "recommendedDarkness": 35,
-      "defaultEffect": "none",
-      "palette": ["#060913", "#111c38", "#4868a8"]
-    },
-    {
       "id": "live_night_aurora",
-      "name": "Aurora Vadisi",
+      "name": "Kuzey Işıkları (Aurora)",
       "type": "live",
       "scene": "aurora",
       "category": "Deniz ve Gök",
@@ -297,7 +220,7 @@
     },
     {
       "id": "live_sea_sunset",
-      "name": "Şafak Bulutları",
+      "name": "Şafak Ufku",
       "type": "live",
       "scene": "sunset_sky",
       "category": "Deniz ve Gök",
@@ -307,7 +230,7 @@
     },
     {
       "id": "live_sea_dawn",
-      "name": "Mavi Saat",
+      "name": "Mavi Saat Ufku",
       "type": "live",
       "scene": "horizon_glow",
       "category": "Deniz ve Gök",
@@ -327,7 +250,7 @@
     },
     {
       "id": "live_rain_amber",
-      "name": "Fenerli Avlu",
+      "name": "Fenerli Yağmurlu Avlu",
       "type": "live",
       "scene": "rain_amber",
       "category": "Gece ve Özel Günler",
@@ -337,7 +260,7 @@
     },
     {
       "id": "live_night_nebula",
-      "name": "Gecenin Yıldızı",
+      "name": "Samanyolu & Zerreler",
       "type": "live",
       "scene": "nebula_dust",
       "category": "Gece ve Özel Günler",
@@ -347,24 +270,13 @@
     },
     {
       "id": "live_night_cosmos",
-      "name": "Gece ve Hilal",
+      "name": "Derin Semâ & Yıldızlar",
       "type": "live",
       "scene": "deep_stars",
       "category": "Gece ve Özel Günler",
       "recommendedDarkness": 30,
       "defaultEffect": "none",
       "palette": ["#04060c", "#0f172a", "#93c5fd"]
-    },
-    {
-      "id": "media_rain_glass",
-      "name": "Yağmurlu Pencere (1080p)",
-      "type": "image",
-      "src": "media/rain_glass.jpg",
-      "thumb": "media/thumbs/rain_glass.jpg",
-      "category": "Sanat ve Dokular",
-      "recommendedDarkness": 40,
-      "defaultEffect": "none",
-      "palette": ["#0c1524", "#1b2d48", "#6585a6"]
     },
     {
       "id": "live_water_ripples",
@@ -378,7 +290,7 @@
     },
     {
       "id": "live_abs_silk",
-      "name": "İpeğin Akışı",
+      "name": "Zümrüt İpek Akışı",
       "type": "live",
       "scene": "silk_waves",
       "category": "Sanat ve Dokular",
@@ -388,7 +300,7 @@
     },
     {
       "id": "live_abs_islamic_teal",
-      "name": "Lale Çinisi",
+      "name": "Selçuklu Çini Hendesesi",
       "type": "live",
       "scene": "seljuk_tile",
       "category": "Sanat ve Dokular",
@@ -398,7 +310,7 @@
     },
     {
       "id": "live_abs_islamic_gold",
-      "name": "Kündekâri Kapı",
+      "name": "Altın Kündekâri",
       "type": "live",
       "scene": "islamic_geo",
       "category": "Sanat ve Dokular",
@@ -408,7 +320,7 @@
     },
     {
       "id": "live_rahle_glow",
-      "name": "Rahle, Seccade & Tesbih",
+      "name": "Rahle & Tefekkür Işığı",
       "type": "live",
       "scene": "rahle_glow",
       "category": "İlim ve Dua",
@@ -438,7 +350,7 @@
     },
     {
       "id": "live_rain_emerald",
-      "name": "Yağmurdan Sonra",
+      "name": "Yağmurdan Sonra Şifa",
       "type": "live",
       "scene": "rain_emerald",
       "category": "Taziye ve Şifa",
@@ -448,7 +360,7 @@
     },
     {
       "id": "live_sea_ocean",
-      "name": "Pencere Işığı & Şifa",
+      "name": "Derin Okyanus Sükûneti",
       "type": "live",
       "scene": "deep_ocean",
       "category": "Taziye ve Şifa",

@@ -1,16 +1,18 @@
 "use strict";
 
-(function () {
+(() => {
   const {
     SURAHS,
     RECITERS,
+    MINIMAL_FALLBACK_CATALOG,
     STYLE_PRESETS,
     KNOWN_EXCERPTS,
-    MINIMAL_FALLBACK_CATALOG,
     ZEMIN_CATEGORIES,
     AMBIENT_SOUNDS,
     ARABIC_COLOR_SWATCHES,
     MEAL_COLOR_SWATCHES,
+    EN_COLOR_SWATCHES,
+    HIGHLIGHT_COLOR_SWATCHES,
     MEAL_TEXT_STYLES,
     COVER_TEMPLATES
   } = window.TW_DATA;
@@ -60,220 +62,242 @@
     document.documentElement.style.setProperty("--app-height", `${vh}px`);
   }
   window.addEventListener("resize", syncAppViewportHeight);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", syncAppViewportHeight);
-  }
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", syncAppViewportHeight);
   syncAppViewportHeight();
+
+  const savedSettings = loadSettings();
+  const state = {
+    ...savedSettings,
+    activeTab: "stil",
+    drawerCollapsed: false,
+    reciterSearch: "",
+    surahSearch: "",
+    verses: [],
+    versesLoaded: false,
+    versesOfflineError: "",
+    audioStatuses: [],
+    audioElements: [],
+    audioDurations: [],
+    audioObjectUrls: [],
+    audioReady: false,
+    textOnlyMode: false,
+    isPlaying: false,
+    isRecording: false,
+    isFadingOut: false,
+    fadeOutProgress: 0,
+    activeVerseIdx: 0,
+    verseStartTime: 0,
+    activeVerseElapsed: 0,
+    elapsedTime: 0,
+    totalDuration: 0,
+    lastExportBlob: null,
+    lastExportExt: "mp4",
+    lastExportMime: "video/mp4",
+    fontsReady: false
+  };
+
+  // Undo / Redo History Stack
+  const historyStack = [];
+  let historyPointer = -1;
+  let isRestoringHistory = false;
+
+  function captureStateSnapshot() {
+    const snap = {};
+    for (const k of PERSISTED_KEYS) {
+      snap[k] = JSON.parse(JSON.stringify(state[k]));
+    }
+    return snap;
+  }
+
+  function pushHistorySnapshot() {
+    if (isRestoringHistory) return;
+    const snap = captureStateSnapshot();
+    const serialized = JSON.stringify(snap);
+    if (historyPointer >= 0 && JSON.stringify(historyStack[historyPointer]) === serialized) {
+      return;
+    }
+    historyStack.splice(historyPointer + 1);
+    historyStack.push(snap);
+    if (historyStack.length > 35) historyStack.shift();
+    historyPointer = historyStack.length - 1;
+    updateUndoRedoButtons();
+  }
+
+  function updateUndoRedoButtons() {
+    const btnUndo = document.getElementById("btnUndo");
+    const btnRedo = document.getElementById("btnRedo");
+    if (btnUndo) btnUndo.disabled = historyPointer <= 0;
+    if (btnRedo) btnRedo.disabled = historyPointer >= historyStack.length - 1;
+  }
+
+  async function applyHistorySnapshot(snap) {
+    if (!snap) return;
+    isRestoringHistory = true;
+    const prevSurah = state.surahNo;
+    const prevStart = state.ayahStart;
+    const prevEnd = state.ayahEnd;
+    const prevReciter = state.reciterId;
+    const prevBismillah = state.bismillahMode;
+    const prevZemin = state.zeminId;
+
+    for (const k of PERSISTED_KEYS) {
+      if (typeof snap[k] !== "undefined") {
+        state[k] = JSON.parse(JSON.stringify(snap[k]));
+      }
+    }
+    saveSettings(state);
+    syncAllControlsFromState();
+
+    if (prevZemin !== state.zeminId) {
+      await selectZemin(state.zeminId, true);
+    }
+    if (
+      prevSurah !== state.surahNo ||
+      prevStart !== state.ayahStart ||
+      prevEnd !== state.ayahEnd ||
+      prevReciter !== state.reciterId ||
+      prevBismillah !== state.bismillahMode
+    ) {
+      await loadVersesAndPreloadAudio();
+    }
+    updateVolumes(state, activeBgVideo);
+    if (state.isPlaying || state.isRecording) {
+      startAmbientSound(state);
+    }
+    isRestoringHistory = false;
+    updateUndoRedoButtons();
+  }
+
+  let persistDebounceTimer = null;
+  function persistState(recordHistory = true) {
+    saveSettings(state);
+    updateHeaderAndBottomSummary();
+    updateSocialCaptionText();
+    if (recordHistory && !isRestoringHistory) {
+      clearTimeout(persistDebounceTimer);
+      persistDebounceTimer = setTimeout(() => {
+        pushHistorySnapshot();
+      }, 280);
+    }
+  }
+
+  let toastTimer = null;
+  function showToast(msg, duration = 2600) {
+    const el = document.getElementById("toastNotification");
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), duration);
+  }
+
+  function hapticTap(ms = 10) {
+    try {
+      if (navigator.vibrate) navigator.vibrate(ms);
+    } catch (_) {}
+  }
+
+  function formatPreciseTime(sec) {
+    const s = Math.max(0, Number(sec) || 0);
+    const m = Math.floor(s / 60);
+    const rem = s - m * 60;
+    const whole = Math.floor(rem);
+    const tenths = Math.floor((rem - whole) * 10);
+    return `${String(m).padStart(2, "0")}:${String(whole).padStart(2, "0")}.${tenths}`;
+  }
+
+  function formatShortTime(sec) {
+    const s = Math.max(0, Math.round(sec || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${String(r).padStart(2, "0")}`;
+  }
 
   function toArabicIndicDigits(num) {
     const map = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
     return String(num).replace(/\d/g, (d) => map[Number(d)]);
   }
 
-  const initialSettings = loadSettings();
-  const state = {
-    ...initialSettings,
-    zeminSearch: "",
-    reciterSearch: "",
-    verses: [],
-    versesLoaded: false,
-    versesOfflineError: "",
-    audioElements: [],
-    audioDurations: [],
-    audioStatuses: [],
-    audioObjectUrls: [],
-    totalDuration: 0,
-    audioReady: false,
-    textOnlyMode: false,
-    fontsReady: false,
-    activeVerseIdx: 0,
-    activeVerseElapsed: 0,
-    verseStartTime: 0,
-    isPlaying: false,
-    isRecording: false,
-    isBuffering: false,
-    isFadingOut: false,
-    fadeOutProgress: 0,
-    elapsedTime: 0,
-    lastExportBlob: null,
-    lastExportExt: "mp4",
-    lastExportMime: "",
-    lastExportDuration: 0
-  };
-
-  // Undo / Redo History Stack
-  const historyStack = [];
-  const redoStack = [];
-  let isRestoringHistory = false;
-
-  function captureSnapshot() {
-    const snap = {};
-    PERSISTED_KEYS.forEach((k) => {
-      if (k !== "favoriteAyahs" && k !== "userPresets") {
-        snap[k] = state[k];
-      }
-    });
-    return JSON.stringify(snap);
+  // Normalizes circumflex vowels (Fâtiha -> Fatiha, Yâsîn -> Yasin, Nûr -> Nur) so hashtags never lose letters!
+  function normalizeHashtagWord(str) {
+    if (!str) return "";
+    return String(str)
+      .replace(/[âÂ]/g, (m) => (m === "Â" ? "A" : "a"))
+      .replace(/[îÎ]/g, (m) => (m === "Î" ? "İ" : "i"))
+      .replace(/[ûÛ]/g, (m) => (m === "Û" ? "U" : "u"))
+      .replace(/[êÊ]/g, (m) => (m === "Ê" ? "E" : "e"))
+      .replace(/[ôÔ]/g, (m) => (m === "Ô" ? "O" : "o"))
+      .replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]/g, "");
   }
 
-  let lastSnapshotStr = captureSnapshot();
-
-  function pushUndoSnapshot() {
-    if (isRestoringHistory) return;
-    const cur = captureSnapshot();
-    if (cur !== lastSnapshotStr) {
-      historyStack.push(lastSnapshotStr);
-      if (historyStack.length > 30) historyStack.shift();
-      redoStack.length = 0;
-      lastSnapshotStr = cur;
-      updateUndoRedoButtons();
-    }
-  }
-
-  function updateUndoRedoButtons() {
-    const uBtn = document.getElementById("btnUndo");
-    const rBtn = document.getElementById("btnRedo");
-    if (uBtn) uBtn.disabled = historyStack.length === 0;
-    if (rBtn) rBtn.disabled = redoStack.length === 0;
-  }
-
-  async function performUndo() {
-    if (historyStack.length === 0) return;
-    hapticTap();
-    isRestoringHistory = true;
-    redoStack.push(captureSnapshot());
-    const prevStr = historyStack.pop();
-    lastSnapshotStr = prevStr;
-    const prevObj = JSON.parse(prevStr);
-    const prevSurah = state.surahNo, prevStart = state.ayahStart, prevEnd = state.ayahEnd, prevRec = state.reciterId, prevZem = state.zeminId;
-    Object.assign(state, prevObj);
-    syncAllControlsFromState();
-    if (state.zeminId !== prevZem) await selectZemin(state.zeminId, true);
-    if (state.surahNo !== prevSurah || state.ayahStart !== prevStart || state.ayahEnd !== prevEnd || state.reciterId !== prevRec) {
-      await loadVersesAndPreloadAudio();
-    }
-    saveSettings(state, null, true);
-    updateUndoRedoButtons();
-    isRestoringHistory = false;
-    showToast("↶ Geri alındı", 1400);
-  }
-
-  async function performRedo() {
-    if (redoStack.length === 0) return;
-    hapticTap();
-    isRestoringHistory = true;
-    historyStack.push(captureSnapshot());
-    const nextStr = redoStack.pop();
-    lastSnapshotStr = nextStr;
-    const nextObj = JSON.parse(nextStr);
-    const prevSurah = state.surahNo, prevStart = state.ayahStart, prevEnd = state.ayahEnd, prevRec = state.reciterId, prevZem = state.zeminId;
-    Object.assign(state, nextObj);
-    syncAllControlsFromState();
-    if (state.zeminId !== prevZem) await selectZemin(state.zeminId, true);
-    if (state.surahNo !== prevSurah || state.ayahStart !== prevStart || state.ayahEnd !== prevEnd || state.reciterId !== prevRec) {
-      await loadVersesAndPreloadAudio();
-    }
-    saveSettings(state, null, true);
-    updateUndoRedoButtons();
-    isRestoringHistory = false;
-    showToast("↷ İleri alındı", 1400);
-  }
-
-  let toastTimer = null;
-  function showToast(msg, duration = 2400) {
-    const box = document.getElementById("toastBox");
-    if (!box) return;
-    box.textContent = msg;
-    box.classList.add("show");
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => box.classList.remove("show"), duration);
-  }
-
-  function persistState() {
-    pushUndoSnapshot();
-    updateHeaderAndBottomSummary();
-    saveSettings(state);
-  }
-
-  function hapticTap(ms = 10) {
-    if (!state.hapticEnabled) return;
-    if (navigator.vibrate) {
-      try { navigator.vibrate(ms); } catch (_) {}
-    }
-  }
-
-  function formatShortTime(sec) {
-    if (!Number.isFinite(sec) || sec < 0) return "0:00";
-    const totalSec = Math.round(sec);
-    const m = Math.floor(totalSec / 60);
-    const s = totalSec % 60;
-    return `${m}:${String(s).padStart(2, "0")}`;
-  }
-
-  function formatPreciseTime(sec) {
-    if (!Number.isFinite(sec) || sec < 0) return "00:00.0";
-    const m = Math.floor(sec / 60);
-    const s = (sec % 60).toFixed(1);
-    return `${String(m).padStart(2, "0")}:${s.padStart(4, "0")}`;
+  // Formats verse number prefix for both Turkish and English meals without duplicate numbers
+  function formatVerseTextWithNumber(rawText, ayahNum, fmt) {
+    if (!rawText) return "";
+    const clean = String(rawText).replace(/^\s*\d+\s*[-.)\]]\s*/, "").trim();
+    const mode = fmt || state.mealNumberFormat || "hyphen";
+    if (mode === "none") return clean;
+    if (mode === "dot") return `${ayahNum}. ${clean}`;
+    if (mode === "bracket") return `[${ayahNum}] ${clean}`;
+    return `${ayahNum}- ${clean}`;
   }
 
   function updateHeaderAndBottomSummary() {
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const recMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
     const rangeStr = state.ayahStart === state.ayahEnd ? `${state.ayahStart}` : `${state.ayahStart}-${state.ayahEnd}`;
 
-    const hdrSum = document.getElementById("headerProjectSummary");
-    if (hdrSum) {
-      hdrSum.textContent = `${surahMeta[1]} ${rangeStr} · ${recMeta.name}`;
+    const hdr = document.getElementById("headerProjectSummary");
+    if (hdr) hdr.textContent = `${surahMeta[1]} ${rangeStr} · ${recMeta.name}`;
+
+    // Update Cover Surah Name input placeholder
+    const inpCoverSurah = document.getElementById("inpCoverSurahName");
+    if (inpCoverSurah) {
+      inpCoverSurah.placeholder = `${surahMeta[1]} Sûresi`;
     }
 
-    const kesitRec = document.getElementById("lblCurrentReciterInKesit");
-    if (kesitRec) {
-      kesitRec.textContent = recMeta.name;
-    }
-
-    const durSec = state.totalDuration || ((state.ayahEnd - state.ayahStart + 1) * 5.8);
-    const durFormatted = formatShortTime(durSec);
-
-    const specLine = document.getElementById("lblBottomExportSpecs");
-    if (specLine) {
-      specLine.textContent = `${state.platformRatio} · ${state.resolution}p · ≈ ${durFormatted}`;
-    }
-
+    const durSec = Math.max(5, Math.round(state.totalDuration || 18));
     const estRenderSec = Math.max(3, Math.round(durSec * 0.25));
-    const estMB = Math.max(2, Math.round((durSec * (state.resolution === 1080 ? 0.75 : 0.42))));
-    const elRender = document.getElementById("lblBottomEstRender");
-    const elSize = document.getElementById("lblBottomEstSize");
-    if (elRender) elRender.textContent = `⏱ ≈ ${formatShortTime(estRenderSec)}`;
-    if (elSize) elSize.textContent = `💾 ${estMB} MB`;
+    const estMB = Math.max(2, Math.round((durSec * (state.bitrateMbps || 8)) / 8));
 
-    const kesitDur = document.getElementById("lblKesitDuration");
-    const kesitFill = document.getElementById("kesitDurationFill");
-    if (kesitDur) kesitDur.textContent = `≈ ${durFormatted}`;
-    if (kesitFill) {
-      const pct = Math.min(100, Math.max(4, (durSec / 600) * 100));
-      kesitFill.style.width = `${pct}%`;
+    const mainSpec = document.getElementById("lblExportSpecsMain");
+    if (mainSpec) mainSpec.textContent = `${state.platformRatio} · ${state.resolution}p · ≈ ${formatShortTime(durSec)}`;
+
+    const estTime = document.getElementById("lblExportEstTime");
+    if (estTime) estTime.textContent = `⏱ ≈ ${formatShortTime(estRenderSec)}`;
+
+    const estSize = document.getElementById("lblExportEstSize");
+    if (estSize) estSize.textContent = `💾 ${estMB} MB`;
+
+    for (let i = 0; i <= 4; i++) {
+      const el = document.getElementById(`tlRuler${i}`);
+      if (el) {
+        const tVal = (durSec * i) / 4;
+        el.textContent = formatShortTime(tVal);
+      }
     }
-
-    updateTimelineRulerMarks(durSec);
   }
 
-  function updateTimelineRulerMarks(totalSec) {
-    const ruler = document.getElementById("timelineRulerRow");
-    if (!ruler) return;
-    const dur = Math.max(5, totalSec || 20);
-    const marks = [];
-    for (let i = 0; i <= 4; i++) {
-      marks.push(`<span>${formatShortTime((dur * i) / 4)}</span>`);
+  let wakeLockSentinel = null;
+  async function requestScreenWakeLock() {
+    if ("wakeLock" in navigator && navigator.wakeLock) {
+      try {
+        wakeLockSentinel = await navigator.wakeLock.request("screen");
+      } catch (_) {}
     }
-    ruler.innerHTML = marks.join("");
+  }
+  function releaseScreenWakeLock() {
+    if (wakeLockSentinel) {
+      try { wakeLockSentinel.release(); } catch (_) {}
+      wakeLockSentinel = null;
+    }
   }
 
   async function ensureFontsLoaded() {
     if (document.fonts && document.fonts.load) {
       try {
-        await Promise.allSettled([
-          document.fonts.load(`700 44px '${state.arabicFont}'`),
+        await Promise.all([
+          document.fonts.load(`700 ${state.arabicSize}px '${state.arabicFont}'`),
+          document.fonts.load(`${state.mealWeight} ${state.mealItalic ? "italic " : ""}${state.mealSize}px '${state.mealFont}'`),
           document.fonts.load("700 44px 'Amiri'"),
           document.fonts.load("700 44px 'Scheherazade New'"),
           document.fonts.load("700 44px 'Noto Naskh Arabic'"),
@@ -287,34 +311,56 @@
     state.fontsReady = true;
   }
 
+  // Crisp 512x512 High-DPI Studio Logo
   const appLogoImg = new Image();
   let appLogoLoaded = false;
   const fallbackLogoCanvas = document.createElement("canvas");
-  fallbackLogoCanvas.width = 256;
-  fallbackLogoCanvas.height = 256;
+  fallbackLogoCanvas.width = 512;
+  fallbackLogoCanvas.height = 512;
 
   function buildFallbackLogo() {
     const lctx = fallbackLogoCanvas.getContext("2d");
-    lctx.clearRect(0, 0, 256, 256);
-    const grad = lctx.createRadialGradient(128, 128, 20, 128, 128, 120);
-    grad.addColorStop(0, "#1A1C23");
-    grad.addColorStop(1, "#070809");
+    lctx.clearRect(0, 0, 512, 512);
+    const grad = lctx.createRadialGradient(256, 256, 30, 256, 256, 240);
+    grad.addColorStop(0, "#1A1E26");
+    grad.addColorStop(1, "#07080A");
     lctx.fillStyle = grad;
     lctx.beginPath();
-    lctx.arc(128, 128, 120, 0, Math.PI * 2);
+    lctx.arc(256, 256, 240, 0, Math.PI * 2);
     lctx.fill();
-    lctx.lineWidth = 6;
+
+    // Outer & inner golden rings
+    lctx.lineWidth = 10;
     lctx.strokeStyle = "#E0B84C";
     lctx.stroke();
-    lctx.fillStyle = "#F5DF98";
-    lctx.font = "bold 54px 'Amiri', serif";
+
+    lctx.lineWidth = 3;
+    lctx.strokeStyle = "rgba(248, 229, 166, 0.45)";
+    lctx.beginPath();
+    lctx.arc(256, 256, 218, 0, Math.PI * 2);
+    lctx.stroke();
+
+    // Crisp golden crescent
+    lctx.fillStyle = "rgba(224, 184, 76, 0.22)";
+    lctx.beginPath();
+    lctx.arc(256, 256, 155, 0, Math.PI * 2);
+    lctx.fill();
+
+    lctx.fillStyle = "#F8E5A6";
+    lctx.font = "bold 116px 'Amiri', serif";
     lctx.textAlign = "center";
     lctx.textBaseline = "middle";
-    lctx.fillText("تلاوة", 128, 128);
+    lctx.fillText("تلاوة", 256, 244);
+
+    lctx.fillStyle = "#E0B84C";
+    lctx.font = "700 30px 'DM Sans', sans-serif";
+    lctx.fillText("TILAWAH", 256, 355);
   }
   buildFallbackLogo();
 
-  appLogoImg.onload = () => { appLogoLoaded = true; };
+  appLogoImg.onload = () => {
+    appLogoLoaded = (appLogoImg.naturalWidth >= 128);
+  };
   appLogoImg.onerror = () => {
     appLogoLoaded = false;
     const hdr = document.getElementById("headerLogoImg");
@@ -326,7 +372,6 @@
 
   let catalogItems = window.__TW_INLINE_CATALOG_ITEMS__ || [...MINIMAL_FALLBACK_CATALOG];
   let galleryItems = [];
-  let pexelsSearchItems = [];
   let activeObjectUrls = [];
   const thumbCache = new Map();
   let activeBgImage = null;
@@ -339,31 +384,29 @@
     }
   }
 
-  function revokeAudioObjectUrls() {
-    while (state.audioObjectUrls.length > 0) {
-      const u = state.audioObjectUrls.pop();
-      try { URL.revokeObjectURL(u); } catch (_) {}
-    }
-  }
-
   async function loadExternalCatalogJson() {
     if (window.__TW_INLINE_CATALOG_ITEMS__ && window.__TW_INLINE_CATALOG_ITEMS__.length > 2) {
-      catalogItems = window.__TW_INLINE_CATALOG_ITEMS__;
+      catalogItems = window.__TW_INLINE_CATALOG_ITEMS__.filter((it) => it.type !== "image");
+      renderZeminGrid();
       return;
     }
     try {
       const res = await fetch("media/catalog.json", { cache: "no-cache" });
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          catalogItems = data.items;
-        }
+      if (!res.ok) throw new Error("catalog error");
+      const data = await res.json();
+      if (data && Array.isArray(data.items) && data.items.length > 0) {
+        catalogItems = data.items.filter((it) => it.type !== "image");
       }
-    } catch (_) {}
+    } catch (_) {
+      if (!catalogItems || catalogItems.length === 0) {
+        catalogItems = [...MINIMAL_FALLBACK_CATALOG];
+      }
+    }
+    renderZeminGrid();
   }
 
-  function generateProceduralThumb(palette = ["#070809", "#181A20", "#E0B84C"], label = "") {
-    const key = palette.join("_") + "_" + label;
+  function generateProceduralThumb(palette = ["#0a111a", "#172536", "#d8b456"], label = "") {
+    const key = palette.join(",") + "|" + label;
     if (thumbCache.has(key)) return thumbCache.get(key);
 
     const c = document.createElement("canvas");
@@ -371,26 +414,26 @@
     c.height = 320;
     const tctx = c.getContext("2d");
 
-    const grad = tctx.createLinearGradient(0, 0, 0, 320);
-    grad.addColorStop(0, palette[0] || "#070809");
-    grad.addColorStop(0.55, palette[1] || "#181A20");
-    grad.addColorStop(1, "#040506");
-    tctx.fillStyle = grad;
+    const g = tctx.createLinearGradient(0, 0, 0, 320);
+    g.addColorStop(0, palette[0] || "#070809");
+    g.addColorStop(0.55, palette[1] || "#141820");
+    g.addColorStop(1, palette[0] || "#070809");
+    tctx.fillStyle = g;
     tctx.fillRect(0, 0, 180, 320);
 
-    const rad = tctx.createRadialGradient(90, 110, 8, 90, 110, 110);
+    const rad = tctx.createRadialGradient(90, 130, 6, 90, 130, 120);
     rad.addColorStop(0, (palette[2] || "#E0B84C") + "66");
     rad.addColorStop(1, "transparent");
     tctx.fillStyle = rad;
     tctx.fillRect(0, 0, 180, 320);
 
-    const url = c.toDataURL("image/jpeg", 0.78);
+    const url = c.toDataURL("image/jpeg", 0.8);
     thumbCache.set(key, url);
     return url;
   }
 
   function getAllZeminItems() {
-    return [...galleryItems, ...pexelsSearchItems, ...catalogItems];
+    return [...galleryItems, ...catalogItems];
   }
 
   function getZeminById(id) {
@@ -434,12 +477,12 @@
       if (item.blob) {
         srcUrl = URL.createObjectURL(item.blob);
         activeObjectUrls.push(srcUrl);
-      } else if (!srcUrl.startsWith("data:")) {
+      } else if (srcUrl && !srcUrl.startsWith("data:")) {
         img.crossOrigin = "anonymous";
       }
       img.onload = () => { activeBgImage = img; };
       img.onerror = () => { activeBgImage = null; };
-      img.src = srcUrl;
+      if (srcUrl) img.src = srcUrl;
     } else if (item && item.type === "video") {
       if (trimBox) trimBox.style.display = "grid";
       const vid = document.createElement("video");
@@ -447,7 +490,7 @@
       if (item.blob) {
         srcUrl = URL.createObjectURL(item.blob);
         activeObjectUrls.push(srcUrl);
-      } else if (!srcUrl.startsWith("data:")) {
+      } else if (srcUrl && !srcUrl.startsWith("data:")) {
         vid.crossOrigin = "anonymous";
       }
       vid.playsInline = true;
@@ -513,19 +556,22 @@
         if (!state.lockBgDim) state.bgDim = st.bgDim;
         state.bgWarmth = st.bgWarmth;
         state.visualEffect = st.visualEffect;
+        if (st.arabicFont) state.arabicFont = st.arabicFont;
         state.arabicColor = st.arabicColor;
         state.mealColor = st.mealColor;
+        if (st.enMealColor) state.enMealColor = st.enMealColor;
+        if (st.wordHighlightColor) state.wordHighlightColor = st.wordHighlightColor;
+        if (st.wordHighlightStyle) state.wordHighlightStyle = st.wordHighlightStyle;
+        if (st.textBoxStyle) state.textBoxStyle = st.textBoxStyle;
         applyMealStyleById(st.mealStyle, false);
 
         syncAllControlsFromState();
-        renderStylePresetsGrid();
-        await selectZemin(state.zeminId, true);
+        await selectZemin(st.zeminId, true);
         if (state.isPlaying || state.isRecording) {
-          ensureAudioGraph(state, activeBgVideo);
           startAmbientSound(state);
         }
         persistState();
-        showToast(`✨ "${st.name}" stili uygulandı`, 1800);
+        showToast(`"${st.name}" stili uygulandı.`);
       });
 
       grid.appendChild(card);
@@ -533,146 +579,144 @@
   }
 
   function renderKnownExcerptsList() {
-    const wrap = document.getElementById("knownExcerptsList");
-    if (!wrap) return;
-    wrap.innerHTML = "";
-    const list = state.favoriteAyahs && state.favoriteAyahs.length > 0 ? state.favoriteAyahs : KNOWN_EXCERPTS;
+    const list = document.getElementById("knownExcerptsList");
+    if (!list) return;
+    list.innerHTML = "";
 
-    list.forEach((ex) => {
-      const surahMeta = SURAHS.find((s) => s[0] === ex.surahNo) || SURAHS[0];
-      const isCurrent = (state.surahNo === ex.surahNo && state.ayahStart === ex.start && state.ayahEnd === ex.end);
-      const row = document.createElement("div");
-      row.className = "sebat-list-item" + (isCurrent ? " active" : "");
-      row.innerHTML = `
-        <div>
-          <div class="sebat-item-title">${ex.title || ex.label}</div>
-          <div class="sebat-item-sub">${ex.sub || `${surahMeta[1]} ${ex.start}-${ex.end}`}</div>
+    KNOWN_EXCERPTS.forEach((ex) => {
+      const isAct = (state.surahNo === ex.surahNo && state.ayahStart === ex.start && state.ayahEnd === ex.end);
+      const item = document.createElement("div");
+      item.className = "sebat-list-item" + (isAct ? " active" : "");
+
+      item.innerHTML = `
+        <div class="sebat-item-left">
+          <div class="sebat-item-title">${ex.title}</div>
+          <div class="sebat-item-sub">${ex.sub}</div>
         </div>
-        <div class="sebat-item-ar" dir="rtl">${ex.arName || surahMeta[4] || surahMeta[2]}</div>
+        <div class="sebat-item-ar" dir="rtl">${ex.arName}</div>
       `;
-      row.addEventListener("click", () => {
+
+      item.addEventListener("click", async () => {
         hapticTap();
         state.surahNo = ex.surahNo;
+        populateAyahRangeSelectors(false);
         state.ayahStart = ex.start;
         state.ayahEnd = ex.end;
-        state.coverAyahNo = ex.start;
-        populateSurahAndReciterSelectors();
+        document.getElementById("selSurah").value = String(ex.surahNo);
+        document.getElementById("selAyahStart").value = String(ex.start);
+        document.getElementById("selAyahEnd").value = String(ex.end);
         renderKnownExcerptsList();
         persistState();
-        loadVersesAndPreloadAudio();
+        await loadVersesAndPreloadAudio();
+        showToast(`${ex.title} yüklendi.`);
       });
-      wrap.appendChild(row);
+
+      list.appendChild(item);
     });
   }
 
   function renderRecitersList() {
-    const wrap = document.getElementById("reciterFullList");
+    const wrap = document.getElementById("recitersListWrap");
     if (!wrap) return;
     wrap.innerHTML = "";
+
     const q = (state.reciterSearch || "").trim().toLowerCase();
+    const filtered = RECITERS.filter((r) => !q || r.name.toLowerCase().includes(q) || r.tag.toLowerCase().includes(q));
 
-    const filtered = RECITERS.filter((r) =>
-      !q || r.name.toLowerCase().includes(q) || (r.tag || "").toLowerCase().includes(q)
-    );
-
-    let lastGroup = "";
-    filtered.forEach((r) => {
-      const grp = r.group || r.name.charAt(0).toUpperCase();
-      if (grp !== lastGroup) {
-        lastGroup = grp;
-        const hdr = document.createElement("div");
-        hdr.style.cssText = "padding:6px 10px 2px;font-size:11px;font-weight:700;color:var(--gold-light);";
-        hdr.textContent = grp;
-        wrap.appendChild(hdr);
+    let currentGroup = "";
+    filtered.forEach((rec) => {
+      if (rec.group !== currentGroup && !q) {
+        currentGroup = rec.group;
+        const grp = document.createElement("div");
+        grp.style.cssText = "font-size:10.5px;font-weight:700;color:var(--gold-light);padding:3px 4px 1px;";
+        grp.textContent = currentGroup;
+        wrap.appendChild(grp);
       }
 
-      const row = document.createElement("div");
-      row.className = "sebat-list-item" + (state.reciterId === r.id ? " active" : "");
-      row.innerHTML = `
-        <div>
-          <div class="sebat-item-title">${r.name}</div>
-          <div class="sebat-item-sub">${r.tag || "İndirilebilir"}</div>
+      const item = document.createElement("div");
+      item.className = "sebat-list-item" + (state.reciterId === rec.id ? " active" : "");
+      item.innerHTML = `
+        <div class="sebat-item-left">
+          <div class="sebat-item-title">${rec.name}</div>
+          <div class="sebat-item-sub">${rec.tag}</div>
         </div>
-        <span style="color:var(--gold-bright);font-weight:700;">${state.reciterId === r.id ? "●" : ""}</span>
+        <span style="color:var(--gold-bright);font-size:13px;">${state.reciterId === rec.id ? "●" : ""}</span>
       `;
-      row.addEventListener("click", () => {
+
+      item.addEventListener("click", async () => {
         hapticTap();
-        state.reciterId = r.id;
+        state.reciterId = rec.id;
         renderRecitersList();
         persistState();
-        loadVersesAndPreloadAudio();
-        showToast(`🎙️ Hâfız: ${r.name}`, 1800);
+        await loadVersesAndPreloadAudio();
+        showToast(`Hâfız: ${rec.name}`);
       });
-      wrap.appendChild(row);
+
+      wrap.appendChild(item);
     });
   }
 
   function renderZeminCategories() {
-    const bar = document.getElementById("zeminCategoryBar");
-    if (!bar) return;
-    bar.innerHTML = "";
+    const wrap = document.getElementById("zeminCategoryChips");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+
     ZEMIN_CATEGORIES.forEach((cat) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      const isGal = cat === "Galerim";
       btn.className = "chip" + (state.zeminCategory === cat ? " active" : "");
-      btn.textContent = isGal ? `★ Galerim (${galleryItems.length})` : cat;
+      const label = cat === "Galerim" && galleryItems.length > 0 ? `Galerim (${galleryItems.length})` : cat;
+      btn.textContent = label;
       btn.addEventListener("click", () => {
         hapticTap();
         state.zeminCategory = cat;
         renderZeminCategories();
         renderZeminGrid();
       });
-      bar.appendChild(btn);
+      wrap.appendChild(btn);
     });
   }
 
   function renderZeminGrid() {
     const grid = document.getElementById("zeminGrid");
-    const manageBar = document.getElementById("galleryManageBar");
-    const lblCount = document.getElementById("lblGalleryCount");
     if (!grid) return;
-
-    if (manageBar) manageBar.style.display = state.zeminCategory === "Galerim" ? "flex" : "none";
-    if (lblCount) lblCount.textContent = `${galleryItems.length} kişisel medya kayıtlı`;
-
-    const query = (state.zeminSearch || "").trim().toLowerCase();
-    let list = getAllZeminItems();
-
-    if (state.zeminCategory === "Son Kullanılanlar") {
-      list = (state.recentZeminIds || []).map((id) => getZeminById(id)).filter(Boolean);
-    } else if (state.zeminCategory !== "Tümü") {
-      list = list.filter((i) => i.category === state.zeminCategory);
-    }
-    if (query) {
-      list = list.filter((i) =>
-        i.name.toLowerCase().includes(query) ||
-        (i.category || "").toLowerCase().includes(query)
-      );
-    }
-
     grid.innerHTML = "";
-    if (list.length === 0) {
-      grid.innerHTML = `<div style="grid-column:1/-1;padding:18px;text-align:center;color:var(--text-muted);font-size:12px;">Bu kategoride medya yok. "+ Yükle" ile kendi fotoğraf veya videonuzu ekleyebilirsiniz.</div>`;
+
+    const all = getAllZeminItems();
+    const cat = state.zeminCategory || "Tümü";
+
+    const filtered = all.filter((item) => {
+      if (cat === "Tümü") return true;
+      if (cat === "Galerim") return item.category === "Galerim";
+      if (cat === "Son Kullanılanlar") return (state.recentZeminIds || []).includes(item.id);
+      return item.category === cat;
+    });
+
+    if (filtered.length === 0) {
+      const empty = document.createElement("div");
+      empty.style.cssText = "grid-column: 1 / -1; text-align:center; padding:16px 8px; color:var(--text-muted); font-size:11.5px;";
+      empty.textContent = cat === "Galerim"
+        ? "Galerinizde henüz video veya görsel yok. Sağ üstteki '+ Galerim' düğmesiyle cihazınızdan ekleyebilirsiniz."
+        : "Bu kategoride sahne bulunamadı.";
+      grid.appendChild(empty);
       return;
     }
 
-    list.forEach((item) => {
-      const isUserGal = item.category === "Galerim";
+    filtered.forEach((item) => {
       const card = document.createElement("div");
-      card.className = "zemin-card" + (state.zeminId === item.id ? " active" : "");
+      card.className = "zemin-card" + (item.id === state.zeminId ? " active" : "");
 
       const img = document.createElement("img");
       img.className = "zemin-thumb";
-      img.loading = "lazy";
       img.alt = item.name;
-      const fallbackThumb = generateProceduralThumb(item.palette || ["#070809", "#181A20", "#E0B84C"], item.name);
-      img.src = item.thumbDataUrl || item.thumb || fallbackThumb;
-      img.onerror = () => { img.onerror = null; img.src = fallbackThumb; };
+      img.loading = "lazy";
+      const fallbackUrl = generateProceduralThumb(item.palette, item.name);
+      img.src = item.thumbDataUrl || item.thumb || fallbackUrl;
+      img.onerror = () => { img.onerror = null; img.src = fallbackUrl; };
 
       const badge = document.createElement("span");
       badge.className = "zemin-badge";
-      badge.textContent = item.type === "video" ? "VİDEO" : item.type === "image" ? "1080P" : "CANLI";
+      badge.textContent = item.type === "video" ? "VİDEO" : item.category === "Galerim" ? "GALERİM" : "CANLI";
 
       const label = document.createElement("div");
       label.className = "zemin-label";
@@ -682,7 +726,7 @@
       card.appendChild(badge);
       card.appendChild(label);
 
-      if (isUserGal) {
+      if (item.category === "Galerim") {
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.className = "zemin-del-btn";
@@ -693,8 +737,13 @@
           await deleteGalleryItem(item.id);
           galleryItems = await getAllGalleryItems();
           renderZeminCategories();
-          renderZeminGrid();
+          if (state.zeminId === item.id) {
+            await selectZemin("vid_forest_stream");
+          } else {
+            renderZeminGrid();
+          }
           refreshStorageStatsUI();
+          showToast("Galerim'den silindi.");
         });
         card.appendChild(delBtn);
       }
@@ -703,98 +752,107 @@
         hapticTap();
         selectZemin(item.id);
       });
+
       grid.appendChild(card);
     });
   }
 
   function renderAmbientSoundList() {
-    const wrap = document.getElementById("ambientSoundList");
-    if (!wrap) return;
-    wrap.innerHTML = "";
+    const list = document.getElementById("ambientSoundList");
+    if (!list) return;
+    list.innerHTML = "";
 
-    AMBIENT_SOUNDS.forEach((s) => {
-      const isAct = state.ambientType === s.id;
-      const row = document.createElement("div");
-      row.className = "sebat-list-item" + (isAct ? " active" : "");
-      row.innerHTML = `
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:17px;">${s.icon}</span>
-          <div>
-            <div class="sebat-item-title">${s.name}</div>
-            <div class="sebat-item-sub">${s.sub}</div>
-          </div>
+    AMBIENT_SOUNDS.forEach((amb) => {
+      const isAct = state.ambientType === amb.id;
+      const item = document.createElement("div");
+      item.className = "sebat-list-item" + (isAct ? " active" : "");
+      item.innerHTML = `
+        <div class="sebat-item-left">
+          <div class="sebat-item-title">${amb.icon} ${amb.name}</div>
+          <div class="sebat-item-sub">${amb.sub}</div>
         </div>
-        <span style="color:var(--gold-bright);font-weight:700;">${isAct ? "● Seçili" : ""}</span>
+        <span style="color:var(--gold-bright);font-size:13px;">${isAct ? "●" : ""}</span>
       `;
-      row.addEventListener("click", () => {
+      item.addEventListener("click", () => {
         hapticTap();
-        state.ambientType = s.id;
-        if (s.id !== "none" && state.ambientVol === 0) {
+        state.ambientType = amb.id;
+        if (amb.id !== "none" && state.ambientVol === 0) {
           state.ambientVol = 22;
           document.getElementById("rngAmbientVol").value = 22;
           document.getElementById("valAmbientVol").textContent = "%22";
         }
         renderAmbientSoundList();
-        ensureAudioGraph(state, activeBgVideo);
-        if (s.id === "none") {
-          stopAmbientSound();
-        } else {
+        if (state.isPlaying || state.isRecording) {
           startAmbientSound(state);
         }
         persistState();
       });
-      wrap.appendChild(row);
+      list.appendChild(item);
+    });
+  }
+
+  function renderSwatchGroup(containerId, swatches, currentHex, labelId, inputId, onSelectHex) {
+    const row = document.getElementById(containerId);
+    if (!row) return;
+    row.innerHTML = "";
+    swatches.forEach((sw) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const isAct = (currentHex || "").toUpperCase() === sw.hex.toUpperCase();
+      btn.className = "color-swatch-circle" + (isAct ? " active" : "");
+      btn.style.backgroundColor = sw.hex;
+      btn.title = sw.name;
+      if (isAct) {
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = sw.name;
+      }
+      btn.addEventListener("click", () => {
+        hapticTap();
+        onSelectHex(sw.hex, sw.name);
+        const lbl = document.getElementById(labelId);
+        if (lbl) lbl.textContent = sw.name;
+        const inp = document.getElementById(inputId);
+        if (inp) inp.value = sw.hex;
+        renderColorSwatches();
+        persistState();
+      });
+      row.appendChild(btn);
     });
   }
 
   function renderColorSwatches() {
-    const arRow = document.getElementById("arabicSwatchRow");
-    const mealRow = document.getElementById("mealSwatchRow");
-    if (arRow) {
-      arRow.innerHTML = "";
-      ARABIC_COLOR_SWATCHES.forEach((sw) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "color-swatch-btn" + (state.arabicColor.toLowerCase() === sw.hex.toLowerCase() ? " active" : "");
-        btn.style.backgroundColor = sw.hex;
-        btn.title = sw.name;
-        btn.addEventListener("click", () => {
-          hapticTap();
-          state.arabicColor = sw.hex;
-          state.arabicColorName = sw.name;
-          const lbl = document.getElementById("lblArabicColorName");
-          if (lbl) lbl.textContent = sw.name;
-          const inp = document.getElementById("inpArabicColor");
-          if (inp) inp.value = sw.hex;
-          renderColorSwatches();
-          persistState();
-        });
-        arRow.appendChild(btn);
-      });
-    }
-
-    if (mealRow) {
-      mealRow.innerHTML = "";
-      MEAL_COLOR_SWATCHES.forEach((sw) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "color-swatch-btn" + (state.mealColor.toLowerCase() === sw.hex.toLowerCase() ? " active" : "");
-        btn.style.backgroundColor = sw.hex;
-        btn.title = sw.name;
-        btn.addEventListener("click", () => {
-          hapticTap();
-          state.mealColor = sw.hex;
-          state.mealColorName = sw.name;
-          const lbl = document.getElementById("lblMealColorName");
-          if (lbl) lbl.textContent = sw.name;
-          const inp = document.getElementById("inpMealColor");
-          if (inp) inp.value = sw.hex;
-          renderColorSwatches();
-          persistState();
-        });
-        mealRow.appendChild(btn);
-      });
-    }
+    renderSwatchGroup(
+      "arabicColorSwatches",
+      ARABIC_COLOR_SWATCHES,
+      state.arabicColor,
+      "lblArabicColorName",
+      "inpArabicColor",
+      (hex) => { state.arabicColor = hex; }
+    );
+    renderSwatchGroup(
+      "mealColorSwatches",
+      MEAL_COLOR_SWATCHES,
+      state.mealColor,
+      "lblMealColorName",
+      "inpMealColor",
+      (hex) => { state.mealColor = hex; }
+    );
+    renderSwatchGroup(
+      "enColorSwatches",
+      EN_COLOR_SWATCHES,
+      state.enMealColor,
+      "lblEnColorName",
+      "inpEnMealColor",
+      (hex) => { state.enMealColor = hex; }
+    );
+    renderSwatchGroup(
+      "highlightColorSwatches",
+      HIGHLIGHT_COLOR_SWATCHES,
+      state.wordHighlightColor,
+      "lblHighlightColorName",
+      "inpHighlightColor",
+      (hex) => { state.wordHighlightColor = hex; }
+    );
   }
 
   function applyMealStyleById(styleId, shouldPersist = true) {
@@ -810,17 +868,37 @@
     if (shouldPersist) persistState();
   }
 
+  // Timeline Strip with [🖼 Kapak] Pill at Index 0 + Ayah Blocks
   function renderAyahTimelineStrip() {
     const strip = document.getElementById("ayahTimelineStrip");
     if (!strip) return;
     strip.innerHTML = "";
+
+    // 1. Always render [🖼 Kapak] pill first so user can switch between Cover & Ayah view with 1 tap!
+    const coverBtn = document.createElement("button");
+    coverBtn.type = "button";
+    const isCoverActive = state.coverPreviewMode === "cover";
+    coverBtn.className = "ayah-tl-block cover-tl-block" + (isCoverActive ? " active" : "");
+    coverBtn.innerHTML = `
+      <span class="ayah-tl-num">🖼 Kapak</span>
+      <span class="ayah-tl-dur">${state.coverFirstFrame === "on" ? "1.2s" : "Önizle"}</span>
+    `;
+    coverBtn.addEventListener("click", () => {
+      hapticTap();
+      state.coverPreviewMode = state.coverPreviewMode === "cover" ? "ayah" : "cover";
+      const chk = document.getElementById("chkPreviewCoverNow");
+      if (chk) chk.checked = (state.coverPreviewMode === "cover");
+      renderAyahTimelineStrip();
+      persistState(false);
+    });
+    strip.appendChild(coverBtn);
 
     if (!state.versesLoaded || state.verses.length === 0) return;
 
     state.verses.forEach((v, idx) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      const isAct = idx === state.activeVerseIdx;
+      const isAct = (state.coverPreviewMode !== "cover" && idx === state.activeVerseIdx);
       btn.className = "ayah-tl-block" + (isAct ? " active" : "");
 
       const firstWords = (v.arabic || "").split(/\s+/).slice(0, 2).join(" ");
@@ -834,6 +912,9 @@
 
       btn.addEventListener("click", () => {
         hapticTap();
+        state.coverPreviewMode = "ayah";
+        const chk = document.getElementById("chkPreviewCoverNow");
+        if (chk) chk.checked = false;
         jumpToVerseIndex(idx);
       });
 
@@ -875,6 +956,7 @@
         const chk = document.getElementById("chkPreviewCoverNow");
         if (chk) chk.checked = true;
         renderCoverTemplateChips();
+        renderAyahTimelineStrip();
         persistState();
       });
       wrap.appendChild(chip);
@@ -886,24 +968,25 @@
     if (!wrap) return;
     wrap.innerHTML = "";
 
-    const validCoverAyah =
-      state.coverAyahNo >= state.ayahStart && state.coverAyahNo <= state.ayahEnd
-        ? state.coverAyahNo
-        : state.ayahStart;
-    state.coverAyahNo = validCoverAyah;
+    const start = state.ayahStart || 1;
+    const end = state.ayahEnd || 1;
+    if (state.coverAyahNo < start || state.coverAyahNo > end) {
+      state.coverAyahNo = start;
+    }
 
-    for (let a = state.ayahStart; a <= state.ayahEnd; a++) {
+    for (let a = start; a <= end; a++) {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "cover-ayah-btn" + (state.coverAyahNo === a ? " active" : "");
-      btn.textContent = a;
+      btn.className = "circle-num-btn" + (state.coverAyahNo === a ? " active" : "");
+      btn.textContent = String(a);
       btn.addEventListener("click", () => {
         hapticTap();
         state.coverAyahNo = a;
         state.coverPreviewMode = "cover";
-        const chkPrev = document.getElementById("chkPreviewCoverNow");
-        if (chkPrev) chkPrev.checked = true;
+        const chk = document.getElementById("chkPreviewCoverNow");
+        if (chk) chk.checked = true;
         renderCoverAyahCircles();
+        renderAyahTimelineStrip();
         persistState();
       });
       wrap.appendChild(btn);
@@ -913,138 +996,164 @@
   function renderUserPresetsList() {
     const sel = document.getElementById("selUserPreset");
     if (!sel) return;
-    sel.innerHTML = `<option value="">-- Kayıtlı Ön Ayar Seçin --</option>`;
-    (state.userPresets || []).forEach((p) => {
+    sel.innerHTML = "";
+    const presets = Array.isArray(state.userPresets) ? state.userPresets : [];
+    if (presets.length === 0) {
       const opt = document.createElement("option");
-      opt.value = p.id;
-      opt.textContent = p.name;
+      opt.value = "";
+      opt.textContent = "Kayıtlı ön ayar yok";
+      sel.appendChild(opt);
+      return;
+    }
+    presets.forEach((p, idx) => {
+      const opt = document.createElement("option");
+      opt.value = String(idx);
+      opt.textContent = p.name || `Ön Ayar #${idx + 1}`;
       sel.appendChild(opt);
     });
   }
 
-  async function processUploadedFile(file) {
-    const lower = file.name.toLowerCase();
-    const isVideo = file.type.startsWith("video/") || lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
-    const id = "gal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-
-    if (!isVideo) {
-      const tempUrl = URL.createObjectURL(file);
-      const img = new Image();
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = tempUrl; });
+  async function createCompactThumbFromMedia(blob) {
+    const isVideo = blob.type && blob.type.startsWith("video/");
+    const tempUrl = URL.createObjectURL(blob);
+    try {
+      if (!isVideo) {
+        const img = new Image();
+        await new Promise((res, rej) => {
+          img.onload = res;
+          img.onerror = rej;
+          img.src = tempUrl;
+        });
+        const tc = document.createElement("canvas");
+        tc.width = 280;
+        tc.height = 498;
+        const srcW = img.naturalWidth || 720;
+        const srcH = img.naturalHeight || 1280;
+        const s = Math.max(280 / srcW, 498 / srcH);
+        tc.getContext("2d").drawImage(img, (280 - srcW * s) / 2, (498 - srcH * s) / 2, srcW * s, srcH * s);
+        return tc.toDataURL("image/jpeg", 0.72);
+      } else {
+        const vid = document.createElement("video");
+        vid.muted = true;
+        vid.playsInline = true;
+        vid.src = tempUrl;
+        await new Promise((res) => {
+          vid.onloadeddata = () => { vid.currentTime = 0.2; };
+          vid.onseeked = res;
+          vid.onerror = res;
+          setTimeout(res, 1500);
+        });
+        const tc = document.createElement("canvas");
+        tc.width = 280;
+        tc.height = 498;
+        const vw = vid.videoWidth || 720;
+        const vh = vid.videoHeight || 1280;
+        const s = Math.max(280 / vw, 498 / vh);
+        tc.getContext("2d").drawImage(vid, (280 - vw * s) / 2, (498 - vh * s) / 2, vw * s, vh * s);
+        return tc.toDataURL("image/jpeg", 0.72);
+      }
+    } catch (_) {
+      return generateProceduralThumb(["#0b1d16", "#163829", "#d8b456"], "Galerim");
+    } finally {
       URL.revokeObjectURL(tempUrl);
-
-      const srcW = img.naturalWidth || 720;
-      const srcH = img.naturalHeight || 1280;
-      const tc = document.createElement("canvas");
-      tc.width = 280;
-      tc.height = 498;
-      const s = Math.max(280 / srcW, 498 / srcH);
-      tc.getContext("2d").drawImage(img, (280 - srcW * s) / 2, (498 - srcH * s) / 2, srcW * s, srcH * s);
-
-      return {
-        id,
-        name: file.name.replace(/\.[^.]+$/, ""),
-        type: "image",
-        blob: file,
-        thumbDataUrl: tc.toDataURL("image/jpeg", 0.74),
-        category: "Galerim",
-        recommendedDarkness: 40,
-        defaultEffect: "none",
-        createdAt: Date.now()
-      };
-    } else {
-      return {
-        id,
-        name: file.name.replace(/\.[^.]+$/, ""),
-        type: "video",
-        blob: file,
-        thumbDataUrl: generateProceduralThumb(["#070809", "#181A20", "#E0B84C"], "VİDEO"),
-        category: "Galerim",
-        recommendedDarkness: 40,
-        defaultEffect: "none",
-        createdAt: Date.now()
-      };
     }
   }
 
-  function stripLeadingBismillah(arabicText, surahNo, ayahNo) {
-    if (surahNo === 1 || surahNo === 9 || ayahNo !== 1) return arabicText;
-    const text = (arabicText || "").trim();
-    const words = text.split(/\s+/);
-    if (words.length > 4) {
-      const normalizeAr = (s) =>
-        s
-          .replace(/[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED\u0640]/g, "")
-          .replace(/[ٱأإآ]/g, "ا");
-      const first4 = normalizeAr(words.slice(0, 4).join(" "));
-      if (first4 === "بسم الله الرحمن الرحيم") {
-        return words.slice(4).join(" ").trim();
-      }
-    }
-    return text.replace(
-      /^بِسْمِ\s+[ٱا]للَّهِ\s+[ٱا]لرَّحْمَـ?ٰنِ\s+[ٱا]لرَّحِيمِ\s*/u,
-      ""
-    ).trim() || text;
+  async function processUploadedFile(file) {
+    const isVideo = file.type.startsWith("video/");
+    const thumbDataUrl = await createCompactThumbFromMedia(file);
+    return {
+      id: "gal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
+      name: file.name.replace(/\.[^.]+$/, "").slice(0, 22),
+      type: isVideo ? "video" : "image",
+      category: "Galerim",
+      blob: file,
+      thumbDataUrl,
+      recommendedDarkness: 42,
+      defaultEffect: "none",
+      palette: ["#0c1821", "#1b3a4b", "#d8b456"]
+    };
+  }
+
+  function cleanLeadingBismillah(text, surahNo, ayahNo) {
+    if (surahNo === 1 || surahNo === 9 || ayahNo !== 1) return text;
+    if (state.bismillahMode === "first_only") return text;
+    const patterns = [
+      /^بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ\s*/,
+      /^بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ\s*/
+    ];
+    let cleaned = text;
+    for (const p of patterns) cleaned = cleaned.replace(p, "");
+    return cleaned.trim() || text;
   }
 
   let currentLoadToken = 0;
+  function revokePreloadedAudioUrls() {
+    while (state.audioObjectUrls.length > 0) {
+      const u = state.audioObjectUrls.pop();
+      try { URL.revokeObjectURL(u); } catch (_) {}
+    }
+  }
 
   async function loadVersesAndPreloadAudio() {
     const token = ++currentLoadToken;
     stopPlaybackAndRecording(true);
-    revokeAudioObjectUrls();
+    revokePreloadedAudioUrls();
 
-    state.audioReady = false;
-    state.textOnlyMode = false;
     state.versesLoaded = false;
     state.versesOfflineError = "";
-    state.totalDuration = 0;
+    state.audioReady = false;
+    state.textOnlyMode = false;
+    state.audioStatuses = [];
+    state.audioElements = [];
+    state.audioDurations = [];
+
+    const errBox = document.getElementById("ayahAudioAlertBox");
+    if (errBox) errBox.style.display = "none";
+
+    const lblState = document.getElementById("lblAudioReadyState");
+    if (lblState) lblState.textContent = "Yükleniyor...";
 
     const btnPlay = document.getElementById("btnPlayPreview");
     const btnRec = document.getElementById("btnRecordExport");
-    const lblDur = document.getElementById("lblTotalDuration");
-    const lblState = document.getElementById("lblAudioReadyState");
-    const errBox = document.getElementById("ayahAudioErrorBox");
-
     if (btnPlay) btnPlay.disabled = true;
     if (btnRec) btnRec.disabled = true;
-    if (lblDur) lblDur.textContent = "≈ ...";
-    if (lblState) lblState.textContent = "Ayetler ve tilâvet sesleri yükleniyor...";
-    if (errBox) errBox.style.display = "none";
     updateStageBadge("loading", "Hazırlanıyor...");
 
     const sNo = state.surahNo;
     const start = state.ayahStart;
     const end = state.ayahEnd;
-    const count = end - start + 1;
-    const offset = start - 1;
 
     let loadedVerses = null;
     let fromOfflineCache = false;
 
     try {
-      const url = `https://api.alquran.cloud/v1/surah/${sNo}/editions/quran-uthmani,tr.diyanet,tr.yazir,tr.vakfi,en.sahih?offset=${offset}&limit=${count}`;
+      const url = `https://api.alquran.cloud/v1/surah/${sNo}/editions/quran-uthmani,tr.diyanet,tr.yazir,tr.vakfi,en.sahih`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error("HTTP " + res.status);
+      if (!res.ok) throw new Error("API HTTP " + res.status);
       const json = await res.json();
-      if (token !== currentLoadToken) return;
+      if (!json || !Array.isArray(json.data) || json.data.length < 5) throw new Error("Invalid API data");
 
-      const [arEd, trDiyanet, trYazir, trVakfi, enEd] = json.data;
+      const arAyahs = json.data[0].ayahs;
+      const trDiyanet = json.data[1].ayahs;
+      const trYazir = json.data[2].ayahs;
+      const trVakfi = json.data[3].ayahs;
+      const enSahih = json.data[4].ayahs;
+
       const verses = [];
-      for (let i = 0; i < arEd.ayahs.length; i++) {
-        const ayahNum = arEd.ayahs[i].numberInSurah;
-        const rawAr = arEd.ayahs[i].text;
-        const cleanAr = stripLeadingBismillah(rawAr, sNo, ayahNum);
+      for (let a = start; a <= end; a++) {
+        const idx = a - 1;
+        if (!arAyahs[idx]) continue;
         verses.push({
-          numberInSurah: ayahNum,
-          arabic: cleanAr,
-          hasBismillahHeader: (ayahNum === 1 && sNo !== 1 && sNo !== 9),
-          tr: trDiyanet && trDiyanet.ayahs[i] ? trDiyanet.ayahs[i].text : "",
-          tr_yazir: trYazir && trYazir.ayahs[i] ? trYazir.ayahs[i].text : "",
-          tr_vakfi: trVakfi && trVakfi.ayahs[i] ? trVakfi.ayahs[i].text : "",
-          en: enEd && enEd.ayahs[i] ? enEd.ayahs[i].text : ""
+          numberInSurah: a,
+          arabic: cleanLeadingBismillah(arAyahs[idx].text, sNo, a),
+          tr: trDiyanet[idx] ? trDiyanet[idx].text : "",
+          tr_yazir: trYazir[idx] ? trYazir[idx].text : "",
+          tr_vakfi: trVakfi[idx] ? trVakfi[idx].text : "",
+          en: enSahih[idx] ? enSahih[idx].text : ""
         });
       }
+      if (verses.length === 0) throw new Error("Empty range");
       loadedVerses = verses;
       await cacheVersesToDB(sNo, verses);
       refreshStorageStatsUI();
@@ -1097,9 +1206,9 @@
       }
       state.totalDuration = total;
       state.audioReady = true;
-      state.textOnlyMode = false;
 
-      if (lblDur) lblDur.textContent = formatPreciseTime(total);
+      document.getElementById("lblTotalDuration").textContent = formatPreciseTime(total);
+      document.getElementById("lblCurrentTime").textContent = "00:00.0";
       if (lblState) {
         lblState.textContent = `✓ Hazır (${state.audioDurations.length} âyet · ${formatShortTime(total)}${fromOfflineCache ? " · Çevrimdışı" : ""})`;
       }
@@ -1174,6 +1283,11 @@
   const canvas = document.getElementById("studioCanvas");
   const ctx = canvas.getContext("2d");
 
+  // Snap Guide state during touch/mouse dragging on canvas
+  let isDraggingCanvasText = false;
+  let snapGuideX = false;
+  let snapGuideY = false;
+
   function wrapCanvasText(context, text, maxWidth) {
     if (!text) return [];
     const words = text.split(/\s+/);
@@ -1199,141 +1313,162 @@
     return verse.tr || "";
   }
 
-  // Unified Cover Scene: Combines 9 Templates (Borders/Mihrab Arch/Badges) + Sebat Cover Ayah & Large Surah Calligraphy + Custom Title/Subtitle + Scale (60-160%) + Precise X/Y Offset + Cover Background Override!
-  function drawUnifiedCoverScene(w, h, scaleFactor) {
-    const tpl = COVER_TEMPLATES.find((t) => t.id === state.coverTemplateId) || COVER_TEMPLATES[0];
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
-    const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
-    const coverVerse =
-      state.verses.find((v) => v.numberInSurah === state.coverAyahNo) ||
-      state.verses[0];
+  function drawRoundedBox(context, x, y, width, height, radius, fill, stroke) {
+    context.save();
+    context.beginPath();
+    if (context.roundRect) {
+      context.roundRect(x, y, width, height, radius);
+    } else {
+      context.rect(x, y, width, height);
+    }
+    if (fill) {
+      context.fillStyle = fill;
+      context.fill();
+    }
+    if (stroke) {
+      context.strokeStyle = stroke;
+      context.lineWidth = 1.5;
+      context.stroke();
+    }
+    context.restore();
+  }
 
-    // 1. Optional Cover Background Override
-    if (state.coverBgOverride && state.coverBgOverride !== "same") {
-      const map = {
-        pure_black: ["#050608", "#0d0f14"],
-        dark_gold: ["#120e07", "#291f0e"],
-        emerald: ["#061612", "#0f2e24"],
-        midnight: ["#060b16", "#132242"]
-      };
-      const pal = map[state.coverBgOverride] || map.pure_black;
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, pal[0]);
-      g.addColorStop(1, pal[1]);
+  // Unified Cover Scene with Editable Surah Name, Size Scale, and X/Y Offsets
+  function drawUnifiedCoverScene(w, h, scaleFactor) {
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
+    const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
+    const tpl = COVER_TEMPLATES.find((t) => t.id === state.coverTemplateId) || COVER_TEMPLATES[0];
+    const coverVerse = state.verses.find((v) => v.numberInSurah === state.coverAyahNo) || state.verses[0];
+
+    ctx.save();
+
+    if (state.coverBgOverride !== "same") {
+      const g = ctx.createRadialGradient(w / 2, h * 0.42, 20, w / 2, h / 2, Math.max(w, h) * 0.78);
+      if (state.coverBgOverride === "dark_emerald") {
+        g.addColorStop(0, "rgba(14, 48, 38, 0.94)");
+        g.addColorStop(1, "rgba(4, 12, 9, 0.98)");
+      } else if (state.coverBgOverride === "pure_black") {
+        g.addColorStop(0, "rgba(22, 20, 16, 0.94)");
+        g.addColorStop(1, "rgba(4, 5, 7, 0.98)");
+      } else {
+        g.addColorStop(0, "rgba(18, 32, 62, 0.94)");
+        g.addColorStop(1, "rgba(5, 9, 18, 0.98)");
+      }
       ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    } else {
+      ctx.fillStyle = "rgba(4, 6, 8, 0.28)";
       ctx.fillRect(0, 0, w, h);
     }
 
     const cScale = ((state.coverScale || 100) / 100) * scaleFactor;
-    const baseCenterY = state.coverPos === "upper" ? h * 0.34 : state.coverPos === "lower" ? h * 0.66 : h * 0.5;
-    const centerY = baseCenterY + ((state.coverOffsetY || 0) / 100) * h;
-    const centerX = w * 0.5 + ((state.coverOffsetX || 0) / 100) * w;
+    const pad = 42 * scaleFactor;
 
-    ctx.save();
-
-    // 2. Template Decorative Frame & Mihrab Arch
     if (tpl.border) {
-      const pad = 38 * scaleFactor;
-      ctx.strokeStyle = (tpl.accent || "#D8B456") + "88";
-      ctx.lineWidth = 2.5 * scaleFactor;
+      ctx.strokeStyle = tpl.accent + "77";
+      ctx.lineWidth = 2.2 * scaleFactor;
       ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+      ctx.strokeStyle = tpl.accent + "33";
+      ctx.lineWidth = 1 * scaleFactor;
+      ctx.strokeRect(pad + 10 * scaleFactor, pad + 10 * scaleFactor, w - (pad + 10 * scaleFactor) * 2, h - (pad + 10 * scaleFactor) * 2);
     }
+
     if (tpl.arch) {
-      ctx.strokeStyle = (tpl.accent || "#F3D77D") + "55";
-      ctx.lineWidth = 2 * scaleFactor;
+      ctx.strokeStyle = tpl.accent + "66";
+      ctx.lineWidth = 2.8 * scaleFactor;
       ctx.beginPath();
-      ctx.arc(centerX, centerY - 52 * cScale, 178 * cScale, Math.PI, 0);
+      ctx.moveTo(pad + 18 * scaleFactor, h - pad - 18 * scaleFactor);
+      ctx.lineTo(pad + 18 * scaleFactor, h * 0.34);
+      ctx.quadraticCurveTo(pad + 18 * scaleFactor, pad + 26 * scaleFactor, w / 2, pad + 18 * scaleFactor);
+      ctx.quadraticCurveTo(w - pad - 18 * scaleFactor, pad + 26 * scaleFactor, w - pad - 18 * scaleFactor, h * 0.34);
+      ctx.lineTo(w - pad - 18 * scaleFactor, h - pad - 18 * scaleFactor);
       ctx.stroke();
     }
 
+    let baseCenterY = h * 0.50;
+    if (state.coverPos === "top") baseCenterY = h * 0.34;
+    else if (state.coverPos === "bottom") baseCenterY = h * 0.66;
+
+    const centerX = w * 0.5 + ((state.coverOffsetX || 0) / 100) * w;
+    const centerY = baseCenterY + ((state.coverOffsetY || 0) / 100) * h;
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.88)";
-    ctx.shadowBlur = (state.textShadow || 14) * scaleFactor;
+    ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+    ctx.shadowBlur = 16 * scaleFactor;
 
-    // 3. Optional Template Badge
-    if (tpl.badge) {
-      ctx.direction = "ltr";
-      ctx.fillStyle = tpl.accent || "#E0B84C";
+    // 1. Optional Custom Title or Template Badge
+    const topBadgeText = (state.coverTitle || "").trim() || tpl.badge;
+    if (topBadgeText) {
+      ctx.fillStyle = tpl.accent;
       ctx.font = `700 ${Math.round(14 * cScale)}px 'DM Sans', sans-serif`;
-      ctx.fillText(tpl.badge, centerX, centerY - 128 * cScale);
+      ctx.fillText(topBadgeText.toUpperCase(), centerX, centerY - 148 * cScale);
     }
 
-    const customMain = (state.coverTitle || "").trim();
-    const customSub = (state.coverSubtitle || "").trim();
+    // 2. Surah Calligraphy & Editable Turkish Surah Name
+    const surahDisplayTr = (state.coverSurahName || "").trim() || `${surahMeta[1]} Sûresi`;
+    const surahArSize = state.coverLargeSurah ? Math.round(52 * cScale) : Math.round(36 * cScale);
+    ctx.fillStyle = tpl.accent || "#F0D78A";
+    ctx.font = `700 ${surahArSize}px 'Amiri', serif`;
+    ctx.fillText(`سُورَةُ ${surahMeta[2]}`, centerX, centerY - 98 * cScale);
 
-    if (state.coverLargeSurah) {
-      // Large Arabic Surah Calligraphy + Title + Subtitle + Selected Cover Ayah
-      ctx.direction = "rtl";
-      ctx.fillStyle = "rgba(255, 253, 247, 0.94)";
-      ctx.font = `700 ${Math.round(66 * cScale)}px '${state.arabicFont}', serif`;
-      ctx.fillText(surahMeta[4] || surahMeta[2], centerX, centerY - 64 * cScale);
+    const surahTrSize = state.coverLargeSurah ? Math.round(24 * cScale) : Math.round(18 * cScale);
+    ctx.fillStyle = "#FFFDF7";
+    ctx.font = `700 ${surahTrSize}px 'DM Sans', sans-serif`;
+    ctx.fillText(`${surahDisplayTr} · ${reciterMeta.name}`, centerX, centerY - 52 * cScale);
 
-      ctx.direction = "ltr";
-      ctx.fillStyle = tpl.accent || "#FFFDF7";
-      ctx.font = `700 ${Math.round(28 * cScale)}px '${state.mealFont || "DM Sans"}', serif`;
-      ctx.fillText(customMain || surahMeta[1], centerX, centerY - 2 * cScale);
+    // Ornamental divider line
+    ctx.strokeStyle = "rgba(240, 215, 138, 0.45)";
+    ctx.lineWidth = 1.5 * scaleFactor;
+    ctx.beginPath();
+    ctx.moveTo(centerX - w * 0.2, centerY - 26 * cScale);
+    ctx.lineTo(centerX + w * 0.2, centerY - 26 * cScale);
+    ctx.stroke();
 
-      const rangeLabel = customSub || `${state.ayahStart}-${state.ayahEnd}. âyetler · ${reciterMeta.name}`;
-      ctx.fillStyle = "rgba(229, 224, 213, 0.85)";
-      ctx.font = `500 ${Math.round(14.5 * cScale)}px 'DM Sans', sans-serif`;
-      ctx.fillText(rangeLabel, centerX, centerY + 30 * cScale);
-
-      if (coverVerse) {
-        ctx.direction = "rtl";
-        ctx.fillStyle = state.arabicColor;
-        ctx.font = `700 ${Math.round(25 * cScale)}px '${state.arabicFont}', serif`;
-        const maxW = w * 0.82;
-        const lines = wrapCanvasText(ctx, coverVerse.arabic, maxW);
-        lines.slice(0, 2).forEach((ln, i) => {
-          ctx.fillText(ln, centerX, centerY + (74 + i * 34) * cScale);
-        });
-      }
-    } else if (coverVerse) {
-      // Selected Cover Ayah Arabic + Meal (with custom title override if typed)
-      if (customMain) {
-        ctx.direction = "ltr";
-        ctx.fillStyle = tpl.accent || "#E0B84C";
-        ctx.font = `700 ${Math.round(22 * cScale)}px 'DM Sans', sans-serif`;
-        ctx.fillText(customMain, centerX, centerY - 78 * cScale);
-      }
-
+    // 3. Cover Verse Arabic & Subtitle/Meal
+    if (coverVerse) {
       ctx.direction = "rtl";
       ctx.fillStyle = state.arabicColor;
-      ctx.font = `700 ${Math.round(38 * cScale)}px '${state.arabicFont}', serif`;
-      const arLines = wrapCanvasText(ctx, coverVerse.arabic, w * 0.82);
-      arLines.slice(0, 2).forEach((ln, i) => {
-        ctx.fillText(ln, centerX, centerY - 22 * cScale + i * 48 * cScale);
+      const arFontPx = Math.round(34 * cScale);
+      ctx.font = `700 ${arFontPx}px '${state.arabicFont}', serif`;
+      const ayahBadge = `\uFD3F${toArabicIndicDigits(coverVerse.numberInSurah)}\uFD3E`;
+      const arLines = wrapCanvasText(ctx, `${coverVerse.arabic} ${ayahBadge}`, w * 0.82);
+      const maxArLines = arLines.slice(0, 2);
+      maxArLines.forEach((ln, i) => {
+        ctx.fillText(ln, centerX, centerY + (14 + i * 48) * cScale);
       });
 
       ctx.direction = "ltr";
       ctx.fillStyle = state.mealColor;
-      const italicPrefix = state.mealItalic ? "italic " : "";
-      ctx.font = `${italicPrefix}${state.mealWeight || 500} ${Math.round(20 * cScale)}px '${state.mealFont}', serif`;
-      const subStr = customSub || `${coverVerse.numberInSurah}- ${getSelectedMealText(coverVerse)}`;
+      const trFontPx = Math.round(19 * cScale);
+      ctx.font = `${state.mealItalic ? "italic " : ""}${state.mealWeight} ${trFontPx}px '${state.mealFont}', serif`;
+      const customSub = (state.coverSubtitle || "").trim();
+      const subStr = customSub || formatVerseTextWithNumber(getSelectedMealText(coverVerse), coverVerse.numberInSurah, state.mealNumberFormat);
       const trLines = wrapCanvasText(ctx, subStr, w * 0.82);
       trLines.slice(0, 2).forEach((ln, i) => {
-        ctx.fillText(ln, centerX, centerY + (36 + (arLines.length > 1 ? 32 : 0) + i * 28) * cScale);
+        ctx.fillText(ln, centerX, centerY + (68 + (maxArLines.length > 1 ? 42 : 0) + i * 28) * cScale);
       });
     }
 
     ctx.restore();
   }
 
-  // Draws Top-Left Corner Info + Centered Surah Header + Top-Right/Bottom Logo Signature
+  // Draws Top-Left Corner Info + Centered Surah Header + High-DPI 512px Logo Signature (Zero Collision with Bottom Progress Bar!)
   function drawOverlaysAndLogo(w, h, scaleFactor, t, verse) {
-    const barOffset = state.cinemaBars ? Math.round(h * 0.085) : 0;
     const padX = 28 * scaleFactor;
-    const padY = barOffset + 26 * scaleFactor;
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+    const topBarPad = state.inVideoProgressBar === "top" ? 18 * scaleFactor : 0;
+    const padY = topBarPad + 24 * scaleFactor;
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const recMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
 
     ctx.save();
     ctx.direction = "ltr";
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
     ctx.shadowBlur = 8 * scaleFactor;
 
-    // 1. Top-Left Corner Info Badge ("Köşe Yazısı": Sûre / Âyetler / Hâfız)
+    // 1. Top-Left Corner Info Badge
     const showCorner =
       (state.inVideoSurahHeader === "both" || state.inVideoSurahHeader === "corner_only") &&
       (state.cornerShowSurah || state.cornerShowAyahs || state.cornerShowReciter);
@@ -1350,19 +1485,19 @@
       let curY = padY;
 
       if (line1) {
-        ctx.fillStyle = "rgba(255, 253, 247, 0.92)";
+        ctx.fillStyle = "rgba(255, 253, 247, 0.94)";
         ctx.font = `700 ${Math.round(13.5 * scaleFactor)}px 'DM Sans', sans-serif`;
         ctx.fillText(line1, padX, curY);
         curY += 17 * scaleFactor;
       }
       if (state.cornerShowReciter) {
-        ctx.fillStyle = "rgba(229, 224, 213, 0.74)";
+        ctx.fillStyle = "rgba(229, 224, 213, 0.76)";
         ctx.font = `500 ${Math.round(11 * scaleFactor)}px 'DM Sans', sans-serif`;
         ctx.fillText(recMeta.name, padX, curY);
       }
     }
 
-    // 2. Centered Classic Surah & Ayah Header Strip inside video ("A'lâ Sûresi · 1. Âyet")
+    // 2. Centered Classic Surah & Ayah Header Strip inside video ("Fâtiha Sûresi · 1. Âyet")
     const showCenterBanner =
       verse &&
       state.coverPreviewMode !== "cover" &&
@@ -1377,10 +1512,10 @@
       ctx.fillText(`${surahMeta[1]} Sûresi · ${verse.numberInSurah}. Âyet`, w / 2, bannerY);
     }
 
-    // 3. Detailed Logo & Signature Watermark
+    // 3. Crisp 512px Logo & Signature Watermark — Automatically lifts above bottom progress bar when bottom-center is active!
     if (state.showSignature && state.logoPos !== "hidden") {
       const lScale = (state.logoScale || 100) / 100;
-      const iconSize = 26 * lScale * scaleFactor;
+      const iconSize = Math.round(28 * lScale * scaleFactor);
       const text = (state.watermarkText || "Tilawah World").trim();
       ctx.globalAlpha = Math.max(0.15, Math.min(1, (state.logoOpacity || 90) / 100));
       ctx.font = `600 ${Math.round(13.5 * lScale * scaleFactor)}px 'DM Sans', sans-serif`;
@@ -1390,30 +1525,33 @@
       if (state.logoPos === "top-right") {
         const rightX = w - padX;
         const midY = padY + iconSize * 0.5;
-        ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+        ctx.fillStyle = "rgba(255, 253, 247, 0.92)";
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
         if (text) ctx.fillText(text, rightX, midY);
-        ctx.drawImage(logoSource, rightX - tw - iconSize - (text ? 7 * scaleFactor : 0), midY - iconSize / 2, iconSize, iconSize);
+        ctx.drawImage(logoSource, rightX - tw - iconSize - (text ? 8 * scaleFactor : 0), midY - iconSize / 2, iconSize, iconSize);
       } else if (state.logoPos === "top-left") {
         const leftX = padX;
-        const midY = padY + (showCorner ? 42 * scaleFactor : 0) + iconSize * 0.5;
+        const midY = padY + (showCorner ? 40 * scaleFactor : 0) + iconSize * 0.5;
         ctx.drawImage(logoSource, leftX, midY - iconSize / 2, iconSize, iconSize);
         if (text) {
-          ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+          ctx.fillStyle = "rgba(255, 253, 247, 0.92)";
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
-          ctx.fillText(text, leftX + iconSize + 7 * scaleFactor, midY);
+          ctx.fillText(text, leftX + iconSize + 8 * scaleFactor, midY);
         }
       } else {
-        // bottom-center or floating
+        // bottom-center or floating: if inVideoProgressBar === "bottom", lift bottom-center logo safely above the progress bar!
         const totalW = iconSize + (text ? 8 * scaleFactor + tw : 0);
         const cx = state.logoPos === "floating" ? w * 0.5 + Math.sin(t * 0.45) * (w * 0.22) : w * 0.5;
-        const cy = state.logoPos === "floating" ? h * 0.82 + Math.cos(t * 0.35) * (h * 0.04) : h - barOffset - 36 * scaleFactor;
+        const bottomProgressClearance = (state.inVideoProgressBar === "bottom") ? (34 * scaleFactor) : 0;
+        const cy = state.logoPos === "floating"
+          ? h * 0.82 + Math.cos(t * 0.35) * (h * 0.04)
+          : h - bottomProgressClearance - 32 * scaleFactor;
         const startX = cx - totalW / 2;
         ctx.drawImage(logoSource, startX, cy - iconSize / 2, iconSize, iconSize);
         if (text) {
-          ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+          ctx.fillStyle = "rgba(255, 253, 247, 0.92)";
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
           ctx.fillText(text, startX + iconSize + 8 * scaleFactor, cy);
@@ -1436,25 +1574,21 @@
       prog = Math.max(0.08, Math.min(1, (state.activeVerseIdx + 0.35) / state.verses.length));
     }
 
-    const barOffset = state.cinemaBars ? Math.round(h * 0.085) : 0;
-
     ctx.save();
     if (mode === "bottom" || mode === "top") {
       const barH = Math.max(4, Math.round(5.5 * scaleFactor));
       const padSide = Math.round(w * 0.06);
       const trackW = w - padSide * 2;
       const y = mode === "bottom"
-        ? h - barOffset - Math.round(16 * scaleFactor) - barH
-        : barOffset + Math.round(12 * scaleFactor);
+        ? h - Math.round(16 * scaleFactor) - barH
+        : Math.round(12 * scaleFactor);
 
-      // Track background
       ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(padSide, y, trackW, barH, 999);
       else ctx.rect(padSide, y, trackW, barH);
       ctx.fill();
 
-      // Active fill
       const fillW = Math.max(barH, trackW * prog);
       const grad = ctx.createLinearGradient(padSide, y, padSide + fillW, y);
       grad.addColorStop(0, "#D8B456");
@@ -1470,7 +1604,7 @@
       const barW = Math.round(w * 0.44);
       const barH = Math.max(3, Math.round(4 * scaleFactor));
       const x = Math.round((w - barW) / 2);
-      const y = Math.min(h - barOffset - 45 * scaleFactor, underTextY + Math.round(18 * scaleFactor));
+      const y = Math.min(h - 45 * scaleFactor, underTextY + Math.round(18 * scaleFactor));
 
       ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
       ctx.fillRect(x, y, barW, barH);
@@ -1483,6 +1617,7 @@
     ctx.restore();
   }
 
+  // Word-by-Word Highlight with Custom Highlight Color & 3 Styles (glow, underline, pill_scale)
   function drawArabicLinesWithWordHighlight(ctx, verse, maxTextW, centerX, startY, lineH, arPx, scaleFactor, activeWordGlobalIdx, highlightEnabled) {
     const rawWords = (verse.arabic || "").trim().split(/\s+/).filter(Boolean);
     const ayahBadge = `\uFD3F${toArabicIndicDigits(verse.numberInSurah)}\uFD3E`;
@@ -1501,6 +1636,9 @@
       }
     }
     if (curTokens.length > 0) lines.push(curTokens);
+
+    const hlColor = state.wordHighlightColor || "#F8E5A6";
+    const hlStyle = state.wordHighlightStyle || "glow";
 
     lines.forEach((lineTokens, lineIdx) => {
       const y = startY + lineIdx * lineH;
@@ -1529,9 +1667,33 @@
 
         ctx.save();
         if (isHighlighted) {
-          ctx.fillStyle = "#F472B6";
-          ctx.shadowColor = "rgba(244, 114, 182, 0.8)";
+          if (hlStyle === "pill_scale") {
+            const padW = 8 * scaleFactor;
+            const padH = arPx * 0.62;
+            drawRoundedBox(
+              ctx,
+              wordCenterX - tw / 2 - padW,
+              y - padH,
+              tw + padW * 2,
+              padH * 2,
+              10 * scaleFactor,
+              hlColor + "28",
+              hlColor + "88"
+            );
+            ctx.translate(wordCenterX, y);
+            ctx.scale(1.06, 1.06);
+            ctx.translate(-wordCenterX, -y);
+          }
+
+          ctx.fillStyle = hlColor;
+          ctx.shadowColor = hlColor;
           ctx.shadowBlur = 18 * scaleFactor;
+
+          if (hlStyle === "underline") {
+            const ulY = y + arPx * 0.56;
+            const ulH = Math.max(2.5, 3.2 * scaleFactor);
+            ctx.fillRect(wordCenterX - tw * 0.48, ulY, tw * 0.96, ulH);
+          }
         } else {
           ctx.fillStyle = state.arabicColor;
         }
@@ -1568,12 +1730,14 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    // 1. Background
+    // 1. Background (Always draw procedural fallback if media isn't ready so canvas is NEVER black!)
     const currentZemin = getZeminById(state.zeminId);
     const mediaEl = activeBgVideo || activeBgImage;
+    let mediaDrawn = false;
     if (mediaEl) {
-      drawBackgroundMediaWithFilters(ctx, mediaEl, Boolean(activeBgVideo), w, h, t, state);
-    } else {
+      mediaDrawn = drawBackgroundMediaWithFilters(ctx, mediaEl, Boolean(activeBgVideo), w, h, t, state);
+    }
+    if (!mediaDrawn) {
       drawProceduralScene(ctx, w, h, t, dt, currentZemin);
     }
 
@@ -1587,12 +1751,12 @@
     drawCinematicVignette(ctx, w, h, state.vignette !== "off");
     drawVisualEffectOverlay(ctx, w, h, t, dt, state);
 
-    // 4. Filter Warmth & Cinema Letterbox Bars
+    // 4. Filter Warmth
     drawFilterWarmthAndCinemaBars(ctx, w, h, state);
 
     const activeVerse = state.verses[state.activeVerseIdx] || state.verses[0];
 
-    // 5. Corner Info Badges, Centered Surah Header & Logo Signature
+    // 5. Corner Info Badges, Centered Surah Header & Crisp 512px Logo Signature
     drawOverlaysAndLogo(w, h, scaleFactor, t, activeVerse);
 
     // 6. Main Content (Cover or Verse)
@@ -1637,6 +1801,7 @@
       const maxTextW = isLandscape ? w * 0.8 : w * 0.84;
       const arPx = Math.round(state.arabicSize * scaleFactor * (isLandscape ? 0.86 : 1));
       const mealPx = Math.round(state.mealSize * scaleFactor * (isLandscape ? 0.86 : 1));
+      const enPx = Math.round((state.enMealSize || 18) * scaleFactor * (isLandscape ? 0.86 : 1));
 
       const showAr = (state.subtitleMode !== "meal_only");
       const showTr = (state.subtitleMode === "tr" || state.subtitleMode === "meal_only" || state.subtitleMode === "both");
@@ -1648,85 +1813,74 @@
       const arLineH = arPx * 1.62;
       const totalArH = arLinesPreview.length * arLineH;
 
-      const italicStr = state.mealItalic ? "italic " : "";
-      ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
-      const mealTextStr = `${activeVerse.numberInSurah}- ${getSelectedMealText(activeVerse)}`;
-      const trLines = showTr ? wrapCanvasText(ctx, mealTextStr, maxTextW) : [];
+      ctx.font = `${state.mealItalic ? "italic " : ""}${state.mealWeight} ${mealPx}px '${state.mealFont}', serif`;
+      const numberedMeal = showTr ? formatVerseTextWithNumber(getSelectedMealText(activeVerse), activeVerse.numberInSurah, state.mealNumberFormat) : "";
+      const trLines = showTr ? wrapCanvasText(ctx, numberedMeal, maxTextW) : [];
       const trLineH = mealPx * 1.44;
+      const totalTrH = trLines.length * trLineH;
 
-      const enPx = Math.round(mealPx * 0.86);
       ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
-      const enLines = showEn ? wrapCanvasText(ctx, activeVerse.en, maxTextW) : [];
-      const enLineH = enPx * 1.38;
+      const numberedEnMeal = showEn ? formatVerseTextWithNumber(activeVerse.en || "", activeVerse.numberInSurah, state.mealNumberFormat) : "";
+      const enLines = showEn ? wrapCanvasText(ctx, numberedEnMeal, maxTextW) : [];
+      const enLineH = enPx * 1.42;
+      const totalEnH = enLines.length * enLineH;
 
-      const totalBlockH =
-        totalArH +
-        (trLines.length > 0 ? (showAr ? 20 * scaleFactor : 0) + trLines.length * trLineH : 0) +
-        (enLines.length > 0 ? 14 * scaleFactor + enLines.length * enLineH : 0);
+      const showBismillahCrown =
+        state.bismillahMode === "separate" &&
+        state.surahNo !== 1 &&
+        state.surahNo !== 9 &&
+        activeVerse.numberInSurah === 1 &&
+        showAr;
+      const bismillahH = showBismillahCrown ? 46 * scaleFactor : 0;
 
-      const posMap = {
-        top: isLandscape ? h * 0.36 : h * 0.33,
-        center: h * 0.50,
-        bottom: isLandscape ? h * 0.68 : h * 0.68
-      };
-      const anchorY = posMap[state.textPosition] || h * 0.50;
-      const blockStartY = anchorY - totalBlockH / 2;
+      const gapArTr = (showAr && (showTr || showEn)) ? 26 * scaleFactor : 0;
+      const gapTrEn = (showTr && showEn) ? 14 * scaleFactor : 0;
+      const totalBlockH = bismillahH + totalArH + gapArTr + totalTrH + gapTrEn + totalEnH;
 
-      // Optional Bismillah Header above Ayah 1
-      const showBismillah =
-        activeVerse.hasBismillahHeader &&
-        (state.bismillahMode === "separate" || (state.bismillahMode === "first_only" && state.activeVerseIdx === 0));
+      let baseCenterY = h * 0.50;
+      if (state.textAlignPos === "top") baseCenterY = h * 0.34;
+      else if (state.textAlignPos === "bottom") baseCenterY = h * 0.66;
 
-      if (showBismillah) {
-        ctx.direction = "rtl";
+      const centerX = w * 0.5 + ((state.textOffsetX || 0) / 100) * w;
+      const centerY = baseCenterY + ((state.textOffsetY || 0) / 100) * h;
+      let cursorY = centerY - totalBlockH / 2;
+
+      // Optional Frosted or Dark Text Box
+      if (state.textBoxStyle !== "none") {
+        const boxPadX = 26 * scaleFactor;
+        const boxPadY = 22 * scaleFactor;
+        const boxW = Math.min(w - 32 * scaleFactor, maxTextW + boxPadX * 2);
+        const boxH = totalBlockH + boxPadY * 2;
+        const fillCol = state.textBoxStyle === "frosted" ? "rgba(18, 22, 28, 0.54)" : "rgba(4, 6, 8, 0.78)";
+        const strokeCol = state.textBoxStyle === "frosted" ? "rgba(240, 215, 138, 0.34)" : "rgba(224, 184, 76, 0.22)";
+        drawRoundedBox(ctx, centerX - boxW / 2, cursorY - boxPadY, boxW, boxH, 18 * scaleFactor, fillCol, strokeCol);
+      }
+
+      if (showBismillahCrown) {
         ctx.fillStyle = "#F0D78A";
-        ctx.font = `700 ${Math.round(arPx * 0.72)}px '${state.arabicFont}', serif`;
-        ctx.fillText("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", w / 2, blockStartY - 38 * scaleFactor);
+        ctx.font = `700 ${Math.round(25 * scaleFactor)}px 'Amiri', serif`;
+        ctx.fillText("بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", centerX, cursorY + 16 * scaleFactor);
+        cursorY += bismillahH;
       }
 
-      if (state.textReadability === "box") {
-        const padY = 22 * scaleFactor;
-        ctx.fillStyle = "rgba(5, 7, 10, 0.70)";
-        const bx = w * 0.06;
-        const bw = w * 0.88;
-        ctx.beginPath();
-        if (ctx.roundRect) {
-          ctx.roundRect(bx, blockStartY - padY, bw, totalBlockH + padY * 2, 16 * scaleFactor);
-        } else {
-          ctx.rect(bx, blockStartY - padY, bw, totalBlockH + padY * 2);
-        }
-        ctx.fill();
-      }
-
-      let cursorY = blockStartY + arLineH / 2;
-
+      // Draw Arabic with Word-by-Word Highlight + Timing Offset
       if (showAr) {
         ctx.direction = "rtl";
         ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
-        if (state.arabicLetterSpacing > 0 && "letterSpacing" in ctx) {
-          ctx.letterSpacing = `${state.arabicLetterSpacing}px`;
+        if ("letterSpacing" in ctx) {
+          ctx.letterSpacing = `${state.arabicLetterSpacing || 0}px`;
         }
 
-        const words = (activeVerse.arabic || "").trim().split(/\s+/).filter(Boolean);
+        const rawWords = (activeVerse.arabic || "").trim().split(/\s+/).filter(Boolean);
+        const verseDur = state.audioDurations[state.activeVerseIdx] || 5.0;
         let activeWordIdx = -1;
-        const isWordHighlight = (state.transitionMode === "word_highlight");
-        if (isWordHighlight && words.length > 0) {
-          const vDur = state.audioDurations[state.activeVerseIdx] || 5.0;
+        if (state.wordHighlight && rawWords.length > 0) {
           if (state.isPlaying || state.isRecording) {
-            const frac = Math.max(0, Math.min(0.999, (state.activeVerseElapsed || 0) / vDur));
-            const weights = words.map((wStr) => Math.max(2, wStr.length));
-            const totalWeight = weights.reduce((a, b) => a + b, 0);
-            let target = frac * totalWeight;
-            for (let wi = 0; wi < weights.length; wi++) {
-              if (target <= weights[wi]) {
-                activeWordIdx = wi;
-                break;
-              }
-              target -= weights[wi];
-            }
-            if (activeWordIdx === -1) activeWordIdx = words.length - 1;
+            const adjustedElapsed = Math.max(0, state.activeVerseElapsed + (Number(state.wordTimingOffset) || 0));
+            const ratio = Math.max(0, Math.min(0.999, adjustedElapsed / Math.max(0.5, verseDur * 0.92)));
+            activeWordIdx = Math.floor(ratio * rawWords.length);
           } else {
-            activeWordIdx = Math.floor(t * 1.1) % words.length;
+            activeWordIdx = 0;
           }
         }
 
@@ -1734,113 +1888,181 @@
           ctx,
           activeVerse,
           maxTextW,
-          w / 2,
-          cursorY,
+          centerX,
+          cursorY + arLineH / 2,
           arLineH,
           arPx,
           scaleFactor,
           activeWordIdx,
-          isWordHighlight
+          Boolean(state.wordHighlight)
         );
-        if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
-        cursorY += totalArH + 18 * scaleFactor;
+        cursorY += totalArH;
+
+        if ("letterSpacing" in ctx) {
+          ctx.letterSpacing = "0px";
+        }
+      }
+
+      if (gapArTr > 0) {
+        ctx.strokeStyle = "rgba(240, 215, 138, 0.36)";
+        ctx.lineWidth = 1.3 * scaleFactor;
+        ctx.beginPath();
+        ctx.moveTo(centerX - 42 * scaleFactor, cursorY + gapArTr * 0.5);
+        ctx.lineTo(centerX + 42 * scaleFactor, cursorY + gapArTr * 0.5);
+        ctx.stroke();
+        cursorY += gapArTr;
       }
 
       ctx.direction = "ltr";
-      if (trLines.length > 0) {
+      if (showTr && trLines.length > 0) {
+        ctx.font = `${state.mealItalic ? "italic " : ""}${state.mealWeight} ${mealPx}px '${state.mealFont}', serif`;
         ctx.fillStyle = state.mealColor;
-        ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
-        trLines.forEach((line, i) => {
-          const ly = cursorY + i * trLineH;
+        trLines.forEach((line) => {
+          cursorY += trLineH / 2;
           if (state.textReadability === "outline") {
             ctx.strokeStyle = "rgba(0,0,0,0.9)";
             ctx.lineWidth = 2.8 * scaleFactor;
-            ctx.strokeText(line, w / 2, ly);
+            ctx.strokeText(line, centerX, cursorY);
           }
-          ctx.fillText(line, w / 2, ly);
+          ctx.fillText(line, centerX, cursorY);
+          cursorY += trLineH / 2;
         });
-        cursorY += trLines.length * trLineH + 14 * scaleFactor;
       }
 
-      if (enLines.length > 0) {
-        ctx.fillStyle = "#CBD5E1";
-        ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
-        enLines.forEach((line, i) => {
-          ctx.fillText(line, w / 2, cursorY + i * enLineH);
+      if (gapTrEn > 0) cursorY += gapTrEn;
+
+      // Draw English Meal with Independent Color, Size, and Verse Number Prefix!
+      if (showEn && enLines.length > 0) {
+        ctx.font = `500 ${enPx}px 'DM Sans', sans-serif`;
+        ctx.fillStyle = state.enMealColor || "#CBD5E1";
+        enLines.forEach((line) => {
+          cursorY += enLineH / 2;
+          if (state.textReadability === "outline") {
+            ctx.strokeStyle = "rgba(0,0,0,0.9)";
+            ctx.lineWidth = 2.4 * scaleFactor;
+            ctx.strokeText(line, centerX, cursorY);
+          }
+          ctx.fillText(line, centerX, cursorY);
+          cursorY += enLineH / 2;
         });
-        cursorY += enLines.length * enLineH;
       }
 
       lastContentBottomY = cursorY;
       ctx.restore();
+    } else if (!state.versesLoaded && state.versesOfflineError) {
+      ctx.save();
+      ctx.fillStyle = "rgba(7, 8, 9, 0.85)";
+      ctx.fillRect(w * 0.08, h * 0.38, w * 0.84, h * 0.22);
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.65)";
+      ctx.strokeRect(w * 0.08, h * 0.38, w * 0.84, h * 0.22);
+      ctx.fillStyle = "#FCA5A5";
+      ctx.textAlign = "center";
+      ctx.font = `700 ${Math.round(20 * scaleFactor)}px 'DM Sans', sans-serif`;
+      const errLines = wrapCanvasText(ctx, state.versesOfflineError, w * 0.75);
+      errLines.forEach((l, idx) => {
+        ctx.fillText(l, w / 2, h * 0.46 + idx * 28 * scaleFactor);
+      });
+      ctx.restore();
     }
 
-    // 7. In-Video Progress Bar (Süre Şeridi videonun içinde!)
+    // 7. In-Video Progress Bar (Süre İlerleme Şeridi directly inside the video!)
     drawInVideoProgressBar(w, h, scaleFactor, lastContentBottomY);
 
+    // 8. Magnetic Gold Center Snap Guides while Touch/Mouse Dragging on Preview
+    if (isDraggingCanvasText && !state.isRecording) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(248, 229, 166, 0.82)";
+      ctx.lineWidth = Math.max(1.5, 2 * scaleFactor);
+      ctx.setLineDash([8 * scaleFactor, 6 * scaleFactor]);
+      if (snapGuideX) {
+        ctx.beginPath();
+        ctx.moveTo(w / 2, 0);
+        ctx.lineTo(w / 2, h);
+        ctx.stroke();
+      }
+      if (snapGuideY) {
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // 9. Smooth End Fade-Out Overlay
     if (state.isFadingOut && state.fadeOutProgress > 0) {
       ctx.save();
-      ctx.fillStyle = `rgba(4, 6, 8, ${Math.min(0.92, state.fadeOutProgress)})`;
+      ctx.fillStyle = `rgba(4, 5, 7, ${Math.min(1, state.fadeOutProgress)})`;
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
   }
 
-  let animLoopId = null;
+  let renderRafId = null;
+  let hiddenRenderInterval = null;
+
   function startRenderLoop() {
-    function step(now) {
-      if (!document.hidden || state.isRecording) {
-        renderStudioFrame(now);
+    const loop = (now) => {
+      renderStudioFrame(now);
+      renderRafId = requestAnimationFrame(loop);
+    };
+    renderRafId = requestAnimationFrame(loop);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden && (state.isRecording || state.isPlaying)) {
+        if (!hiddenRenderInterval) {
+          hiddenRenderInterval = setInterval(() => {
+            renderStudioFrame(performance.now());
+          }, 33);
+        }
+      } else if (hiddenRenderInterval) {
+        clearInterval(hiddenRenderInterval);
+        hiddenRenderInterval = null;
       }
-      animLoopId = requestAnimationFrame(step);
-    }
-    if (!animLoopId) animLoopId = requestAnimationFrame(step);
+    });
   }
 
-  // Recording & Playback Session
   let mediaRecorder = null;
   let recordedChunks = [];
   let sessionAborted = false;
   let recorderCompletedNaturally = false;
-  let wakeLockSentinel = null;
-  let playbackRafId = null;
-  let textModeTimerId = null;
+  let playbackTimerIds = [];
+  let activeAudioElement = null;
 
-  async function requestScreenWakeLock() {
-    if ("wakeLock" in navigator) {
-      try { wakeLockSentinel = await navigator.wakeLock.request("screen"); } catch (_) {}
+  function clearPlaybackTimers() {
+    while (playbackTimerIds.length > 0) {
+      clearTimeout(playbackTimerIds.pop());
     }
   }
 
-  function releaseScreenWakeLock() {
-    if (wakeLockSentinel) {
-      try { wakeLockSentinel.release(); } catch (_) {}
-      wakeLockSentinel = null;
-    }
-  }
+  function stopPlaybackAndRecording(isAbort = true) {
+    sessionAborted = isAbort;
+    clearPlaybackTimers();
 
-  function stopPlaybackAndRecording(aborted = true) {
-    if (aborted) {
-      sessionAborted = true;
-      recorderCompletedNaturally = false;
-    }
-
-    cancelAnimationFrame(playbackRafId);
-    playbackRafId = null;
-    clearTimeout(textModeTimerId);
-
-    (state.audioElements || []).forEach((a) => {
-      if (!a) return;
+    if (activeAudioElement) {
       try {
-        a.onended = null;
-        a.onwaiting = null;
-        a.onplaying = null;
-        a.pause();
-        a.currentTime = 0;
+        activeAudioElement.onended = null;
+        activeAudioElement.ontimeupdate = null;
+        activeAudioElement.pause();
+        activeAudioElement.currentTime = 0;
       } catch (_) {}
+      activeAudioElement = null;
+    }
+
+    state.audioElements.forEach((a) => {
+      if (a) {
+        try {
+          a.onended = null;
+          a.ontimeupdate = null;
+          a.pause();
+          a.currentTime = 0;
+        } catch (_) {}
+      }
     });
+
     stopAmbientSound();
     resetMasterGain();
+    releaseScreenWakeLock();
 
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
       try { mediaRecorder.stop(); } catch (_) {}
@@ -1848,21 +2070,20 @@
 
     state.isPlaying = false;
     state.isRecording = false;
-    state.isBuffering = false;
     state.isFadingOut = false;
     state.fadeOutProgress = 0;
-    releaseScreenWakeLock();
 
     const wrap = document.getElementById("canvasWrap");
-    if (wrap) wrap.classList.remove("recording-active");
-    const pill = document.getElementById("bufferingPill");
-    if (pill) pill.classList.remove("active");
+    if (wrap) wrap.classList.remove("recording-active", "clean-ui");
 
-    updateStageBadge(state.audioReady ? "ready" : "error", state.audioReady ? "Hazır" : "Ses Bekleniyor");
-    const lblPlay = document.getElementById("lblPlayBtn");
-    const lblRec = document.getElementById("lblRecordBtn");
-    if (lblPlay) lblPlay.textContent = "▶";
-    if (lblRec) lblRec.textContent = "🎬 Oluştur";
+    document.getElementById("lblPlayBtn").textContent = "▶";
+    document.getElementById("lblRecordBtn").textContent = "🎬 Oluştur";
+    document.getElementById("progressBarFill").style.width = "0%";
+    document.getElementById("lblCurrentTime").textContent = "00:00.0";
+
+    if (state.audioReady) {
+      updateStageBadge("ready", "Hazır");
+    }
   }
 
   async function startStudioSession(recordMode = false) {
@@ -1880,6 +2101,10 @@
 
     sessionAborted = false;
     recorderCompletedNaturally = false;
+    state.coverPreviewMode = "ayah";
+    const chkPrev = document.getElementById("chkPreviewCoverNow");
+    if (chkPrev) chkPrev.checked = false;
+
     const { mixDest } = ensureAudioGraph(state, activeBgVideo);
 
     state.isPlaying = !recordMode;
@@ -1901,6 +2126,11 @@
       updateStageBadge("recording", "Kaydediliyor...");
     } else {
       updateStageBadge("ready", "Önizleniyor");
+      // Auto clean UI after 2s during preview playback
+      const hideId = setTimeout(() => {
+        if (state.isPlaying && wrap) wrap.classList.add("clean-ui");
+      }, 2000);
+      playbackTimerIds.push(hideId);
     }
 
     let recorderStarted = false;
@@ -1915,55 +2145,55 @@
       const canvasStream = canvas.captureStream(30);
       const combinedTracks = [
         ...canvasStream.getVideoTracks(),
-        ...mixDest.stream.getAudioTracks()
+        ...(mixDest ? mixDest.stream.getAudioTracks() : [])
       ];
-      const finalStream = new MediaStream(combinedTracks);
-      const bps = (state.bitrateMbps || (state.resolution === 1080 ? 8 : 5)) * 1000000;
-      const opts = chosenFormat.mime
-        ? { mimeType: chosenFormat.mime, videoBitsPerSecond: bps }
-        : { videoBitsPerSecond: bps };
+      const mixedStream = new MediaStream(combinedTracks);
+
+      const recOptions = {
+        videoBitsPerSecond: (state.bitrateMbps || 8) * 1000000
+      };
+      if (chosenFormat.mime) recOptions.mimeType = chosenFormat.mime;
 
       recordedChunks = [];
-      mediaRecorder = new MediaRecorder(finalStream, opts);
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
+      try {
+        mediaRecorder = new MediaRecorder(mixedStream, recOptions);
+      } catch (_) {
+        mediaRecorder = new MediaRecorder(mixedStream);
+      }
+
+      mediaRecorder.ondataavailable = (ev) => {
+        if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
       };
 
-      mediaRecorder.onstop = async () => {
+      mediaRecorder.onstop = () => {
         if (sessionAborted || !recorderCompletedNaturally || recordedChunks.length === 0) {
           recordedChunks = [];
           return;
         }
-
+        const totalDurationMs = Math.max(1000, performance.now() - recordStartPerf);
         const rawBlob = new Blob(recordedChunks, { type: state.lastExportMime });
-        const actualMs = Math.max(500, performance.now() - recordStartPerf);
-        const patchedBlob = await patchWebmDuration(rawBlob, actualMs);
-        state.lastExportBlob = patchedBlob;
-        state.lastExportDuration = actualMs / 1000;
+        const finalBlob = patchWebmDuration(rawBlob, totalDurationMs);
+        state.lastExportBlob = finalBlob;
 
-        document.getElementById("btnQuickShare").disabled = false;
-        const card = document.getElementById("exportResultCard");
-        if (card) card.classList.add("ready");
-        const meta = document.getElementById("lblExportMeta");
-        if (meta) {
-          meta.textContent = `${formatShortTime(state.lastExportDuration)} · ${(patchedBlob.size / (1024 * 1024)).toFixed(1)} MB · .${state.lastExportExt.toUpperCase()}`;
-        }
+        const btnDl = document.getElementById("btnDownloadLastVideo");
+        if (btnDl) btnDl.disabled = false;
 
-        switchTab("bicim");
-        hapticTap(25);
-        showToast(`✓ Video hazır! (${formatShortTime(state.lastExportDuration)} · .${state.lastExportExt.toUpperCase()})`, 3600);
+        const btnShare = document.getElementById("btnShareLastVideo");
+        if (btnShare && navigator.share) btnShare.style.display = "inline-flex";
+
+        downloadExportedVideo();
       };
     }
 
     const completeSessionSmoothly = () => {
       if (sessionAborted) return;
-      if (state.fadeOutEnd === "on") {
+      if (state.smoothFadeOut === "on") {
         state.isFadingOut = true;
-        triggerSmoothFadeOut(0.75);
+        triggerSmoothFadeOut(1.2);
         const fadeStart = performance.now();
         const fadeStep = () => {
           if (sessionAborted) return;
-          const p = Math.min(1, (performance.now() - fadeStart) / 750);
+          const p = (performance.now() - fadeStart) / 1200;
           state.fadeOutProgress = p;
           if (p < 1) {
             requestAnimationFrame(fadeStep);
@@ -2015,115 +2245,120 @@
           let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
           for (let i = 0; i < idx; i++) passed += state.audioDurations[i];
           passed += Math.min(vDur, curInVerse);
-          state.elapsedTime = Math.min(state.totalDuration, passed);
+          state.elapsedTime = passed;
 
-          document.getElementById("lblCurrentTime").textContent = formatPreciseTime(state.elapsedTime);
-          const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
+          document.getElementById("lblCurrentTime").textContent = formatPreciseTime(passed);
+          const pct = state.totalDuration > 0 ? Math.min(100, (passed / state.totalDuration) * 100) : 0;
           document.getElementById("progressBarFill").style.width = `${pct}%`;
 
-          if (curInVerse >= vDur) {
+          if (curInVerse < vDur) {
+            const tid = setTimeout(stepTextTimeline, 50);
+            playbackTimerIds.push(tid);
+          } else {
             playVerseAtIndex(idx + 1);
-            return;
           }
-          playbackRafId = requestAnimationFrame(stepTextTimeline);
         };
-        playbackRafId = requestAnimationFrame(stepTextTimeline);
+        stepTextTimeline();
         return;
       }
 
-      const aud = state.audioElements[idx];
-      let handedOver = false;
-      aud.currentTime = 0;
-
-      aud.onwaiting = () => {
-        state.isBuffering = true;
-        document.getElementById("bufferingPill").classList.add("active");
-        if (mediaRecorder && mediaRecorder.state === "recording") {
-          try { mediaRecorder.pause(); } catch (_) {}
-        }
-      };
-
-      aud.onplaying = () => {
-        state.isBuffering = false;
-        document.getElementById("bufferingPill").classList.remove("active");
-        if (mediaRecorder && mediaRecorder.state === "paused") {
-          try { mediaRecorder.resume(); } catch (_) {}
-        }
-        if (recordMode && !recorderStarted) {
-          recorderStarted = true;
-          recordStartPerf = performance.now();
-          mediaRecorder.start(200);
-          startAmbientSound(state);
-        } else if (!recordMode && idx === 0) {
-          startAmbientSound(state);
-        }
-      };
-
-      aud.onended = () => {
-        if (!handedOver) {
-          handedOver = true;
-          playVerseAtIndex(idx + 1);
-        }
-      };
-
-      aud.play().catch(() => {
-        showToast("Ses oynatılamadı. Kayıt iptal edildi.");
+      const audioEl = state.audioElements[idx];
+      const dur = state.audioDurations[idx] || 5.0;
+      if (!audioEl) {
         stopPlaybackAndRecording(true);
-      });
+        return;
+      }
 
-      const monitorStep = () => {
-        if (sessionAborted || (!state.isPlaying && !state.isRecording)) return;
-        if (state.activeVerseIdx !== idx) return;
+      activeAudioElement = audioEl;
+      audioEl.currentTime = 0;
+      let advancedToNext = false;
 
-        state.activeVerseElapsed = aud.currentTime || 0;
+      const goNext = () => {
+        if (advancedToNext || sessionAborted) return;
+        advancedToNext = true;
+        audioEl.ontimeupdate = null;
+        audioEl.onended = null;
+        try { audioEl.pause(); } catch (_) {}
+        playVerseAtIndex(idx + 1);
+      };
+
+      audioEl.ontimeupdate = () => {
+        if (sessionAborted) return;
+        state.activeVerseElapsed = audioEl.currentTime;
+
         let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
         for (let i = 0; i < idx; i++) {
           passed += Math.max(0.4, state.audioDurations[i] - state.gaplessTrimSec);
         }
-        passed += state.activeVerseElapsed;
-        state.elapsedTime = Math.min(state.totalDuration, passed);
+        passed += audioEl.currentTime;
+        state.elapsedTime = passed;
 
-        document.getElementById("lblCurrentTime").textContent = formatPreciseTime(state.elapsedTime);
-        const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
+        document.getElementById("lblCurrentTime").textContent = formatPreciseTime(passed);
+        const pct = state.totalDuration > 0 ? Math.min(100, (passed / state.totalDuration) * 100) : 0;
         document.getElementById("progressBarFill").style.width = `${pct}%`;
 
-        if (!isLastVerse && !handedOver && aud.duration > 0 && state.gaplessTrimSec > 0) {
-          if (aud.currentTime >= aud.duration - state.gaplessTrimSec) {
-            handedOver = true;
-            aud.onended = null;
-            aud.pause();
-            playVerseAtIndex(idx + 1);
-            return;
+        if (!isLastVerse && state.gaplessTrimSec > 0 && dur > 1.2) {
+          if (audioEl.currentTime >= dur - state.gaplessTrimSec) {
+            goNext();
           }
         }
-        playbackRafId = requestAnimationFrame(monitorStep);
       };
-      playbackRafId = requestAnimationFrame(monitorStep);
+
+      audioEl.onended = () => goNext();
+
+      const playPromise = audioEl.play();
+      if (playPromise && playPromise.then) {
+        playPromise.then(() => {
+          if (sessionAborted) return;
+          if (recordMode && !recorderStarted) {
+            recorderStarted = true;
+            recordStartPerf = performance.now();
+            mediaRecorder.start(200);
+            startAmbientSound(state);
+          } else if (!recordMode && idx === 0) {
+            startAmbientSound(state);
+          }
+        }).catch(() => {
+          stopPlaybackAndRecording(true);
+          showToast("Ses oynatılamadı. Lütfen tekrar dokunun.");
+        });
+      }
     };
 
     if (state.coverFirstFrame === "on") {
-      if (recordMode && !recorderStarted) {
+      if (recordMode) {
         recorderStarted = true;
         recordStartPerf = performance.now();
         mediaRecorder.start(200);
-        startAmbientSound(state);
       }
-      textModeTimerId = setTimeout(() => {
-        if (!sessionAborted && (state.isPlaying || state.isRecording)) {
-          playVerseAtIndex(0);
+      startAmbientSound(state);
+      const cStart = performance.now();
+      const tickCover = () => {
+        if (sessionAborted || (!state.isPlaying && !state.isRecording)) return;
+        const el = (performance.now() - cStart) / 1000;
+        if (el < 1.2) {
+          state.elapsedTime = el;
+          document.getElementById("lblCurrentTime").textContent = formatPreciseTime(el);
+          requestAnimationFrame(tickCover);
         }
+      };
+      requestAnimationFrame(tickCover);
+      const cid = setTimeout(() => {
+        playVerseAtIndex(0);
       }, 1200);
+      playbackTimerIds.push(cid);
     } else {
       playVerseAtIndex(0);
     }
   }
 
+  // Social Media Caption & Hashtag Generator with Circumflex Fix (#FatihaSuresi, #YasinSuresi)
   function updateSocialCaptionText() {
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
     const firstVerse = state.verses[0];
     const mealSnippet = firstVerse ? `"${getSelectedMealText(firstVerse)}"` : "";
-    const surahTag = surahMeta[1].replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]/g, "");
+    const surahTag = normalizeHashtagWord(surahMeta[1]);
     const plat = state.captionPlatform || "reels";
 
     let tags = `#Kuran #Tilavet #${surahTag}Suresi #Ayet #Huzur #TilawahWorld #Reels #Keşfet`;
@@ -2163,82 +2398,77 @@
     showToast(`Video indirildi: ${fileName}`);
   }
 
-  async function shareExportedVideo() {
-    if (!state.lastExportBlob) {
-      showToast("Önce bir video oluşturun.");
-      return;
-    }
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
-    const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
-    const mimeType = state.lastExportExt === "mp4" ? "video/mp4" : "video/webm";
-    const file = new File([state.lastExportBlob], fileName, { type: mimeType });
-    const caption = document.getElementById("txtSocialCaption").value;
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          title: `${surahMeta[1]} Sûresi Tilâveti`,
-          text: caption,
-          files: [file]
-        });
-        return;
-      } catch (err) {
-        if (err && err.name === "AbortError") return;
-      }
-    }
-    downloadExportedVideo();
-  }
-
-  const sheetTitles = {
-    stil: "Stil",
-    kesit: "Kesit",
-    hafiz: "Hâfız",
-    zemin: "Zemin & Kadraj",
-    ortam: "Ortam & Ses",
-    metin: "Metin & Hat",
-    gorunum: "Görünüm & Video İçi Şerit",
-    filtre: "Filtre & Atmosfer",
-    kapak: "Kapak Tasarımı & Konum",
-    bicim: "Biçim, İmza & Ayarlar"
+  const TAB_TITLES = {
+    stil: "STİL — 16 SEÇKİN GÖRSEL KOMBİNASYON",
+    kesit: "KESİT — SÛRE ARAMA VE ÂYET ARALIĞI",
+    hafiz: "HÂFIZ — KIRAAT İMAMI SEÇİMİ",
+    zemin: "ZEMİN — HAREKETLİ SAHNELER VE GALERİM",
+    ortam: "ORTAM — DOĞA, YAĞMUR VE MİKSER",
+    metin: "METİN — ARAPÇA, TÜRKÇE, İNGİLİZCE VE VURGU",
+    gorunum: "GÖRÜNÜM — DÜZEN, SÜRE ŞERİDİ VE KONUM",
+    filtre: "FİLTRE — KARARTMA, BULANIKLIK VE EFEKT",
+    kapak: "KAPAK — ŞABLON, SÛRE ADI, BOYUT VE KONUM",
+    bicim: "BİÇİM — ORAN, KALİTE, LOGO VE PAYLAŞIM"
   };
 
-  let activeTabName = "stil";
-
-  function switchTab(tabName) {
-    hapticTap();
-    activeTabName = tabName;
-    const shell = document.getElementById("appShell");
-    if (shell && shell.classList.contains("panel-collapsed")) {
-      shell.classList.remove("panel-collapsed");
+  function switchToolTab(tabId) {
+    const drawer = document.getElementById("toolDrawer");
+    if (state.activeTab === tabId && !state.drawerCollapsed) {
+      state.drawerCollapsed = true;
+      if (drawer) drawer.classList.add("collapsed");
+      document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
+      setTimeout(fitCanvasWrapToStage, 230);
+      return;
     }
 
-    document.querySelectorAll(".tool-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.tab === tabName);
-    });
-    document.querySelectorAll(".tab-pane").forEach((pane) => {
-      pane.classList.toggle("active", pane.id === `pane-${tabName}`);
-    });
-    const titleEl = document.getElementById("sheetTitleText");
-    if (titleEl) titleEl.textContent = sheetTitles[tabName] || "Ayarlar";
+    state.activeTab = tabId;
+    state.drawerCollapsed = false;
+    if (drawer) drawer.classList.remove("collapsed");
 
-    if (tabName === "kapak") {
+    document.querySelectorAll(".tool-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.tab === tabId);
+    });
+    document.querySelectorAll(".tab-pane").forEach((p) => {
+      p.classList.toggle("active", p.id === `tab-${tabId}`);
+    });
+
+    const titleEl = document.getElementById("drawerTitle");
+    if (titleEl) titleEl.textContent = TAB_TITLES[tabId] || tabId.toUpperCase();
+
+    if (tabId === "kapak") {
       state.coverPreviewMode = "cover";
       const chk = document.getElementById("chkPreviewCoverNow");
       if (chk) chk.checked = true;
+      renderAyahTimelineStrip();
     } else if (state.coverPreviewMode === "cover") {
       state.coverPreviewMode = "ayah";
       const chk = document.getElementById("chkPreviewCoverNow");
       if (chk) chk.checked = false;
+      renderAyahTimelineStrip();
     }
-
-    if (tabName === "bicim") refreshStorageStatsUI();
+    setTimeout(fitCanvasWrapToStage, 230);
   }
 
-  function populateSurahAndReciterSelectors() {
+  function populateSurahAndReciterSelectors(filterQuery = "") {
     const selSurah = document.getElementById("selSurah");
     if (selSurah) {
       selSurah.innerHTML = "";
-      SURAHS.forEach(([no, nameTr, nameAr, count]) => {
+      const q = normalizeHashtagWord(filterQuery).toLowerCase();
+      const rawQ = (filterQuery || "").trim().toLowerCase();
+
+      const matching = SURAHS.filter(([no, nameTr, nameAr]) => {
+        if (!rawQ) return true;
+        const normTr = normalizeHashtagWord(nameTr).toLowerCase();
+        return (
+          String(no).includes(rawQ) ||
+          nameTr.toLowerCase().includes(rawQ) ||
+          normTr.includes(q) ||
+          nameAr.includes(rawQ)
+        );
+      });
+
+      const listToUse = matching.length > 0 ? matching : SURAHS;
+      listToUse.forEach(([no, nameTr, nameAr, count]) => {
         const opt = document.createElement("option");
         opt.value = no;
         opt.textContent = `${no}. ${nameTr} (${count})`;
@@ -2250,11 +2480,11 @@
   }
 
   function populateAyahRangeSelectors(preserveCurrent = false) {
-    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const maxAyah = surahMeta[3];
     if (!preserveCurrent) {
       state.ayahStart = 1;
-      state.ayahEnd = Math.min(5, maxAyah);
+      state.ayahEnd = Math.min(7, maxAyah);
     } else {
       state.ayahStart = Math.max(1, Math.min(maxAyah, state.ayahStart || 1));
       state.ayahEnd = Math.max(state.ayahStart, Math.min(maxAyah, state.ayahEnd || state.ayahStart));
@@ -2279,6 +2509,27 @@
       if (i === state.ayahEnd) o2.selected = true;
       selEnd.appendChild(o2);
     }
+  }
+
+  // Fits #canvasWrap to exact pixel dimensions matching the active aspect ratio (9:16, 4:5, 1:1, 16:9) inside #stageArea
+  function fitCanvasWrapToStage() {
+    const stage = document.getElementById("stageArea");
+    const wrap = document.getElementById("canvasWrap");
+    if (!stage || !wrap) return;
+
+    const availW = Math.max(120, stage.clientWidth - 20);
+    const availH = Math.max(120, stage.clientHeight - 8);
+    const targetRatio = (canvas.width || 1080) / (canvas.height || 1920);
+
+    let boxH = availH;
+    let boxW = boxH * targetRatio;
+    if (boxW > availW) {
+      boxW = availW;
+      boxH = boxW / targetRatio;
+    }
+
+    wrap.style.width = `${Math.round(boxW)}px`;
+    wrap.style.height = `${Math.round(boxH)}px`;
   }
 
   function updateCanvasResolutionAndRatio() {
@@ -2310,13 +2561,14 @@
       if (dot) dot.textContent = isAct ? "●" : "";
     });
 
+    fitCanvasWrapToStage();
     updateHeaderAndBottomSummary();
   }
 
   function syncAllControlsFromState() {
     document.documentElement.setAttribute("data-theme", state.uiTheme || "black");
 
-    populateSurahAndReciterSelectors();
+    populateSurahAndReciterSelectors(state.surahSearch);
     renderStylePresetsGrid();
     renderKnownExcerptsList();
     renderRecitersList();
@@ -2330,9 +2582,6 @@
     const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
     const setChk = (id, b) => { const el = document.getElementById(id); if (el) el.checked = Boolean(b); };
 
-    document.querySelectorAll("#photoMotionGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.motion === state.photoMotion);
-    });
     setVal("rngBgZoom", state.bgZoom);
     setTxt("valBgZoom", `${(state.bgZoom / 100).toFixed(2)}x`);
     setVal("rngBgPanX", state.bgPanX);
@@ -2342,64 +2591,87 @@
     setVal("inpVideoTrimStart", state.videoTrimStart);
     setVal("inpVideoTrimEnd", state.videoTrimEnd);
 
+    setVal("selBismillahMode", state.bismillahMode);
+
+    setVal("rngAmbientVol", state.ambientVol);
+    setTxt("valAmbientVol", `%${state.ambientVol}`);
+    setVal("rngReciterVol", state.reciterVol);
+    setTxt("valReciterVol", `%${state.reciterVol}`);
+    setVal("selVideoAudioMode", state.videoAudioMode);
+    setVal("rngBgVideoVol", state.bgVideoVol);
+    setTxt("valBgVideoVol", `%${state.bgVideoVol}`);
+    setVal("rngGaplessTrim", state.gaplessTrimSec);
+    setTxt("valGaplessTrim", `${Number(state.gaplessTrimSec).toFixed(2)} sn`);
+    setVal("selSmoothFadeOut", state.smoothFadeOut);
+    setVal("selAudioFailPolicy", state.audioFailPolicy);
+
+    document.querySelectorAll("#arabicFontGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.arfont === state.arabicFont);
+    });
+    setVal("inpArabicColor", state.arabicColor);
+    setVal("rngArabicSize", state.arabicSize);
+    setTxt("valArabicSize", `${state.arabicSize} px`);
+    setVal("rngArabicLetterSpacing", state.arabicLetterSpacing);
+    setTxt("valArabicLetterSpacing", `${state.arabicLetterSpacing} px`);
+    setVal("rngTextShadow", state.textShadow);
+    setTxt("valTextShadow", `${state.textShadow} px`);
+
+    document.querySelectorAll("#mealEditionGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.edition === state.mealEdition);
+    });
     document.querySelectorAll("#mealStyleGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.mstyle === state.mealStyle);
     });
-    document.querySelectorAll("#arabicFontGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.afont === state.arabicFont);
-    });
-    document.querySelectorAll("#readabilityGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.read === state.textReadability);
-    });
-    document.querySelectorAll("#textPositionGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.pos === state.textPosition);
-    });
-
-    document.querySelectorAll("#displayModeGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.disp === state.subtitleMode);
-    });
-    document.querySelectorAll("#mealEditionGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.ed === state.mealEdition);
-    });
-    document.querySelectorAll("#transitionGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", b.dataset.trans === state.transitionMode);
-    });
-
-    document.querySelectorAll("#qualityGroup .sebat-opt-btn").forEach((b) => {
-      b.classList.toggle("active", Number(b.dataset.res) === Number(state.resolution));
-    });
-
-    setTxt("lblArabicColorName", state.arabicColorName || "Fildişi");
-    setTxt("lblMealColorName", state.mealColorName || "Zer");
-    setVal("inpArabicColor", state.arabicColor);
     setVal("inpMealColor", state.mealColor);
-
-    setVal("rngArabicSize", state.arabicSize);
-    setTxt("valArabicSize", `${state.arabicSize} px`);
     setVal("rngMealSize", state.mealSize);
     setTxt("valMealSize", `${state.mealSize} px`);
-    setVal("rngTextShadow", state.textShadow);
-    setTxt("valTextShadow", `${state.textShadow} px`);
-    setVal("rngArabicLetterSpacing", state.arabicLetterSpacing);
-    setTxt("valArabicLetterSpacing", `${state.arabicLetterSpacing} px`);
-    setVal("selBismillahMode", state.bismillahMode);
 
-    setVal("rngReciterVol", state.reciterVol);
-    setTxt("valReciterVol", `%${state.reciterVol}`);
-    setVal("rngAmbientVol", state.ambientVol);
-    setTxt("valAmbientVol", `%${state.ambientVol}`);
-    setVal("rngBgVideoVol", state.bgVideoVol);
-    setTxt("valBgVideoVol", `%${state.bgVideoVol}`);
-    setVal("rngGaplessTrim", Math.round(state.gaplessTrimSec * 100));
-    setTxt("valGaplessTrim", `${state.gaplessTrimSec.toFixed(2)} sn`);
-    setVal("selFadeOutEnd", state.fadeOutEnd);
-    setVal("selAudioFailPolicy", state.audioFailPolicy);
+    document.querySelectorAll("#mealNumFormatGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.numfmt === (state.mealNumberFormat || "hyphen"));
+    });
 
+    setChk("chkShowEnMealQuick", state.subtitleMode === "both" || state.subtitleMode === "en");
+    setVal("inpEnMealColor", state.enMealColor || "#CBD5E1");
+    setVal("rngEnMealSize", state.enMealSize || 18);
+    setTxt("valEnMealSize", `${state.enMealSize || 18} px`);
+
+    document.querySelectorAll("#wordHighlightGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", (b.dataset.wh === "on") === Boolean(state.wordHighlight));
+    });
+    setVal("inpHighlightColor", state.wordHighlightColor || "#F8E5A6");
+    document.querySelectorAll("#highlightStyleGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.hlstyle === (state.wordHighlightStyle || "glow"));
+    });
+    const wOff = Number(state.wordTimingOffset) || 0;
+    setVal("rngWordTimingOffset", wOff);
+    setTxt("valWordTimingOffset", `${wOff > 0 ? "+" : ""}${wOff.toFixed(2)} sn`);
+
+    document.querySelectorAll("#subtitleModeGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.submode === state.subtitleMode);
+    });
     setVal("selInVideoProgressBar", state.inVideoProgressBar);
     setVal("selInVideoSurahHeader", state.inVideoSurahHeader);
-    setChk("chkCornerSurah", state.cornerShowSurah);
-    setChk("chkCornerAyahs", state.cornerShowAyahs);
-    setChk("chkCornerReciter", state.cornerShowReciter);
+
+    document.getElementById("btnCornerSurah").classList.toggle("active", Boolean(state.cornerShowSurah));
+    document.getElementById("btnCornerAyahs").classList.toggle("active", Boolean(state.cornerShowAyahs));
+    document.getElementById("btnCornerReciter").classList.toggle("active", Boolean(state.cornerShowReciter));
+
+    document.querySelectorAll("#textBoxStyleGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.box === state.textBoxStyle);
+    });
+    document.querySelectorAll("#textReadabilityGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.read === state.textReadability);
+    });
+    document.querySelectorAll("#textAlignPosGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.pos === state.textAlignPos);
+    });
+    setVal("rngTextOffsetY", state.textOffsetY);
+    setTxt("valTextOffsetY", `${state.textOffsetY}%`);
+    setVal("rngTextOffsetX", state.textOffsetX || 0);
+    setTxt("valTextOffsetX", `${state.textOffsetX || 0}%`);
+    document.querySelectorAll("#transitionModeGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", b.dataset.trans === state.transitionMode);
+    });
 
     const bOff = state.bgBrightnessOffset || 0;
     setVal("rngBrightnessOffset", bOff);
@@ -2414,7 +2686,6 @@
     setChk("chkLockBgDim", state.lockBgDim);
     setVal("rngBgBlur", state.bgBlur);
     setTxt("valBgBlur", `%${Math.round((state.bgBlur / 20) * 100)}`);
-    setChk("chkCinemaBars", state.cinemaBars);
     setVal("selVisualEffect", state.visualEffect);
     setVal("rngEffectIntensity", state.effectIntensity);
     setTxt("valEffectIntensity", `%${state.effectIntensity}`);
@@ -2422,6 +2693,7 @@
     setChk("chkCoverLargeSurah", state.coverLargeSurah);
     setChk("chkCoverWithVideo", state.coverFirstFrame === "on");
     setChk("chkPreviewCoverNow", state.coverPreviewMode === "cover");
+    setVal("inpCoverSurahName", state.coverSurahName || "");
     setVal("inpCoverTitle", state.coverTitle);
     setVal("inpCoverSubtitle", state.coverSubtitle);
     setVal("rngCoverScale", state.coverScale);
@@ -2433,6 +2705,9 @@
     setVal("selCoverPos", state.coverPos);
     setVal("selCoverBgOverride", state.coverBgOverride);
 
+    document.querySelectorAll("#qualityGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", Number(b.dataset.res) === Number(state.resolution));
+    });
     setVal("selBitrateMbps", state.bitrateMbps);
     setVal("selExportEngine", state.exportEngine);
     setVal("selFileNameFormat", state.fileNameFormat);
@@ -2446,9 +2721,6 @@
     setVal("selCaptionPlatform", state.captionPlatform);
     setVal("selUiTheme", state.uiTheme);
 
-    const szOverlay = document.getElementById("safeZoneOverlay");
-    if (szOverlay) szOverlay.classList.toggle("active", Boolean(state.safeZoneVisible));
-
     updateCanvasResolutionAndRatio();
   }
 
@@ -2460,118 +2732,238 @@
     }
   }
 
-  async function searchPexelsMedia(query) {
-    const q = (query || "rain mosque nature").trim();
-    const key = (state.pexelsApiKey || "").trim();
-    if (!key) {
-      state.zeminSearch = q;
-      state.zeminCategory = "Tümü";
-      renderZeminCategories();
-      renderZeminGrid();
-      const box = document.getElementById("pexelsKeyPromptBox");
-      if (box) box.style.display = "flex";
-      showToast(`Katalogda "${q}" filtrelendi. Çevrimiçi arama için Pexels API anahtarı girebilirsiniz.`);
-      return;
-    }
+  // Injects - / + Stepper Buttons around every range input & binds Tap-to-Reset on value pills
+  function enhanceSlidersWithSteppersAndReset() {
+    document.querySelectorAll('input[type="range"]').forEach((rng) => {
+      if (rng.parentElement && rng.parentElement.classList.contains("slider-stepper-wrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "slider-stepper-wrap";
 
-    showToast(`Pexels üzerinde "${q}" aranıyor...`);
-    try {
-      const vidRes = await fetch(`https://api.pexels.com/videos/search?query=${encodeURIComponent(q)}&orientation=portrait&per_page=8`, {
-        headers: { Authorization: key }
-      });
-      const found = [];
-      if (vidRes.ok) {
-        const vData = await vidRes.json();
-        (vData.videos || []).forEach((v) => {
-          const hdFile = (v.video_files || []).find((f) => f.height >= 720 && f.file_type === "video/mp4") || (v.video_files || [])[0];
-          if (hdFile && hdFile.link) {
-            found.push({
-              id: `pexels_vid_${v.id}`,
-              name: `Pexels Video #${v.id}`,
-              type: "video",
-              src: hdFile.link,
-              thumb: v.image,
-              category: "Hareketli",
-              recommendedDarkness: 40,
-              defaultEffect: "none",
-              palette: ["#070809", "#181A20", "#E0B84C"]
-            });
-          }
-        });
-      }
-      if (found.length > 0) {
-        pexelsSearchItems = found;
-        state.zeminCategory = "Hareketli";
-        renderZeminCategories();
-        renderZeminGrid();
-        showToast(`Pexels'ten ${found.length} video eklendi!`);
-      }
-    } catch (_) {
-      showToast("Pexels API bağlantısı kurulamadı.");
-    }
-  }
+      const btnMinus = document.createElement("button");
+      btnMinus.type = "button";
+      btnMinus.className = "step-btn";
+      btnMinus.textContent = "−";
+      btnMinus.title = "Azalt";
 
-  function bindEvents() {
-    document.querySelectorAll(".tool-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const tab = btn.dataset.tab;
-        const shell = document.getElementById("appShell");
-        if (activeTabName === tab && shell && !shell.classList.contains("panel-collapsed")) {
-          shell.classList.toggle("panel-collapsed");
-        } else {
-          switchTab(tab);
+      const btnPlus = document.createElement("button");
+      btnPlus.type = "button";
+      btnPlus.className = "step-btn";
+      btnPlus.textContent = "+";
+      btnPlus.title = "Artır";
+
+      rng.parentNode.insertBefore(wrap, rng);
+      wrap.appendChild(btnMinus);
+      wrap.appendChild(rng);
+      wrap.appendChild(btnPlus);
+
+      const stepSlider = (dir) => {
+        hapticTap(6);
+        const step = Number(rng.step) || 1;
+        const min = Number(rng.min);
+        const max = Number(rng.max);
+        const cur = Number(rng.value);
+        const next = Math.max(min, Math.min(max, Number((cur + dir * step).toFixed(3))));
+        rng.value = String(next);
+        rng.dispatchEvent(new Event("input", { bubbles: true }));
+      };
+
+      btnMinus.addEventListener("click", () => stepSlider(-1));
+      btnPlus.addEventListener("click", () => stepSlider(1));
+    });
+
+    document.querySelectorAll(".slider-val[data-reset-target]").forEach((badge) => {
+      badge.addEventListener("click", () => {
+        const targetId = badge.getAttribute("data-reset-target");
+        const resetVal = badge.getAttribute("data-reset-val");
+        const rng = document.getElementById(targetId);
+        if (rng && resetVal !== null) {
+          hapticTap(12);
+          rng.value = resetVal;
+          rng.dispatchEvent(new Event("input", { bubbles: true }));
+          showToast("Varsayılan değere sıfırlandı.");
         }
       });
     });
+  }
 
-    document.getElementById("btnCloseSheet").addEventListener("click", () => {
-      hapticTap();
-      document.getElementById("appShell").classList.add("panel-collapsed");
+  // Direct Touch / Mouse Dragging on Canvas to Position Verse or Cover + Magnetic Center Snap
+  function bindCanvasDirectTouchDrag() {
+    let startClientX = 0;
+    let startClientY = 0;
+    let startOffX = 0;
+    let startOffY = 0;
+    let movedSignificantly = false;
+    let pointerActive = false;
+
+    const hintEl = document.getElementById("stageDragHint");
+
+    canvas.addEventListener("pointerdown", (ev) => {
+      if (state.isRecording) return;
+      // Ignore if clicking corner buttons
+      pointerActive = true;
+      movedSignificantly = false;
+      startClientX = ev.clientX;
+      startClientY = ev.clientY;
+
+      const isCover = state.coverPreviewMode === "cover";
+      startOffX = isCover ? (state.coverOffsetX || 0) : (state.textOffsetX || 0);
+      startOffY = isCover ? (state.coverOffsetY || 0) : (state.textOffsetY || 0);
+
+      try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
     });
 
-    document.getElementById("btnExpandSheet").addEventListener("click", () => {
-      hapticTap();
-      const shell = document.getElementById("appShell");
-      shell.classList.remove("panel-collapsed");
-      shell.classList.toggle("panel-expanded");
-    });
+    canvas.addEventListener("pointermove", (ev) => {
+      if (!pointerActive) return;
+      const dxPx = ev.clientX - startClientX;
+      const dyPx = ev.clientY - startClientY;
 
-    document.getElementById("btnFullscreenPreview").addEventListener("click", () => {
-      hapticTap();
-      const shell = document.getElementById("appShell");
-      shell.classList.remove("panel-expanded");
-      shell.classList.toggle("panel-collapsed");
-    });
+      if (!movedSignificantly && Math.hypot(dxPx, dyPx) < 6) return;
+      movedSignificantly = true;
+      isDraggingCanvasText = true;
 
-    // Interactive Progress Scrubber Bar Click
-    document.getElementById("progressTrackBar").addEventListener("click", (e) => {
-      if (!state.versesLoaded || state.verses.length === 0) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const frac = Math.max(0, Math.min(0.999, (e.clientX - rect.left) / rect.width));
-      const targetIdx = Math.min(state.verses.length - 1, Math.floor(frac * state.verses.length));
-      jumpToVerseIndex(targetIdx);
-    });
+      const rect = canvas.getBoundingClientRect();
+      const pctX = (dxPx / Math.max(100, rect.width)) * 100;
+      const pctY = (dyPx / Math.max(100, rect.height)) * 100;
 
-    document.getElementById("btnUndo").addEventListener("click", () => performUndo());
-    document.getElementById("btnRedo").addEventListener("click", () => performRedo());
+      const isCover = state.coverPreviewMode === "cover";
+      const maxX = isCover ? 30 : 25;
+      const maxY = isCover ? 35 : 30;
 
-    document.getElementById("btnSafeZoneToggle").addEventListener("click", () => {
-      hapticTap();
-      state.safeZoneVisible = !state.safeZoneVisible;
-      document.getElementById("safeZoneOverlay").classList.toggle("active", state.safeZoneVisible);
-      persistState();
-    });
+      let newX = Math.round(Math.max(-maxX, Math.min(maxX, startOffX + pctX)));
+      let newY = Math.round(Math.max(-maxY, Math.min(maxY, startOffY + pctY)));
 
-    document.getElementById("btnRandomZeminHeader").addEventListener("click", () => {
-      hapticTap();
-      const all = getAllZeminItems();
-      const pick = all[Math.floor(Math.random() * all.length)];
-      if (pick) {
-        selectZemin(pick.id);
-        showToast(`🎲 Zemin: ${pick.name}`, 1600);
+      // Magnetic snap to 0% center
+      snapGuideX = Math.abs(newX) <= 2;
+      snapGuideY = Math.abs(newY) <= 2;
+      if (snapGuideX) newX = 0;
+      if (snapGuideY) newY = 0;
+
+      if (isCover) {
+        state.coverOffsetX = newX;
+        state.coverOffsetY = newY;
+        const rx = document.getElementById("rngCoverOffsetX");
+        const ry = document.getElementById("rngCoverOffsetY");
+        if (rx) rx.value = newX;
+        if (ry) ry.value = newY;
+        document.getElementById("valCoverOffsetX").textContent = `${newX}%`;
+        document.getElementById("valCoverOffsetY").textContent = `${newY}%`;
+      } else {
+        state.textOffsetX = newX;
+        state.textOffsetY = newY;
+        const rx = document.getElementById("rngTextOffsetX");
+        const ry = document.getElementById("rngTextOffsetY");
+        if (rx) rx.value = newX;
+        if (ry) ry.value = newY;
+        document.getElementById("valTextOffsetX").textContent = `${newX}%`;
+        document.getElementById("valTextOffsetY").textContent = `${newY}%`;
+      }
+
+      if (hintEl) {
+        hintEl.textContent = `✥ ${isCover ? "Kapak" : "Âyet"}: X ${newX}% · Y ${newY}%`;
+        hintEl.classList.add("visible");
       }
     });
 
+    const endDrag = (ev) => {
+      if (!pointerActive) return;
+      pointerActive = false;
+      try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {}
+
+      if (movedSignificantly) {
+        isDraggingCanvasText = false;
+        snapGuideX = false;
+        snapGuideY = false;
+        if (hintEl) hintEl.classList.remove("visible");
+        persistState();
+      } else {
+        // Short tap on canvas toggles Clean Preview UI!
+        const wrap = document.getElementById("canvasWrap");
+        if (wrap) wrap.classList.toggle("clean-ui");
+      }
+    };
+
+    canvas.addEventListener("pointerup", endDrag);
+    canvas.addEventListener("pointercancel", endDrag);
+  }
+
+  function bindEvents() {
+    enhanceSlidersWithSteppersAndReset();
+    bindCanvasDirectTouchDrag();
+
+    // Sub-tab Switching inside Drawer Panels
+    document.querySelectorAll(".subtab-bar .subtab-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        const bar = btn.closest(".subtab-bar");
+        const group = bar ? bar.dataset.subtabGroup : "";
+        const targetId = `subtab-${btn.dataset.subtab}`;
+
+        if (bar) {
+          bar.querySelectorAll(".subtab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        }
+        document.querySelectorAll(`.subtab-pane[data-subtab-group="${group}"]`).forEach((pane) => {
+          pane.classList.toggle("active", pane.id === targetId);
+        });
+      });
+    });
+
+    // 10-Tool Grid Navigation
+    document.querySelectorAll(".tool-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        switchToolTab(btn.dataset.tab);
+      });
+    });
+
+    document.getElementById("btnCloseDrawer").addEventListener("click", () => {
+      hapticTap();
+      state.drawerCollapsed = true;
+      document.getElementById("toolDrawer").classList.add("collapsed");
+      document.querySelectorAll(".tool-btn").forEach((b) => b.classList.remove("active"));
+      setTimeout(fitCanvasWrapToStage, 230);
+    });
+
+    // Clean UI Toggle in Top Header
+    document.getElementById("btnToggleCleanUI").addEventListener("click", () => {
+      hapticTap();
+      const wrap = document.getElementById("canvasWrap");
+      if (wrap) {
+        const isClean = wrap.classList.toggle("clean-ui");
+        showToast(isClean ? "Temiz önizleme (butonlar gizlendi)" : "Önizleme butonları görünür");
+      }
+    });
+
+    // Header Logo Quick Theme Switch
+    document.getElementById("headerLogoImg").addEventListener("click", () => {
+      hapticTap();
+      const themes = ["black", "emerald", "midnight"];
+      const next = themes[(themes.indexOf(state.uiTheme) + 1) % themes.length];
+      state.uiTheme = next;
+      document.documentElement.setAttribute("data-theme", next);
+      document.getElementById("selUiTheme").value = next;
+      persistState();
+      showToast(next === "black" ? "Siyah & Altın Tema" : next === "emerald" ? "Derin Zümrüt Tema" : "Gece Mavisi Tema");
+    });
+
+    // Undo / Redo
+    document.getElementById("btnUndo").addEventListener("click", async () => {
+      if (historyPointer > 0) {
+        hapticTap();
+        historyPointer--;
+        await applyHistorySnapshot(historyStack[historyPointer]);
+        showToast("Geri alındı.");
+      }
+    });
+    document.getElementById("btnRedo").addEventListener("click", async () => {
+      if (historyPointer < historyStack.length - 1) {
+        hapticTap();
+        historyPointer++;
+        await applyHistorySnapshot(historyStack[historyPointer]);
+        showToast("İleri alındı.");
+      }
+    });
+
+    // On-Canvas Play & Fullscreen Buttons
     document.getElementById("btnPlayPreview").addEventListener("click", () => {
       hapticTap();
       if (state.isPlaying || state.isRecording) {
@@ -2581,45 +2973,91 @@
       }
     });
 
-    document.getElementById("btnRecordExport").addEventListener("click", () => {
+    document.getElementById("btnFullscreenPreview").addEventListener("click", () => {
       hapticTap();
-      if (state.isRecording || state.isPlaying) {
+      const drawer = document.getElementById("toolDrawer");
+      state.drawerCollapsed = !state.drawerCollapsed;
+      drawer.classList.toggle("collapsed", state.drawerCollapsed);
+      setTimeout(fitCanvasWrapToStage, 230);
+    });
+
+    // Bottom Export & Share Buttons
+    document.getElementById("btnRecordExport").addEventListener("click", () => {
+      hapticTap(20);
+      if (state.isRecording) {
         stopPlaybackAndRecording(true);
-        showToast("Kayıt iptal edildi — yarım video üretilmedi.");
+        showToast("Video kaydı iptal edildi.");
       } else {
         startStudioSession(true);
       }
     });
-
-    document.getElementById("btnQuickShare").addEventListener("click", () => shareExportedVideo());
-    document.getElementById("btnDownloadExport").addEventListener("click", () => downloadExportedVideo());
-    document.getElementById("btnShareExport").addEventListener("click", () => shareExportedVideo());
-
-    // Kesit & Hâfız
-    document.getElementById("btnJumpToHafizFromKesit").addEventListener("click", () => switchTab("hafiz"));
-
-    document.getElementById("selSurah").addEventListener("change", (e) => {
-      state.surahNo = Number(e.target.value);
-      populateAyahRangeSelectors(false);
-      state.coverAyahNo = state.ayahStart;
-      renderKnownExcerptsList();
-      persistState();
-      loadVersesAndPreloadAudio();
+    document.getElementById("btnDownloadLastVideo").addEventListener("click", () => {
+      hapticTap();
+      downloadExportedVideo();
+    });
+    document.getElementById("btnShareLastVideo").addEventListener("click", async () => {
+      hapticTap();
+      if (!state.lastExportBlob || !navigator.share) return;
+      try {
+        const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
+        const file = new File([state.lastExportBlob], fileName, { type: state.lastExportMime });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "Tilawah World Video",
+            text: document.getElementById("txtSocialCaption").value,
+            files: [file]
+          });
+        }
+      } catch (_) {}
     });
 
-    document.getElementById("selAyahStart").addEventListener("change", (e) => {
+    // Timeline Scrubber Click
+    document.getElementById("progressBarTrack").addEventListener("click", (ev) => {
+      if (!state.versesLoaded || state.verses.length === 0) return;
+      const rect = ev.currentTarget.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+      const idx = Math.min(state.verses.length - 1, Math.floor(ratio * state.verses.length));
+      state.coverPreviewMode = "ayah";
+      const chk = document.getElementById("chkPreviewCoverNow");
+      if (chk) chk.checked = false;
+      jumpToVerseIndex(idx);
+    });
+
+    // Kesit (Surah Quick Search, Surah & Ayah Selectors, -1/+1 Ayah Buttons)
+    document.getElementById("inpSurahSearch").addEventListener("input", async (e) => {
+      state.surahSearch = e.target.value;
+      populateSurahAndReciterSelectors(state.surahSearch);
+      const sel = document.getElementById("selSurah");
+      if (sel && sel.options.length > 0) {
+        const firstNo = Number(sel.options[0].value);
+        if (firstNo && firstNo !== state.surahNo) {
+          state.surahNo = firstNo;
+          populateAyahRangeSelectors(false);
+          renderKnownExcerptsList();
+          persistState();
+          await loadVersesAndPreloadAudio();
+        }
+      }
+    });
+
+    document.getElementById("selSurah").addEventListener("change", async (e) => {
+      state.surahNo = Number(e.target.value);
+      populateAyahRangeSelectors(false);
+      renderKnownExcerptsList();
+      persistState();
+      await loadVersesAndPreloadAudio();
+    });
+    document.getElementById("selAyahStart").addEventListener("change", async (e) => {
       state.ayahStart = Number(e.target.value);
       if (state.ayahEnd < state.ayahStart) {
         state.ayahEnd = state.ayahStart;
         document.getElementById("selAyahEnd").value = state.ayahEnd;
       }
-      state.coverAyahNo = state.ayahStart;
       renderKnownExcerptsList();
       persistState();
-      loadVersesAndPreloadAudio();
+      await loadVersesAndPreloadAudio();
     });
-
-    document.getElementById("selAyahEnd").addEventListener("change", (e) => {
+    document.getElementById("selAyahEnd").addEventListener("change", async (e) => {
       state.ayahEnd = Number(e.target.value);
       if (state.ayahEnd < state.ayahStart) {
         state.ayahStart = state.ayahEnd;
@@ -2627,51 +3065,71 @@
       }
       renderKnownExcerptsList();
       persistState();
+      await loadVersesAndPreloadAudio();
+    });
+
+    document.getElementById("btnAyahMinus").addEventListener("click", async () => {
+      if (state.ayahEnd > state.ayahStart) {
+        hapticTap();
+        state.ayahEnd--;
+        document.getElementById("selAyahEnd").value = String(state.ayahEnd);
+        renderKnownExcerptsList();
+        persistState();
+        await loadVersesAndPreloadAudio();
+      } else {
+        showToast("En az 1 âyet seçili olmalıdır.");
+      }
+    });
+    document.getElementById("btnAyahPlus").addEventListener("click", async () => {
+      const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
+      const maxAyah = surahMeta[3];
+      if (state.ayahEnd < maxAyah) {
+        hapticTap();
+        state.ayahEnd++;
+        document.getElementById("selAyahEnd").value = String(state.ayahEnd);
+        renderKnownExcerptsList();
+        persistState();
+        await loadVersesAndPreloadAudio();
+      } else {
+        showToast("Sûrenin son âyetine ulaşıldı.");
+      }
+    });
+
+    document.getElementById("selBismillahMode").addEventListener("change", async (e) => {
+      state.bismillahMode = e.target.value;
+      persistState();
+      await loadVersesAndPreloadAudio();
+    });
+    document.getElementById("btnRetryFailedAudio").addEventListener("click", () => {
+      hapticTap();
       loadVersesAndPreloadAudio();
     });
-
-    document.getElementById("btnAddCurrentToFavorites").addEventListener("click", () => {
+    document.getElementById("btnContinueTextOnly").addEventListener("click", () => {
       hapticTap();
-      const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
-      const title = `${surahMeta[1]} ${state.ayahStart}–${state.ayahEnd}`;
-      state.favoriteAyahs = [
-        { id: "fav_" + Date.now(), title, sub: `${surahMeta[1]} ${state.ayahStart}-${state.ayahEnd}`, arName: surahMeta[4], surahNo: state.surahNo, start: state.ayahStart, end: state.ayahEnd },
-        ...(state.favoriteAyahs || [])
-      ];
-      renderKnownExcerptsList();
-      persistState();
-      showToast(`★ "${title}" bilinen kesitlere eklendi!`);
+      enableTextOnlyContinueMode();
     });
 
-    document.getElementById("btnRetryFailedAudio").addEventListener("click", () => loadVersesAndPreloadAudio());
-    document.getElementById("btnContinueTextOnly").addEventListener("click", () => enableTextOnlyContinueMode());
-
+    // Hâfız Search
     document.getElementById("inpReciterSearch").addEventListener("input", (e) => {
       state.reciterSearch = e.target.value;
       renderRecitersList();
     });
 
-    // Zemin & Kadraj
-    document.getElementById("inpZeminSearch").addEventListener("input", (e) => {
-      state.zeminSearch = e.target.value;
-      renderZeminGrid();
+    // Zemin (Random, Galerim Upload, Zoom/Pan, Video Trim, Direct URL)
+    document.getElementById("btnRandomZemin").addEventListener("click", () => {
+      hapticTap();
+      const all = getAllZeminItems();
+      const pick = all[Math.floor(Math.random() * all.length)];
+      if (pick) {
+        selectZemin(pick.id);
+        showToast(`Sahne: ${pick.name}`);
+      }
     });
 
-    document.getElementById("btnSearchPexels").addEventListener("click", () => {
-      searchPexelsMedia(document.getElementById("inpZeminSearch").value.trim());
-    });
-
-    document.getElementById("btnSavePexelsKeyInline").addEventListener("click", () => {
-      state.pexelsApiKey = document.getElementById("inpPexelsKeyInline").value.trim();
-      document.getElementById("pexelsKeyPromptBox").style.display = "none";
-      persistState();
-      if (state.pexelsApiKey) searchPexelsMedia(document.getElementById("inpZeminSearch").value.trim());
-    });
-
-    document.getElementById("inpGalleryUpload").addEventListener("change", async (e) => {
+    document.getElementById("inpUploadMedia").addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
-      e.target.value = "";
       if (files.length === 0) return;
+      showToast("Medya Galerim'e ekleniyor...");
       let lastId = null;
       for (const f of files) {
         try {
@@ -2698,15 +3156,6 @@
       showToast("Kişisel galeriniz temizlendi.");
     });
 
-    document.querySelectorAll("#photoMotionGroup .sebat-opt-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        hapticTap();
-        state.photoMotion = btn.dataset.motion;
-        document.querySelectorAll("#photoMotionGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        persistState();
-      });
-    });
-
     document.getElementById("rngBgZoom").addEventListener("input", (e) => {
       state.bgZoom = Number(e.target.value);
       document.getElementById("valBgZoom").textContent = `${(state.bgZoom / 100).toFixed(2)}x`;
@@ -2730,63 +3179,63 @@
       state.videoTrimEnd = Math.max(0, Number(e.target.value) || 0);
       persistState();
     });
-    document.getElementById("btnLoadDirectUrl").addEventListener("click", async () => {
-      const url = document.getElementById("inpDirectMediaUrl").value.trim();
+    document.getElementById("btnAddDirectMediaUrl").addEventListener("click", async () => {
+      const url = (document.getElementById("inpDirectMediaUrl").value || "").trim();
       if (!url) {
-        showToast("Lütfen doğrudan bir .mp4, .webm veya .jpg bağlantısı girin.");
+        showToast("Lütfen geçerli bir video URL'si girin.");
         return;
       }
-      showToast("Bağlantı indiriliyor...");
-      try {
-        const res = await fetch(url, { mode: "cors" });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const blob = await res.blob();
-        const ext = url.split("?")[0].split(".").pop().toLowerCase() || "mp4";
-        const fakeFile = new File([blob], `Baglanti_${Date.now()}.${ext}`, {
-          type: blob.type || (ext === "jpg" ? "image/jpeg" : "video/mp4")
-        });
-        const item = await processUploadedFile(fakeFile);
-        await saveGalleryItem(item);
-        galleryItems = await getAllGalleryItems();
-        state.zeminCategory = "Galerim";
-        renderZeminCategories();
-        await selectZemin(item.id);
-        document.getElementById("inpDirectMediaUrl").value = "";
-        refreshStorageStatsUI();
-        showToast("Bağlantıdaki medya eklendi.");
-      } catch (_) {
-        showToast("CORS engeli nedeniyle indirilemedi. Lütfen cihazınızdan '+ Yükle' ile seçin.");
-      }
+      const isVid = /\.(mp4|webm|mov)(\?|$)/i.test(url);
+      const item = {
+        id: "url_" + Date.now(),
+        name: "URL Medya",
+        type: isVid ? "video" : "image",
+        src: url,
+        category: "Galerim",
+        recommendedDarkness: 42,
+        defaultEffect: "none",
+        palette: ["#0c1524", "#1b2d48", "#d8b456"]
+      };
+      await saveGalleryItem(item);
+      galleryItems = await getAllGalleryItems();
+      state.zeminCategory = "Galerim";
+      renderZeminCategories();
+      await selectZemin(item.id);
+      document.getElementById("inpDirectMediaUrl").value = "";
+      showToast("URL medyası Galerim'e eklendi.");
     });
 
     // Ortam & Ses
-    document.getElementById("rngReciterVol").addEventListener("input", (e) => {
-      state.reciterVol = Number(e.target.value);
-      document.getElementById("valReciterVol").textContent = `%${state.reciterVol}`;
-      updateVolumes(state, activeBgVideo);
-      persistState();
-    });
     document.getElementById("rngAmbientVol").addEventListener("input", (e) => {
       state.ambientVol = Number(e.target.value);
       document.getElementById("valAmbientVol").textContent = `%${state.ambientVol}`;
       updateVolumes(state, activeBgVideo);
       persistState();
     });
+    document.getElementById("rngReciterVol").addEventListener("input", (e) => {
+      state.reciterVol = Number(e.target.value);
+      document.getElementById("valReciterVol").textContent = `%${state.reciterVol}`;
+      updateVolumes(state, activeBgVideo);
+      persistState();
+    });
+    document.getElementById("selVideoAudioMode").addEventListener("change", (e) => {
+      state.videoAudioMode = e.target.value;
+      updateVolumes(state, activeBgVideo);
+      persistState();
+    });
     document.getElementById("rngBgVideoVol").addEventListener("input", (e) => {
       state.bgVideoVol = Number(e.target.value);
       document.getElementById("valBgVideoVol").textContent = `%${state.bgVideoVol}`;
-      state.videoAudioMode = state.bgVideoVol > 0 ? "unmuted" : "muted";
-      ensureAudioGraph(state, activeBgVideo);
       updateVolumes(state, activeBgVideo);
       persistState();
     });
     document.getElementById("rngGaplessTrim").addEventListener("input", (e) => {
-      state.gaplessTrimSec = Number(e.target.value) / 100;
+      state.gaplessTrimSec = Number(e.target.value);
       document.getElementById("valGaplessTrim").textContent = `${state.gaplessTrimSec.toFixed(2)} sn`;
       persistState();
     });
-    document.getElementById("selFadeOutEnd").addEventListener("change", (e) => {
-      state.fadeOutEnd = e.target.value;
+    document.getElementById("selSmoothFadeOut").addEventListener("change", (e) => {
+      state.smoothFadeOut = e.target.value;
       persistState();
     });
     document.getElementById("selAudioFailPolicy").addEventListener("change", (e) => {
@@ -2794,70 +3243,25 @@
       persistState();
     });
 
-    // Metin & Hat
-    document.querySelectorAll("#mealStyleGroup .sebat-opt-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        hapticTap();
-        applyMealStyleById(btn.dataset.mstyle, true);
-      });
-    });
-
+    // Metin — Subtab 1: Arapça Hat
     document.querySelectorAll("#arabicFontGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
-        state.arabicFont = btn.dataset.afont;
+        state.arabicFont = btn.dataset.arfont;
         document.querySelectorAll("#arabicFontGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
         ensureFontsLoaded();
         persistState();
       });
     });
-
     document.getElementById("inpArabicColor").addEventListener("input", (e) => {
       state.arabicColor = e.target.value;
-      state.arabicColorName = e.target.value.toUpperCase();
-      document.getElementById("lblArabicColorName").textContent = state.arabicColorName;
+      document.getElementById("lblArabicColorName").textContent = state.arabicColor.toUpperCase();
       renderColorSwatches();
       persistState();
     });
-    document.getElementById("inpMealColor").addEventListener("input", (e) => {
-      state.mealColor = e.target.value;
-      state.mealColorName = e.target.value.toUpperCase();
-      document.getElementById("lblMealColorName").textContent = state.mealColorName;
-      renderColorSwatches();
-      persistState();
-    });
-
-    document.querySelectorAll("#readabilityGroup .sebat-opt-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        hapticTap();
-        state.textReadability = btn.dataset.read;
-        document.querySelectorAll("#readabilityGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        persistState();
-      });
-    });
-
-    document.querySelectorAll("#textPositionGroup .sebat-opt-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        hapticTap();
-        state.textPosition = btn.dataset.pos;
-        document.querySelectorAll("#textPositionGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        persistState();
-      });
-    });
-
     document.getElementById("rngArabicSize").addEventListener("input", (e) => {
       state.arabicSize = Number(e.target.value);
       document.getElementById("valArabicSize").textContent = `${state.arabicSize} px`;
-      persistState();
-    });
-    document.getElementById("rngMealSize").addEventListener("input", (e) => {
-      state.mealSize = Number(e.target.value);
-      document.getElementById("valMealSize").textContent = `${state.mealSize} px`;
-      persistState();
-    });
-    document.getElementById("rngTextShadow").addEventListener("input", (e) => {
-      state.textShadow = Number(e.target.value);
-      document.getElementById("valTextShadow").textContent = `${state.textShadow} px`;
       persistState();
     });
     document.getElementById("rngArabicLetterSpacing").addEventListener("input", (e) => {
@@ -2865,37 +3269,109 @@
       document.getElementById("valArabicLetterSpacing").textContent = `${state.arabicLetterSpacing} px`;
       persistState();
     });
-    document.getElementById("selBismillahMode").addEventListener("change", (e) => {
-      state.bismillahMode = e.target.value;
+    document.getElementById("rngTextShadow").addEventListener("input", (e) => {
+      state.textShadow = Number(e.target.value);
+      document.getElementById("valTextShadow").textContent = `${state.textShadow} px`;
       persistState();
     });
 
-    // Görünüm & Video İçi Şerit
-    document.querySelectorAll("#displayModeGroup .sebat-opt-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        hapticTap();
-        state.subtitleMode = btn.dataset.disp;
-        document.querySelectorAll("#displayModeGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        persistState();
-      });
-    });
-
+    // Metin — Subtab 2: Türkçe Meal & Âyet Numarası Biçimi
     document.querySelectorAll("#mealEditionGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
-        state.mealEdition = btn.dataset.ed;
+        state.mealEdition = btn.dataset.edition;
         document.querySelectorAll("#mealEditionGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
-        updateSocialCaptionText();
+        persistState();
+      });
+    });
+    document.querySelectorAll("#mealStyleGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        applyMealStyleById(btn.dataset.mstyle, true);
+      });
+    });
+    document.getElementById("inpMealColor").addEventListener("input", (e) => {
+      state.mealColor = e.target.value;
+      document.getElementById("lblMealColorName").textContent = state.mealColor.toUpperCase();
+      renderColorSwatches();
+      persistState();
+    });
+    document.getElementById("rngMealSize").addEventListener("input", (e) => {
+      state.mealSize = Number(e.target.value);
+      document.getElementById("valMealSize").textContent = `${state.mealSize} px`;
+      persistState();
+    });
+    document.querySelectorAll("#mealNumFormatGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.mealNumberFormat = btn.dataset.numfmt;
+        document.querySelectorAll("#mealNumFormatGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
         persistState();
       });
     });
 
-    document.querySelectorAll("#transitionGroup .sebat-opt-btn").forEach((btn) => {
+    // Metin — Subtab 3: İngilizce Meal Rengi & Boyutu
+    document.getElementById("chkShowEnMealQuick").addEventListener("change", (e) => {
+      if (e.target.checked) {
+        state.subtitleMode = state.subtitleMode === "ar_only" ? "en" : "both";
+      } else if (state.subtitleMode === "both" || state.subtitleMode === "en") {
+        state.subtitleMode = "tr";
+      }
+      document.querySelectorAll("#subtitleModeGroup .sebat-opt-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.submode === state.subtitleMode);
+      });
+      persistState();
+    });
+    document.getElementById("inpEnMealColor").addEventListener("input", (e) => {
+      state.enMealColor = e.target.value;
+      document.getElementById("lblEnColorName").textContent = state.enMealColor.toUpperCase();
+      renderColorSwatches();
+      persistState();
+    });
+    document.getElementById("rngEnMealSize").addEventListener("input", (e) => {
+      state.enMealSize = Number(e.target.value);
+      document.getElementById("valEnMealSize").textContent = `${state.enMealSize} px`;
+      persistState();
+    });
+
+    // Metin — Subtab 4: Okunan Kelime Vurgusu Rengi, Stili & Senkron İnce Ayarı
+    document.querySelectorAll("#wordHighlightGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
-        state.transitionMode = btn.dataset.trans;
-        state.verseStartTime = performance.now();
-        document.querySelectorAll("#transitionGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        state.wordHighlight = (btn.dataset.wh === "on");
+        document.querySelectorAll("#wordHighlightGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+    document.getElementById("inpHighlightColor").addEventListener("input", (e) => {
+      state.wordHighlightColor = e.target.value;
+      document.getElementById("lblHighlightColorName").textContent = state.wordHighlightColor.toUpperCase();
+      renderColorSwatches();
+      persistState();
+    });
+    document.querySelectorAll("#highlightStyleGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.wordHighlightStyle = btn.dataset.hlstyle;
+        document.querySelectorAll("#highlightStyleGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+    document.getElementById("rngWordTimingOffset").addEventListener("input", (e) => {
+      state.wordTimingOffset = Number(e.target.value);
+      const wOff = state.wordTimingOffset;
+      document.getElementById("valWordTimingOffset").textContent = `${wOff > 0 ? "+" : ""}${wOff.toFixed(2)} sn`;
+      persistState();
+    });
+
+    // Görünüm Controls
+    document.querySelectorAll("#subtitleModeGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.subtitleMode = btn.dataset.submode;
+        document.querySelectorAll("#subtitleModeGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        const chkEn = document.getElementById("chkShowEnMealQuick");
+        if (chkEn) chkEn.checked = (state.subtitleMode === "both" || state.subtitleMode === "en");
         persistState();
       });
     });
@@ -2909,24 +3385,76 @@
       persistState();
     });
 
-    document.getElementById("chkCornerSurah").addEventListener("change", (e) => {
-      state.cornerShowSurah = e.target.checked;
+    document.getElementById("btnCornerSurah").addEventListener("click", (e) => {
+      hapticTap();
+      state.cornerShowSurah = !state.cornerShowSurah;
+      e.currentTarget.classList.toggle("active", state.cornerShowSurah);
       persistState();
     });
-    document.getElementById("chkCornerAyahs").addEventListener("change", (e) => {
-      state.cornerShowAyahs = e.target.checked;
+    document.getElementById("btnCornerAyahs").addEventListener("click", (e) => {
+      hapticTap();
+      state.cornerShowAyahs = !state.cornerShowAyahs;
+      e.currentTarget.classList.toggle("active", state.cornerShowAyahs);
       persistState();
     });
-    document.getElementById("chkCornerReciter").addEventListener("change", (e) => {
-      state.cornerShowReciter = e.target.checked;
+    document.getElementById("btnCornerReciter").addEventListener("click", (e) => {
+      hapticTap();
+      state.cornerShowReciter = !state.cornerShowReciter;
+      e.currentTarget.classList.toggle("active", state.cornerShowReciter);
       persistState();
     });
 
-    // Filtre
+    document.querySelectorAll("#textBoxStyleGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.textBoxStyle = btn.dataset.box;
+        document.querySelectorAll("#textBoxStyleGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+
+    document.querySelectorAll("#textReadabilityGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.textReadability = btn.dataset.read;
+        document.querySelectorAll("#textReadabilityGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+
+    document.querySelectorAll("#textAlignPosGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.textAlignPos = btn.dataset.pos;
+        document.querySelectorAll("#textAlignPosGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+
+    document.getElementById("rngTextOffsetY").addEventListener("input", (e) => {
+      state.textOffsetY = Number(e.target.value);
+      document.getElementById("valTextOffsetY").textContent = `${state.textOffsetY}%`;
+      persistState();
+    });
+    document.getElementById("rngTextOffsetX").addEventListener("input", (e) => {
+      state.textOffsetX = Number(e.target.value);
+      document.getElementById("valTextOffsetX").textContent = `${state.textOffsetX}%`;
+      persistState();
+    });
+
+    document.querySelectorAll("#transitionModeGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.transitionMode = btn.dataset.trans;
+        document.querySelectorAll("#transitionModeGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        persistState();
+      });
+    });
+
+    // Filtre Controls
     document.getElementById("rngBrightnessOffset").addEventListener("input", (e) => {
       const v = Number(e.target.value);
       state.bgBrightnessOffset = v;
-      state.bgBrightness = 100 + v;
       document.getElementById("valBrightnessOffset").textContent = v > 0 ? `+${v}` : `${v}`;
       persistState();
     });
@@ -2938,8 +3466,6 @@
     });
     document.getElementById("rngBgDim").addEventListener("input", (e) => {
       state.bgDim = Number(e.target.value);
-      state.lockBgDim = true;
-      document.getElementById("chkLockBgDim").checked = true;
       document.getElementById("valBgDim").textContent = `%${state.bgDim}`;
       persistState();
     });
@@ -2952,10 +3478,6 @@
       document.getElementById("valBgBlur").textContent = `%${Math.round((state.bgBlur / 20) * 100)}`;
       persistState();
     });
-    document.getElementById("chkCinemaBars").addEventListener("change", (e) => {
-      state.cinemaBars = e.target.checked;
-      persistState();
-    });
     document.getElementById("selVisualEffect").addEventListener("change", (e) => {
       state.visualEffect = e.target.value;
       persistState();
@@ -2966,31 +3488,51 @@
       persistState();
     });
 
-    // Kapak (Full Unified Controls: Scale, Offset X/Y, Pos, Title, Subtitle, Bg Override)
+    // Kapak (Editable Surah Name, Scale, X/Y Offsets, Titles)
+    document.getElementById("inpCoverSurahName").addEventListener("input", (e) => {
+      state.coverSurahName = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
+      persistState();
+    });
+    document.getElementById("btnResetCoverSurahName").addEventListener("click", () => {
+      hapticTap();
+      state.coverSurahName = "";
+      document.getElementById("inpCoverSurahName").value = "";
+      persistState();
+      showToast("Kapak sûre adı varsayılana sıfırlandı.");
+    });
+
     document.getElementById("chkCoverLargeSurah").addEventListener("change", (e) => {
       state.coverLargeSurah = e.target.checked;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("chkCoverWithVideo").addEventListener("change", (e) => {
       state.coverFirstFrame = e.target.checked ? "on" : "off";
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("chkPreviewCoverNow").addEventListener("change", (e) => {
       state.coverPreviewMode = e.target.checked ? "cover" : "ayah";
-      persistState();
+      renderAyahTimelineStrip();
+      persistState(false);
     });
     document.getElementById("inpCoverTitle").addEventListener("input", (e) => {
       state.coverTitle = e.target.value;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("inpCoverSubtitle").addEventListener("input", (e) => {
       state.coverSubtitle = e.target.value;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("rngCoverScale").addEventListener("input", (e) => {
@@ -2998,6 +3540,7 @@
       document.getElementById("valCoverScale").textContent = `%${state.coverScale}`;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("rngCoverOffsetY").addEventListener("input", (e) => {
@@ -3005,6 +3548,7 @@
       document.getElementById("valCoverOffsetY").textContent = `${state.coverOffsetY}%`;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("rngCoverOffsetX").addEventListener("input", (e) => {
@@ -3012,18 +3556,21 @@
       document.getElementById("valCoverOffsetX").textContent = `${state.coverOffsetX}%`;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("selCoverPos").addEventListener("change", (e) => {
       state.coverPos = e.target.value;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
     document.getElementById("selCoverBgOverride").addEventListener("change", (e) => {
       state.coverBgOverride = e.target.value;
       state.coverPreviewMode = "cover";
       document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
       persistState();
     });
 
@@ -3034,10 +3581,10 @@
       renderStudioFrame(performance.now());
       const dataUrl = canvas.toDataURL("image/png");
       state.coverPreviewMode = prev;
-      const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+      const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
       const a = document.createElement("a");
       a.href = dataUrl;
-      a.download = `Tilawah_Kapak_${surahMeta[1]}_${state.coverAyahNo}.png`;
+      a.download = `Tilawah_Kapak_${normalizeHashtagWord(surahMeta[1])}_${state.coverAyahNo}.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -3100,6 +3647,33 @@
       persistState();
     });
 
+    // User Presets
+    document.getElementById("btnSaveUserPreset").addEventListener("click", () => {
+      hapticTap();
+      const nameInput = document.getElementById("inpNewPresetName");
+      const name = (nameInput.value || "").trim() || `Ön Ayarım ${(state.userPresets || []).length + 1}`;
+      const snap = captureStateSnapshot();
+      delete snap.userPresets;
+      state.userPresets = [...(state.userPresets || []), { name, snap }];
+      nameInput.value = "";
+      renderUserPresetsList();
+      persistState();
+      showToast(`"${name}" ön ayarı kaydedildi.`);
+    });
+
+    document.getElementById("btnLoadUserPreset").addEventListener("click", async () => {
+      const sel = document.getElementById("selUserPreset");
+      const idx = Number(sel.value);
+      const list = state.userPresets || [];
+      if (!list[idx]) {
+        showToast("Yüklenecek ön ayar seçin.");
+        return;
+      }
+      hapticTap();
+      await applyHistorySnapshot({ ...list[idx].snap, userPresets: state.userPresets });
+      showToast(`"${list[idx].name}" ön ayarı yüklendi.`);
+    });
+
     document.getElementById("selCaptionPlatform").addEventListener("change", (e) => {
       state.captionPlatform = e.target.value;
       updateSocialCaptionText();
@@ -3112,44 +3686,8 @@
         await navigator.clipboard.writeText(txt);
         showToast("Açıklama panoya kopyalandı!");
       } catch (_) {
-        document.getElementById("txtSocialCaption").select();
-        document.execCommand("copy");
-        showToast("Açıklama kopyalandı!");
+        showToast("Kopyalandı.");
       }
-    });
-
-    document.getElementById("btnSaveUserPreset").addEventListener("click", () => {
-      hapticTap();
-      const nameInp = document.getElementById("inpNewPresetName");
-      const name = (nameInp.value || "").trim() || `Ön Ayar ${(state.userPresets || []).length + 1}`;
-      const snapshot = {};
-      PERSISTED_KEYS.forEach((k) => {
-        if (k !== "userPresets" && k !== "favoriteAyahs") snapshot[k] = state[k];
-      });
-      state.userPresets = [
-        { id: "preset_" + Date.now(), name, data: snapshot },
-        ...(state.userPresets || [])
-      ];
-      nameInp.value = "";
-      renderUserPresetsList();
-      persistState();
-      showToast(`✓ "${name}" ön ayarı kaydedildi.`);
-    });
-
-    document.getElementById("btnLoadUserPreset").addEventListener("click", async () => {
-      hapticTap();
-      const sel = document.getElementById("selUserPreset");
-      const preset = (state.userPresets || []).find((p) => p.id === sel.value);
-      if (!preset) {
-        showToast("Lütfen listeden bir ön ayar seçin.");
-        return;
-      }
-      Object.assign(state, preset.data);
-      syncAllControlsFromState();
-      await selectZemin(state.zeminId, true);
-      await loadVersesAndPreloadAudio();
-      persistState();
-      showToast(`✓ "${preset.name}" ön ayarı yüklendi!`);
     });
 
     document.getElementById("selUiTheme").addEventListener("change", (e) => {
@@ -3158,66 +3696,83 @@
       persistState();
     });
 
+    document.getElementById("btnResetAllSettings").addEventListener("click", async () => {
+      hapticTap(20);
+      const def = resetSettingsToDefault();
+      Object.assign(state, def);
+      syncAllControlsFromState();
+      await selectZemin(state.zeminId, true);
+      await loadVersesAndPreloadAudio();
+      showToast("Tüm ayarlar varsayılana (9:16 & Siyah Tema) sıfırlandı.");
+    });
+
     document.getElementById("btnExportSettingsJson").addEventListener("click", () => {
       hapticTap();
-      const payload = {};
-      PERSISTED_KEYS.forEach((k) => { payload[k] = state[k]; });
+      const payload = captureStateSnapshot();
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `TilawahWorld_v5_Ayarlar.json`;
+      a.download = "tilawah-world-ayarlar-v6.json";
       document.body.appendChild(a);
       a.click();
       a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 2500);
-      showToast("Ayarlar (.JSON) dışa aktarıldı.");
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast("Ayarlar JSON olarak dışa aktarıldı.");
     });
 
     document.getElementById("inpImportSettingsJson").addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
-      e.target.value = "";
       if (!file) return;
       try {
-        const parsed = JSON.parse(await file.text());
-        PERSISTED_KEYS.forEach((k) => {
-          if (typeof parsed[k] !== "undefined") state[k] = parsed[k];
-        });
-        syncAllControlsFromState();
-        await selectZemin(state.zeminId, true);
-        await loadVersesAndPreloadAudio();
-        saveSettings(state, null, true);
-        showToast("✓ Ayarlar yüklendi!");
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        await applyHistorySnapshot(parsed);
+        showToast("Ayarlar başarıyla içe aktarıldı.");
       } catch (_) {
         showToast("Geçersiz JSON dosyası.");
       }
     });
 
-    document.getElementById("btnResetAllSettings").addEventListener("click", async () => {
-      hapticTap(20);
-      const defaults = resetSettingsToDefault();
-      Object.assign(state, defaults);
-      syncAllControlsFromState();
-      await selectZemin(state.zeminId, true);
-      await loadVersesAndPreloadAudio();
-      saveSettings(state, null, true);
-      showToast("Tüm ayarlar varsayılanlara döndürüldü (9:16 · Siyah Tema).");
-    });
+    // ResizeObserver on Stage Area so 9:16 / 4:5 / 1:1 / 16:9 box is always exact
+    const stageAreaEl = document.getElementById("stageArea");
+    if (stageAreaEl && window.ResizeObserver) {
+      const ro = new ResizeObserver(() => fitCanvasWrapToStage());
+      ro.observe(stageAreaEl);
+    }
+    window.addEventListener("resize", fitCanvasWrapToStage);
 
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden && state.isPlaying && !state.isRecording) {
-        stopPlaybackAndRecording(true);
-      }
-    });
+    pushHistorySnapshot();
   }
 
   function initServiceWorker() {
-    if (!("serviceWorker" in navigator) || window.__TW_INLINE_CANVAS_MODE__) return;
+    if (!("serviceWorker" in navigator)) return;
+    if (location.protocol !== "https:" && location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+      return;
+    }
     navigator.serviceWorker.register("sw.js").then((reg) => {
-      if (reg.waiting) {
-        const banner = document.getElementById("swUpdateBanner");
-        if (banner) banner.classList.add("active");
-      }
+      const banner = document.getElementById("swUpdateBanner");
+      const btnReload = document.getElementById("btnSwReload");
+      const showUpdate = (worker) => {
+        if (!banner) return;
+        banner.classList.add("show");
+        if (btnReload) {
+          btnReload.onclick = () => {
+            worker.postMessage({ type: "SKIP_WAITING" });
+            window.location.reload();
+          };
+        }
+      };
+      if (reg.waiting) showUpdate(reg.waiting);
+      reg.addEventListener("updatefound", () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener("statechange", () => {
+          if (nw.state === "installed" && navigator.serviceWorker.controller) {
+            showUpdate(nw);
+          }
+        });
+      });
     }).catch(() => {});
   }
 
@@ -3229,6 +3784,7 @@
     renderZeminCategories();
     syncAllControlsFromState();
     bindEvents();
+    fitCanvasWrapToStage();
 
     await ensureFontsLoaded();
     startRenderLoop();
@@ -3236,7 +3792,7 @@
     setTimeout(() => {
       const splash = document.getElementById("pwaSplash");
       if (splash) splash.classList.add("hidden");
-    }, 500);
+    }, 450);
 
     await selectZemin(state.zeminId || "vid_forest_stream", true);
     await loadVersesAndPreloadAudio();

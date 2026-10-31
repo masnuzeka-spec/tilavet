@@ -2,51 +2,54 @@
 <html lang="tr" dir="ltr" data-theme="black">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#070809" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#060709" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="Tilawah World" />
-  <meta name="description" content="Tilawah World v5 · Profesyonel Kur'ân-ı Kerîm Tilâvet ve Sosyal Medya Video Stüdyosu" />
-  <title>Tilawah World · Ayet &amp; Video Stüdyosu</title>
+  <meta name="description" content="Tilawah World — Profesyonel Kur'ân-ı Kerîm Tilâveti Video Stüdyosu. 9:16 Reels, Shorts, TikTok ve YouTube için kelime vurgulu tilâvet videoları üretin." />
+  <title>Tilawah World — Kur'ân Tilâveti Video Stüdyosu</title>
+
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,600;1,600&family=DM+Sans:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Scheherazade+New:wght@400;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Noto+Naskh+Arabic:wght@500;600;700&family=Scheherazade+New:wght@400;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <!-- PWA Splash Screen -->
+  <!-- Splash Screen -->
   <div id="pwaSplash" class="pwa-splash" aria-hidden="true">
-    <div class="splash-emblem-wrap">
+    <div class="splash-logo-wrap">
       <div class="splash-crescent-ring"></div>
       <img id="splashLogoImg" src="icons/logo.png" alt="Tilawah World" class="splash-logo" />
     </div>
-    <div class="splash-bismillah" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>
-    <div style="font-weight:700;font-size:15px;color:var(--text-main);">Tilawah World</div>
+    <div class="splash-bismillah">﷽</div>
+    <div style="font-size:15px;font-weight:700;color:var(--gold-light);letter-spacing:0.6px;">TİLAWAH WORLD</div>
+    <div style="font-size:11.5px;color:var(--text-muted);">Profesyonel Tilâvet Video Stüdyosu</div>
   </div>
 
-  <div id="appShell" class="app-shell">
-    <!-- Service Worker Update Banner -->
-    <div id="swUpdateBanner" class="sw-banner">
-      <span>Yeni sürüm hazır. Değişiklikleri uygulamak için yenileyin.</span>
-      <button id="btnReloadSw" type="button" class="btn btn-gold btn-sm">Yenile</button>
+  <div class="app-shell">
+    <!-- Service Worker Update Notification -->
+    <div id="swUpdateBanner" class="sw-banner" role="status">
+      <span>✨ Yeni stüdyo sürümü hazır.</span>
+      <button id="btnSwReload" type="button" class="btn btn-gold btn-sm">Yenile</button>
     </div>
 
-    <!-- Top Header -->
-    <header class="top-header">
+    <!-- Top Studio Header (Reels Safe-Zone Removed; Clean Preview Toggle Added) -->
+    <header class="app-header">
       <div class="header-left">
-        <img id="headerLogoImg" src="icons/logo.png" alt="Logo" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);" />
-        <button id="btnSafeZoneToggle" type="button" class="icon-action-btn" title="Reels Güvenli Alan Rehberi">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="4 2"/></svg>
+        <img id="headerLogoImg" src="icons/logo.png" alt="Tilawah World" class="brand-logo-mini" title="Temayı Değiştir (Siyah / Zümrüt / Gece)" />
+        <button id="btnToggleCleanUI" type="button" class="icon-action-btn" title="Temiz Önizleme (Tuval Üstü Butonları Gizle/Göster)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
       </div>
 
       <div class="header-center">
         <div class="header-main-title">Video Stüdyosu</div>
-        <div id="headerProjectSummary" class="header-sub-summary">A'lâ 1-5 · Mâhir el-Muaykılî</div>
+        <div id="headerProjectSummary" class="header-sub-summary">Fâtiha 1-7 · Mâhir el-Muaykılî</div>
       </div>
 
       <div class="header-right">
@@ -59,18 +62,10 @@
       </div>
     </header>
 
-    <!-- Always-Visible Top Stage & Canvas Preview (Varsayılan 9:16!) -->
+    <!-- Always-Visible Top Stage & Full-Bleed 9:16 Canvas Preview -->
     <main id="stageArea" class="stage-area">
       <div id="canvasWrap" class="canvas-container">
-        <canvas id="studioCanvas" width="1080" height="1920"></canvas>
-
-        <!-- Safe-Zone Guide -->
-        <div id="safeZoneOverlay" class="safe-zone-overlay">
-          <div class="sz-corner-tag">Reels Güvenli Alan</div>
-          <div class="sz-top">Üst Profil / Saat Alanı</div>
-          <div class="sz-right">Beğeni &amp; Yorum</div>
-          <div class="sz-bottom">Açıklama &amp; Ses Bilgisi (Alt %20)</div>
-        </div>
+        <canvas id="studioCanvas" width="1080" height="1920" title="Yazıyı taşımak için parmağınızla sürükleyin"></canvas>
 
         <!-- Stage Status Pill -->
         <div class="stage-badge">
@@ -79,762 +74,846 @@
           <span id="stageStatusLabel">Hazır</span>
         </div>
 
+        <!-- Drag Position Indicator Pill -->
+        <div id="stageDragHint" class="stage-drag-hint">✥ Konum: X 0% · Y 0%</div>
+
         <!-- On-Canvas Play & Fullscreen Buttons -->
         <button id="btnPlayPreview" type="button" class="canvas-corner-btn canvas-play-btn" title="Önizle / Durdur" disabled>
           <span id="lblPlayBtn">▶</span>
         </button>
-        <button id="btnFullscreenPreview" type="button" class="canvas-corner-btn canvas-fs-btn" title="Önizlemeyi Büyüt / Küçült">
-          ⛶
+        <button id="btnFullscreenPreview" type="button" class="canvas-corner-btn canvas-fs-btn" title="Paneli Kapat / Geniş Önizleme">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
         </button>
-
-        <div id="bufferingPill" class="buffering-pill">
-          <span class="crescent-spinner"></span>
-          <span>Ses önbelleğe alınıyor...</span>
-        </div>
       </div>
     </main>
 
-    <!-- Combined Precision Time Scrubber + Ruler + Interactive Ayah Blocks Strip -->
-    <section class="timeline-section">
-      <div class="time-readout-row tabular-nums">
-        <span id="lblCurrentTime" style="color:var(--gold-bright);">00:00.0</span>
-        <div id="progressTrackBar" class="progress-track" title="İstediğiniz saniyeye atlamak için dokunun">
+    <!-- Unified Studio Timeline + [🖼 Kapak] & Ayah Blocks -->
+    <section class="timeline-area" aria-label="Zaman Çizelgesi ve Âyet Şeridi">
+      <div class="timeline-scrubber-row">
+        <span id="lblCurrentTime" class="tl-time-cur tabular-nums">00:00.0</span>
+        <div class="progress-track" id="progressBarTrack" title="Zaman çubuğu">
           <div id="progressBarFill" class="progress-fill"></div>
         </div>
-        <span id="lblTotalDuration" style="color:var(--text-muted);">≈ 00:00.0</span>
+        <span id="lblTotalDuration" class="tl-time-tot tabular-nums">00:00.0</span>
       </div>
-      <div id="timelineRulerRow" class="timeline-ruler-row">
-        <span>0:00</span><span>0:05</span><span>0:10</span><span>0:15</span><span>0:20</span>
+
+      <div class="timeline-ruler-row tabular-nums">
+        <span id="tlRuler0">0:00</span>
+        <span id="tlRuler1">0:05</span>
+        <span id="tlRuler2">0:10</span>
+        <span id="tlRuler3">0:15</span>
+        <span id="tlRuler4">0:20</span>
       </div>
-      <div id="ayahTimelineStrip" class="ayah-timeline-strip" aria-label="Âyet Zaman Şeridi"></div>
+
+      <div id="ayahTimelineStrip" class="ayah-timeline-strip"></div>
     </section>
 
-    <!-- Compact Docked Tool Panel -->
-    <section id="studioPanel" class="studio-panel" aria-label="Araç Ayarları Paneli">
-      <div class="sheet-header-bar">
-        <span id="sheetTitleText" class="sheet-title">Stil</span>
-        <div class="sheet-header-actions">
-          <button id="btnExpandSheet" type="button" class="sheet-close-btn" title="Paneli Genişlet / Daralt">↕ Boyut</button>
-          <button id="btnCloseSheet" type="button" class="sheet-close-btn">Kapat</button>
-        </div>
+    <!-- Contextual Tool Drawer (Compact & Sub-Tabbed) -->
+    <section id="toolDrawer" class="tool-drawer" aria-label="Stüdyo Ayar Çekmecesi">
+      <div class="drawer-top-bar">
+        <span id="drawerTitle" class="drawer-title">STİL — 16 SEÇKİN GÖRSEL KOMBİNASYON</span>
+        <button id="btnCloseDrawer" type="button" class="drawer-close-btn">Gizle ▾</button>
       </div>
 
-      <div class="sheet-body">
-        <!-- 1. STİL -->
-        <div id="pane-stil" class="tab-pane active">
-          <div class="field-label">
-            <span>Hazır Atmosfer Stilleri (Tek Dokunuş · Kilitsiz)</span>
-            <button id="btnRandomZeminHeader" type="button" class="btn btn-sm">🎲 Rastgele Sahne</button>
+      <div class="drawer-body">
+        <!-- 1. STİL (16 Curated Studio Presets) -->
+        <div id="tab-stil" class="tab-pane active">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">
+            Tek dokunuşla sahneyi, ortam sesini, hat yazı tipini, renkleri ve kelime vurgusunu uyumlu şekilde ayarlar:
           </div>
           <div id="stylePresetGrid" class="zemin-grid"></div>
         </div>
 
-        <!-- 2. KESİT -->
-        <div id="pane-kesit" class="tab-pane">
-          <div id="btnJumpToHafizFromKesit" class="sebat-list-item" style="background:var(--bg-card);border:1px solid var(--border);">
-            <div>
-              <div style="font-size:11px;color:var(--text-muted);">Hâfız</div>
-              <div id="lblCurrentReciterInKesit" class="sebat-item-title">Mâhir el-Muaykılî</div>
+        <!-- 2. KESİT (Surah Quick Search + +/-1 Ayah Buttons + Known Excerpts) -->
+        <div id="tab-kesit" class="tab-pane">
+          <div class="glass-card">
+            <div class="field-label">
+              <span>Sûre ve Âyet Aralığı</span>
+              <span id="lblAudioReadyState" style="font-size:10px;color:var(--gold-bright);">Hazırlanıyor...</span>
             </div>
-            <span style="color:var(--gold-light);font-weight:700;">›</span>
-          </div>
 
-          <div class="field-label">
-            <span>Âyet Aralığı Seçimi (114 Sûre)</span>
-            <button id="btnAddCurrentToFavorites" type="button" class="btn btn-sm">+ Kesitlere Ekle</button>
-          </div>
-          <div class="grid-3">
-            <div class="field-group">
-              <label class="field-label" for="selSurah">Sûre</label>
-              <select id="selSurah" class="select-box"></select>
+            <div class="grid-2">
+              <input id="inpSurahSearch" type="search" class="input-box" placeholder="🔍 Sûre ara (Yasin, Mülk, 36)..." />
+              <select id="selSurah" class="select-box" aria-label="Sûre Seçimi"></select>
             </div>
-            <div class="field-group">
-              <label class="field-label" for="selAyahStart">Baştan</label>
-              <select id="selAyahStart" class="select-box tabular-nums"></select>
+
+            <div style="display:flex;align-items:flex-end;gap:6px;">
+              <div style="flex:1;">
+                <label for="selAyahStart" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Başlangıç Âyeti</label>
+                <select id="selAyahStart" class="select-box tabular-nums"></select>
+              </div>
+              <div style="flex:1;">
+                <label for="selAyahEnd" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Bitiş Âyeti</label>
+                <select id="selAyahEnd" class="select-box tabular-nums"></select>
+              </div>
+              <button id="btnAyahMinus" type="button" class="btn btn-sm" title="Bitiş âyetini 1 azalt" style="height:33px;">-1 Âyet</button>
+              <button id="btnAyahPlus" type="button" class="btn btn-sm" title="Bitiş âyetini 1 artır" style="height:33px;">+1 Âyet</button>
             </div>
-            <div class="field-group">
-              <label class="field-label" for="selAyahEnd">Sona</label>
-              <select id="selAyahEnd" class="select-box tabular-nums"></select>
+
+            <div>
+              <label for="selBismillahMode" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Besmele Gösterimi (1. Âyetlerde)</label>
+              <select id="selBismillahMode" class="select-box">
+                <option value="separate">Üstte Zarif Besmele Tacı Göster</option>
+                <option value="first_only">Sadece Sûrenin 1. Âyetinde Göster</option>
+                <option value="strip">Besmele Satırını Gizle</option>
+              </select>
+            </div>
+
+            <div id="ayahAudioAlertBox" class="alert-box error">
+              <div style="font-weight:700;">⚠️ Bazı âyetlerin ses dosyası indirilemedi:</div>
+              <div id="ayahAudioFailList"></div>
+              <div style="display:flex;gap:6px;margin-top:3px;">
+                <button id="btnRetryFailedAudio" type="button" class="btn btn-sm">🔄 Tekrar Dene</button>
+                <button id="btnContinueTextOnly" type="button" class="btn btn-gold btn-sm">📝 Sadece Metin İle Devam Et</button>
+              </div>
             </div>
           </div>
 
           <div class="glass-card">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;" class="tabular-nums">
-              <span style="font-size:12px;color:var(--text-muted);">Süre</span>
-              <strong id="lblKesitDuration" style="color:var(--gold-bright);font-size:13px;">≈ 0:25</strong>
-              <div style="flex:1;height:5px;background:rgba(255,255,255,0.12);border-radius:999px;overflow:hidden;">
-                <div id="kesitDurationFill" style="height:100%;width:12%;background:var(--gold-light);border-radius:999px;"></div>
-              </div>
-              <span style="font-size:11px;color:var(--text-muted);">10:00</span>
-            </div>
-            <div id="lblAudioReadyState" style="font-size:11.5px;color:var(--text-muted);">Ses hazırlanıyor...</div>
-            <div id="ayahAudioErrorBox" style="display:none;flex-direction:column;gap:6px;">
-              <div id="ayahAudioFailList" style="font-size:11px;color:#FCA5A5;"></div>
-              <div class="grid-2">
-                <button id="btnRetryFailedAudio" type="button" class="btn btn-sm">🔄 Tekrar Dene</button>
-                <button id="btnContinueTextOnly" type="button" class="btn btn-gold btn-sm">📜 Sadece Metin İle Devam</button>
-              </div>
-            </div>
+            <div class="field-label">Bilinen Kesitler (Tek Dokunuşla Yükle)</div>
+            <div id="knownExcerptsList" class="sebat-list"></div>
           </div>
-
-          <div class="field-label" style="margin-top:4px;">Bilinen Kesitler (Çevrimdışı Hazır)</div>
-          <div id="knownExcerptsList" class="sebat-list"></div>
         </div>
 
         <!-- 3. HÂFIZ -->
-        <div id="pane-hafiz" class="tab-pane">
-          <input id="inpReciterSearch" type="search" class="input-box" placeholder="Hâfız veya özellik ara (kelime kelime vurgu, Harâm imamı...)" />
-          <div id="reciterFullList" class="sebat-list"></div>
+        <div id="tab-hafiz" class="tab-pane">
+          <div style="display:flex;gap:6px;align-items:center;">
+            <input id="inpReciterSearch" type="search" class="input-box" placeholder="🔍 Hâfız ara (Mahir, Afasi, Şureym, Husari)..." />
+          </div>
+          <div id="recitersListWrap" class="sebat-list"></div>
         </div>
 
-        <!-- 4. ZEMİN (Tam Kapsamlı: Kategoriler + Hareket + Zoom/Pan X/Y + Video Trim + URL İndir + Galerim Yönetimi) -->
-        <div id="pane-zemin" class="tab-pane">
-          <div style="display:flex;gap:6px;align-items:center;">
-            <input id="inpZeminSearch" type="search" class="input-box" placeholder="Zemin ara veya Pexels'te bul..." />
-            <button id="btnSearchPexels" type="button" class="btn btn-sm">🌐 Pexels</button>
-            <label for="inpGalleryUpload" class="btn btn-gold btn-sm" style="cursor:pointer;">
-              + Yükle
-              <input id="inpGalleryUpload" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" multiple style="display:none;" />
+        <!-- 4. ZEMİN (Sadece Hareketli Video & Canlı Sahneler + Galerim; Pexels ve Sabit Görseller Kaldırıldı!) -->
+        <div id="tab-zemin" class="tab-pane">
+          <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;">
+            <div id="zeminCategoryChips" class="chip-scroll" style="flex:1;"></div>
+            <button id="btnRandomZemin" type="button" class="btn btn-sm" title="Rastgele Hareketli Sahne">🎲</button>
+            <label for="inpUploadMedia" class="btn btn-gold btn-sm" style="cursor:pointer;margin:0;flex-shrink:0;">
+              + Galerim
+              <input id="inpUploadMedia" type="file" accept="video/*,image/*" multiple style="display:none;" />
             </label>
           </div>
 
-          <div id="pexelsKeyPromptBox" class="glass-card" style="display:none;">
-            <div style="font-size:11px;color:var(--text-muted);">Ücretsiz Pexels API anahtarınızı girerek binlerce dikey stok video arayabilirsiniz:</div>
-            <div style="display:flex;gap:6px;">
-              <input id="inpPexelsKeyInline" type="password" class="input-box" placeholder="Pexels API Anahtarı..." />
-              <button id="btnSavePexelsKeyInline" type="button" class="btn btn-gold btn-sm">Kaydet</button>
-            </div>
-          </div>
-
-          <div id="zeminCategoryBar" class="chip-scroll"></div>
           <div id="zeminGrid" class="zemin-grid"></div>
 
-          <div id="galleryManageBar" style="display:none;justify-content:space-between;align-items:center;gap:8px;">
-            <span id="lblGalleryCount" style="font-size:11px;color:var(--text-muted);">0 kişisel medya</span>
-            <button id="btnClearGallery" type="button" class="btn btn-danger btn-sm">Tüm Galerim'i Temizle</button>
-          </div>
-
+          <!-- Sahne & Galerim İnce Ayarları -->
           <div class="glass-card">
-            <div class="field-label">Hareket (Fotoğraf &amp; Sahne Akışı)</div>
-            <div id="photoMotionGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn" data-motion="still">Durgun</button>
-              <button type="button" class="sebat-opt-btn" data-motion="zoom_in">Yaklaş</button>
-              <button type="button" class="sebat-opt-btn" data-motion="zoom_out">Uzaklaş</button>
-              <button type="button" class="sebat-opt-btn active" data-motion="pan">Kaydır</button>
+            <div class="field-label">Sahne Yakınlaştırma &amp; Konum İnce Ayarı</div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Yakınlaştırma (Zoom)</span>
+                <span id="valBgZoom" class="slider-val" data-reset-target="rngBgZoom" data-reset-val="100" title="Sıfırlamak için dokunun">1.00x</span>
+              </div>
+              <input id="rngBgZoom" type="range" min="100" max="180" step="2" value="100" />
             </div>
-          </div>
-
-          <!-- v3 Detaylı Zemin Kontrolleri (Zoom, Pan X/Y, Video Trim, Doğrudan URL) -->
-          <div class="glass-card">
-            <div class="field-label">Hassas Kadraj (Zoom &amp; Kaydırma)</div>
-            <div class="grid-3">
-              <div class="field-group">
-                <label class="field-label" for="rngBgZoom">
-                  <span>Zoom</span>
-                  <span id="valBgZoom" class="field-val">1.00x</span>
-                </label>
-                <input id="rngBgZoom" type="range" min="100" max="220" value="100" />
+            <div class="grid-2">
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Yatay Kaydırma (X)</span>
+                  <span id="valBgPanX" class="slider-val" data-reset-target="rngBgPanX" data-reset-val="0" title="Sıfırlamak için dokunun">0%</span>
+                </div>
+                <input id="rngBgPanX" type="range" min="-35" max="35" step="1" value="0" />
               </div>
-              <div class="field-group">
-                <label class="field-label" for="rngBgPanX">
-                  <span>Yatay (X)</span>
-                  <span id="valBgPanX" class="field-val">0%</span>
-                </label>
-                <input id="rngBgPanX" type="range" min="-50" max="50" value="0" />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rngBgPanY">
-                  <span>Dikey (Y)</span>
-                  <span id="valBgPanY" class="field-val">0%</span>
-                </label>
-                <input id="rngBgPanY" type="range" min="-50" max="50" value="0" />
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Dikey Kaydırma (Y)</span>
+                  <span id="valBgPanY" class="slider-val" data-reset-target="rngBgPanY" data-reset-val="0" title="Sıfırlamak için dokunun">0%</span>
+                </div>
+                <input id="rngBgPanY" type="range" min="-35" max="35" step="1" value="0" />
               </div>
             </div>
 
-            <div id="videoTrimBox" class="grid-2" style="display:none;margin-top:4px;">
-              <div class="field-group">
-                <label class="field-label" for="inpVideoTrimStart">Video Başlangıç (sn)</label>
-                <input id="inpVideoTrimStart" type="number" min="0" step="0.5" value="0" class="input-box" />
+            <div id="videoTrimBox" class="grid-2" style="display:none;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);">
+              <div>
+                <label for="inpVideoTrimStart" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video Başlangıç (sn)</label>
+                <input id="inpVideoTrimStart" type="number" min="0" max="600" step="0.5" value="0" class="input-box tabular-nums" />
               </div>
-              <div class="field-group">
-                <label class="field-label" for="inpVideoTrimEnd">Video Bitiş (0 = Sonuna Kadar)</label>
-                <input id="inpVideoTrimEnd" type="number" min="0" step="0.5" value="0" class="input-box" />
+              <div>
+                <label for="inpVideoTrimEnd" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video Bitiş (0=Tamamı)</label>
+                <input id="inpVideoTrimEnd" type="number" min="0" max="600" step="0.5" value="0" class="input-box tabular-nums" />
               </div>
             </div>
 
-            <div class="field-group" style="margin-top:4px;">
-              <label class="field-label" for="inpDirectMediaUrl">Doğrudan Medya Bağlantısı (.mp4, .webm, .jpg)</label>
-              <div style="display:flex;gap:6px;">
-                <input id="inpDirectMediaUrl" type="url" class="input-box" placeholder="https://ornek.com/video.mp4" />
-                <button id="btnLoadDirectUrl" type="button" class="btn btn-sm">İndir &amp; Seç</button>
-              </div>
+            <div style="display:flex;gap:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);">
+              <input id="inpDirectMediaUrl" type="url" class="input-box" placeholder="Galerim için doğrudan MP4 URL yapıştırın..." />
+              <button id="btnAddDirectMediaUrl" type="button" class="btn btn-sm">Ekle</button>
+              <button id="btnClearGallery" type="button" class="btn btn-danger btn-sm" title="Galerim'deki yüklemeleri temizle">Temizle</button>
             </div>
           </div>
         </div>
 
-        <!-- 5. ORTAM & SES (Tam Kapsamlı: Hâfız + Ortam + Video Sesi + Gapless Trim + Yumuşak Kapanış + Ses Hata Politikası) -->
-        <div id="pane-ortam" class="tab-pane">
+        <!-- 5. ORTAM -->
+        <div id="tab-ortam" class="tab-pane">
           <div class="glass-card">
-            <div class="field-label">
-              <span>Okuyucu (Hâfız Sesi)</span>
-              <span id="valReciterVol" class="field-val">%100</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:14px;">🔈</span>
-              <input id="rngReciterVol" type="range" min="10" max="100" value="100" />
-              <span style="font-size:14px;">🔊</span>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Ortam Sesi Seviyesi</span>
+                <span id="valAmbientVol" class="slider-val" data-reset-target="rngAmbientVol" data-reset-val="22" title="Sıfırlamak için dokunun">%22</span>
+              </div>
+              <input id="rngAmbientVol" type="range" min="0" max="100" step="1" value="22" />
             </div>
           </div>
 
-          <div class="glass-card">
-            <div class="field-label">
-              <span>Ortam Ses Seviyesi</span>
-              <span id="valAmbientVol" class="field-val">%20</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span style="font-size:14px;">🔈</span>
-              <input id="rngAmbientVol" type="range" min="0" max="80" value="20" />
-              <span style="font-size:14px;">🔊</span>
-            </div>
-          </div>
-
-          <div class="field-label">Ortam Sesleri (Tamamı Açık)</div>
           <div id="ambientSoundList" class="sebat-list"></div>
 
           <div class="glass-card">
-            <div class="grid-2">
-              <div class="field-group">
-                <label class="field-label" for="rngBgVideoVol">
-                  <span>Arka Plan Video Sesi</span>
-                  <span id="valBgVideoVol" class="field-val">%0</span>
-                </label>
-                <input id="rngBgVideoVol" type="range" min="0" max="100" value="0" />
+            <div class="field-label">Kıraat, Zemin Sesi &amp; Geçiş Ayarları</div>
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Hâfız Kıraat Ses Seviyesi</span>
+                <span id="valReciterVol" class="slider-val" data-reset-target="rngReciterVol" data-reset-val="100" title="Sıfırlamak için dokunun">%100</span>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="rngGaplessTrim">
-                  <span>Âyet Arası Boşluk Kırpma</span>
-                  <span id="valGaplessTrim" class="field-val">0.14 sn</span>
-                </label>
-                <input id="rngGaplessTrim" type="range" min="0" max="35" value="14" />
-              </div>
+              <input id="rngReciterVol" type="range" min="20" max="100" step="2" value="100" />
             </div>
 
             <div class="grid-2">
-              <div class="field-group">
-                <label class="field-label" for="selFadeOutEnd">Video Sonunda Yumuşak Kapanış</label>
-                <select id="selFadeOutEnd" class="select-box">
-                  <option value="on" selected>Açık (Yumuşak Kapanış)</option>
-                  <option value="off">Kapalı</option>
+              <div>
+                <label for="selVideoAudioMode" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Zemin Videosu Sesi</label>
+                <select id="selVideoAudioMode" class="select-box">
+                  <option value="muted">Sessiz (Önerilen)</option>
+                  <option value="mix">Kıraatle Miksle (Kayda Girer)</option>
                 </select>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="selAudioFailPolicy">Ses Yüklenemezse</label>
+              <div class="slider-row" style="justify-content:flex-end;">
+                <div class="slider-header">
+                  <span>Zemin Video Sesi</span>
+                  <span id="valBgVideoVol" class="slider-val" data-reset-target="rngBgVideoVol" data-reset-val="35">%35</span>
+                </div>
+                <input id="rngBgVideoVol" type="range" min="0" max="100" step="5" value="35" />
+              </div>
+            </div>
+
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Âyet Arası Boşluk Kırpma (Gapless)</span>
+                <span id="valGaplessTrim" class="slider-val" data-reset-target="rngGaplessTrim" data-reset-val="0.25">0.25 sn</span>
+              </div>
+              <input id="rngGaplessTrim" type="range" min="0" max="0.9" step="0.05" value="0.25" />
+            </div>
+
+            <div class="grid-2">
+              <div>
+                <label for="selSmoothFadeOut" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video Sonu Kapanış</label>
+                <select id="selSmoothFadeOut" class="select-box">
+                  <option value="on">Yumuşak Kapanış (1.2sn Fade)</option>
+                  <option value="off">Anında Bitir</option>
+                </select>
+              </div>
+              <div>
+                <label for="selAudioFailPolicy" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Ses İndirilemezse</label>
                 <select id="selAudioFailPolicy" class="select-box">
-                  <option value="block" selected>Kaydı Engelle &amp; Uyar</option>
-                  <option value="text_only">Otomatik Sadece Metin</option>
+                  <option value="strict">Uyarı Ver &amp; Bekle</option>
+                  <option value="text_only">Otomatik Metin Moduna Geç</option>
                 </select>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 6. METİN (Tam Kapsamlı: Meal Stilleri + Arapça Hat + Renk Daireleri + Özel Renk Seçici + Okunaklılık + Konum + Boyut + Gölge + Harf Aralığı + Besmele) -->
-        <div id="pane-metin" class="tab-pane">
-          <div class="field-group">
-            <div class="field-label">Meal Yazısı Stili</div>
-            <div id="mealStyleGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn" data-mstyle="sade">Sade</button>
-              <button type="button" class="sebat-opt-btn" data-mstyle="kitap">Kitap</button>
-              <button type="button" class="sebat-opt-btn" data-mstyle="klasik">Klasik</button>
-              <button type="button" class="sebat-opt-btn" data-mstyle="italik">İtalik</button>
-              <button type="button" class="sebat-opt-btn active" data-mstyle="zarif">Zarif</button>
-              <button type="button" class="sebat-opt-btn" data-mstyle="edebi">Edebî</button>
-            </div>
+        <!-- 6. METİN (Hap Alt Sekmeli: [Arapça Hat] · [Türkçe Meal] · [İngilizce Meal] · [Kelime Vurgusu]) -->
+        <div id="tab-metin" class="tab-pane">
+          <div class="subtab-bar" data-subtab-group="metin">
+            <button type="button" class="subtab-btn active" data-subtab="metin-ar">Arapça Hat</button>
+            <button type="button" class="subtab-btn" data-subtab="metin-tr">Türkçe Meal</button>
+            <button type="button" class="subtab-btn" data-subtab="metin-en">İngilizce Meal</button>
+            <button type="button" class="subtab-btn" data-subtab="metin-hl">Kelime Vurgusu</button>
           </div>
 
-          <div class="field-group">
-            <div class="field-label">Arapça Hat Seçimi</div>
-            <div id="arabicFontGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn active" data-afont="Amiri">Mushaf (Amiri)</button>
-              <button type="button" class="sebat-opt-btn" data-afont="Scheherazade New">Harekeli Hat</button>
-              <button type="button" class="sebat-opt-btn" data-afont="Noto Naskh Arabic">Modern Nesih</button>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">
-              <span>Arapça Rengi (Hazır &amp; Özel Seçici)</span>
-              <span id="lblArabicColorName" class="field-val">Fildişi</span>
-            </div>
-            <div class="swatch-row">
-              <div id="arabicSwatchRow" style="display:flex;gap:8px;"></div>
-              <input id="inpArabicColor" type="color" value="#FFFDF7" class="custom-color-picker" title="Özel Arapça Rengi Seç" />
-            </div>
-
-            <div class="field-label" style="margin-top:4px;">
-              <span>Meal Rengi (Hazır &amp; Özel Seçici)</span>
-              <span id="lblMealColorName" class="field-val">Zer</span>
-            </div>
-            <div class="swatch-row">
-              <div id="mealSwatchRow" style="display:flex;gap:8px;"></div>
-              <input id="inpMealColor" type="color" value="#E8C978" class="custom-color-picker" title="Özel Meal Rengi Seç" />
-            </div>
-          </div>
-
-          <div class="grid-2">
+          <!-- Sub-tab 1: Arapça Hat -->
+          <div id="subtab-metin-ar" class="subtab-pane active" data-subtab-group="metin">
             <div class="glass-card">
-              <div class="field-label">Okunaklılık</div>
-              <div id="readabilityGroup" class="sebat-option-row">
-                <button type="button" class="sebat-opt-btn active" data-read="shadow">Gölge</button>
-                <button type="button" class="sebat-opt-btn" data-read="outline">Kontur</button>
-                <button type="button" class="sebat-opt-btn" data-read="box">Kutu</button>
-                <button type="button" class="sebat-opt-btn" data-read="plain">Yalın</button>
+              <div class="field-label">Arapça Hat Yazı Tipi</div>
+              <div class="sebat-btn-group" id="arabicFontGroup">
+                <button type="button" class="sebat-opt-btn active" data-arfont="Amiri" style="font-family:'Amiri',serif;font-size:15px;">Amiri Klasik</button>
+                <button type="button" class="sebat-opt-btn" data-arfont="Scheherazade New" style="font-family:'Scheherazade New',serif;font-size:15px;">Scheherazade</button>
+                <button type="button" class="sebat-opt-btn" data-arfont="Noto Naskh Arabic" style="font-family:'Noto Naskh Arabic',serif;font-size:14px;">Noto Naskh</button>
               </div>
-            </div>
-            <div class="glass-card">
-              <div class="field-label">Konum</div>
-              <div id="textPositionGroup" class="sebat-option-row">
-                <button type="button" class="sebat-opt-btn" data-pos="top">Üst</button>
-                <button type="button" class="sebat-opt-btn active" data-pos="center">Orta</button>
-                <button type="button" class="sebat-opt-btn" data-pos="bottom">Alt</button>
+
+              <div class="field-label" style="margin-top:2px;">
+                <span>Arapça Renk</span>
+                <span id="lblArabicColorName" style="color:var(--text-main);">Fildişi</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="arabicColorSwatches" class="swatch-row" style="flex:1;"></div>
+                <input id="inpArabicColor" type="color" value="#FFFDF7" class="color-picker-mini" title="Özel Arapça Rengi Seç" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Arapça Hat Boyutu</span>
+                  <span id="valArabicSize" class="slider-val" data-reset-target="rngArabicSize" data-reset-val="44">44 px</span>
+                </div>
+                <input id="rngArabicSize" type="range" min="26" max="76" step="1" value="44" />
+              </div>
+
+              <div class="grid-2">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Harf Aralığı</span>
+                    <span id="valArabicLetterSpacing" class="slider-val" data-reset-target="rngArabicLetterSpacing" data-reset-val="0">0 px</span>
+                  </div>
+                  <input id="rngArabicLetterSpacing" type="range" min="0" max="6" step="0.5" value="0" />
+                </div>
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Metin Gölgesi</span>
+                    <span id="valTextShadow" class="slider-val" data-reset-target="rngTextShadow" data-reset-val="14">14 px</span>
+                  </div>
+                  <input id="rngTextShadow" type="range" min="0" max="32" step="2" value="14" />
+                </div>
               </div>
             </div>
           </div>
 
-          <div class="grid-2">
-            <div class="field-group">
-              <label class="field-label" for="rngArabicSize">
-                <span>Arapça Boyutu</span>
-                <span id="valArabicSize" class="field-val">44 px</span>
-              </label>
-              <input id="rngArabicSize" type="range" min="26" max="68" value="44" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="rngMealSize">
-                <span>Meal Boyutu</span>
-                <span id="valMealSize" class="field-val">22 px</span>
-              </label>
-              <input id="rngMealSize" type="range" min="14" max="36" value="22" />
+          <!-- Sub-tab 2: Türkçe Meal -->
+          <div id="subtab-metin-tr" class="subtab-pane" data-subtab-group="metin">
+            <div class="glass-card">
+              <div class="field-label">Türkçe Meal Kaynağı</div>
+              <div class="sebat-btn-group" id="mealEditionGroup">
+                <button type="button" class="sebat-opt-btn active" data-edition="tr.diyanet">Diyanet İşleri</button>
+                <button type="button" class="sebat-opt-btn" data-edition="tr.yazir">Elmalılı Hamdi Yazır</button>
+                <button type="button" class="sebat-opt-btn" data-edition="tr.vakfi">Diyanet Vakfı</button>
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">Meal Yazı Stili</div>
+              <div class="sebat-btn-group" id="mealStyleGroup">
+                <button type="button" class="sebat-opt-btn" data-mstyle="sade">Sade</button>
+                <button type="button" class="sebat-opt-btn" data-mstyle="kitap">Kitap</button>
+                <button type="button" class="sebat-opt-btn" data-mstyle="klasik">Klasik</button>
+                <button type="button" class="sebat-opt-btn" data-mstyle="italik">İtalik</button>
+                <button type="button" class="sebat-opt-btn active" data-mstyle="zarif">Zarif</button>
+                <button type="button" class="sebat-opt-btn" data-mstyle="edebi">Edebî</button>
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">
+                <span>Türkçe Meal Rengi</span>
+                <span id="lblMealColorName" style="color:var(--text-main);">Zer Altın</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="mealColorSwatches" class="swatch-row" style="flex:1;"></div>
+                <input id="inpMealColor" type="color" value="#E8C978" class="color-picker-mini" title="Özel Türkçe Meal Rengi Seç" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Türkçe Meal Yazı Boyutu</span>
+                  <span id="valMealSize" class="slider-val" data-reset-target="rngMealSize" data-reset-val="23">23 px</span>
+                </div>
+                <input id="rngMealSize" type="range" min="14" max="42" step="1" value="23" />
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">Âyet Numarası Biçimi (Türkçe &amp; İngilizce Mealde)</div>
+              <div class="sebat-btn-group" id="mealNumFormatGroup">
+                <button type="button" class="sebat-opt-btn active" data-numfmt="hyphen">1- Meal</button>
+                <button type="button" class="sebat-opt-btn" data-numfmt="dot">1. Meal</button>
+                <button type="button" class="sebat-opt-btn" data-numfmt="bracket">[1] Meal</button>
+                <button type="button" class="sebat-opt-btn" data-numfmt="none">Numarasız</button>
+              </div>
             </div>
           </div>
 
-          <div class="grid-3">
-            <div class="field-group">
-              <label class="field-label" for="rngTextShadow">
-                <span>Gölge Şiddeti</span>
-                <span id="valTextShadow" class="field-val">14 px</span>
+          <!-- Sub-tab 3: İngilizce Meal -->
+          <div id="subtab-metin-en" class="subtab-pane" data-subtab-group="metin">
+            <div class="glass-card">
+              <label class="toggle-row">
+                <span>Videoda İngilizce Meali Göster (Sahih International)</span>
+                <input id="chkShowEnMealQuick" type="checkbox" class="switch-chk" />
               </label>
-              <input id="rngTextShadow" type="range" min="0" max="32" value="14" />
+
+              <div class="field-label" style="margin-top:2px;">
+                <span>İngilizce Meal Rengi</span>
+                <span id="lblEnColorName" style="color:var(--text-main);">Gümüş Gri</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="enColorSwatches" class="swatch-row" style="flex:1;"></div>
+                <input id="inpEnMealColor" type="color" value="#CBD5E1" class="color-picker-mini" title="Özel İngilizce Meal Rengi Seç" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>İngilizce Meal Yazı Boyutu</span>
+                  <span id="valEnMealSize" class="slider-val" data-reset-target="rngEnMealSize" data-reset-val="18">18 px</span>
+                </div>
+                <input id="rngEnMealSize" type="range" min="12" max="34" step="1" value="18" />
+              </div>
+
+              <div style="font-size:11px;color:var(--text-muted);">
+                💡 İngilizce mealin başında da seçtiğiniz biçimde (örn. <b>1- In the name of Allah...</b>) âyet numarası otomatik yer alır.
+              </div>
             </div>
-            <div class="field-group">
-              <label class="field-label" for="rngArabicLetterSpacing">
-                <span>Harf Aralığı</span>
-                <span id="valArabicLetterSpacing" class="field-val">0 px</span>
-              </label>
-              <input id="rngArabicLetterSpacing" type="range" min="0" max="4" step="0.5" value="0" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="selBismillahMode">1. Âyette Besmele</label>
-              <select id="selBismillahMode" class="select-box">
-                <option value="separate" selected>Üstte Göster</option>
-                <option value="first_only">Sadece İlk Karede</option>
-                <option value="strip">Gizle</option>
-              </select>
+          </div>
+
+          <!-- Sub-tab 4: Okunan Kelime Vurgusu -->
+          <div id="subtab-metin-hl" class="subtab-pane" data-subtab-group="metin">
+            <div class="glass-card">
+              <div class="field-label">Okunan Kelime Vurgusu</div>
+              <div class="sebat-btn-group" id="wordHighlightGroup">
+                <button type="button" class="sebat-opt-btn active" data-wh="on">✨ Vurgulu (Kelime Takibi Açık)</button>
+                <button type="button" class="sebat-opt-btn" data-wh="off">Normal (Vurgusuz)</button>
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">
+                <span>Okunan Kelime Vurgu Rengi</span>
+                <span id="lblHighlightColorName" style="color:var(--text-main);">Altın Nûr</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div id="highlightColorSwatches" class="swatch-row" style="flex:1;"></div>
+                <input id="inpHighlightColor" type="color" value="#F8E5A6" class="color-picker-mini" title="Özel Kelime Vurgu Rengi Seç" />
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">Vurgu Görünüm Stili</div>
+              <div class="sebat-btn-group" id="highlightStyleGroup">
+                <button type="button" class="sebat-opt-btn active" data-hlstyle="glow">Renk &amp; Işıma</button>
+                <button type="button" class="sebat-opt-btn" data-hlstyle="underline">Alt Çizgi &amp; Işıma</button>
+                <button type="button" class="sebat-opt-btn" data-hlstyle="pill_scale">Yumuşak Kutu &amp; Büyüme</button>
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Kelime Senkron İnce Ayarı (Erken / Geç)</span>
+                  <span id="valWordTimingOffset" class="slider-val" data-reset-target="rngWordTimingOffset" data-reset-val="0">0.00 sn</span>
+                </div>
+                <input id="rngWordTimingOffset" type="range" min="-0.5" max="0.5" step="0.05" value="0" />
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- 7. GÖRÜNÜM (Video İçi Süre Şeridi + Video İçi Sûre Başlık Şeridi + Köşe Yazısı + Çoklu Meal + Vurgulu Geçiş) -->
-        <div id="pane-gorunum" class="tab-pane">
+        <!-- 7. GÖRÜNÜM -->
+        <div id="tab-gorunum" class="tab-pane">
           <div class="glass-card">
-            <div class="field-label">Gösterim</div>
-            <div id="displayModeGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn active" data-disp="tr">Arapça ve meal</button>
-              <button type="button" class="sebat-opt-btn" data-disp="none">Yalnız Arapça</button>
-              <button type="button" class="sebat-opt-btn" data-disp="meal_only">Yalnız meal</button>
-              <button type="button" class="sebat-opt-btn" data-disp="blank">Yazısız</button>
-              <button type="button" class="sebat-opt-btn" data-disp="both">TR + İngilizce</button>
+            <div class="field-label">Altyazı &amp; Dil Düzeni</div>
+            <div class="sebat-btn-group" id="subtitleModeGroup">
+              <button type="button" class="sebat-opt-btn active" data-submode="tr">Arapça + Türkçe</button>
+              <button type="button" class="sebat-opt-btn" data-submode="both">Arapça + TR + EN</button>
+              <button type="button" class="sebat-opt-btn" data-submode="en">Arapça + İngilizce</button>
+              <button type="button" class="sebat-opt-btn" data-submode="ar_only">Sadece Arapça</button>
+              <button type="button" class="sebat-opt-btn" data-submode="meal_only">Sadece Meal</button>
+              <button type="button" class="sebat-opt-btn" data-submode="blank">Metinsiz</button>
             </div>
           </div>
 
           <div class="glass-card">
-            <div class="field-label">Meal Kaynağı</div>
-            <div id="mealEditionGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn active" data-ed="tr.diyanet">Diyanet İşleri</button>
-              <button type="button" class="sebat-opt-btn" data-ed="tr.yazir">Elmalılı Hamdi Yazır</button>
-              <button type="button" class="sebat-opt-btn" data-ed="tr.vakfi">Diyanet Vakfı</button>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">Âyet ve Meal Geçişi</div>
-            <div id="transitionGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn active" data-trans="word_highlight">Vurgulu (Kelime Kelime)</button>
-              <button type="button" class="sebat-opt-btn" data-trans="fade">Belirerek</button>
-              <button type="button" class="sebat-opt-btn" data-trans="soft">Yumuşak</button>
-              <button type="button" class="sebat-opt-btn" data-trans="slide">Süzülme</button>
-            </div>
-          </div>
-
-          <!-- Video İçi Süre (İlerleme) Şeridi & Sûre Başlık Şeridi -->
-          <div class="glass-card">
+            <div class="field-label">Video İçi Süre İlerleme Şeridi &amp; Sûre Başlığı</div>
             <div class="grid-2">
-              <div class="field-group">
-                <label class="field-label" for="selInVideoProgressBar">Video İçi Süre İlerleme Şeridi</label>
+              <div>
+                <label for="selInVideoProgressBar" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video İçi Süre Şeridi</label>
                 <select id="selInVideoProgressBar" class="select-box">
-                  <option value="bottom" selected>Alt Kenarda İnce Altın Şerit</option>
+                  <option value="bottom">Alt Kenarda İnce Altın Şerit</option>
                   <option value="under_text">Âyetin Altında Zarif Çizgi</option>
                   <option value="top">Üst Kenarda İnce Şerit</option>
-                  <option value="off">Kapalı (Gizle)</option>
+                  <option value="off">Kapalı (Videoda Gösterme)</option>
                 </select>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="selInVideoSurahHeader">Video İçi Sûre Başlık Şeridi</label>
+              <div>
+                <label for="selInVideoSurahHeader" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Sûre &amp; Âyet Başlığı</label>
                 <select id="selInVideoSurahHeader" class="select-box">
-                  <option value="both" selected>Ortada Sûre Şeridi + Sol Üst Köşe</option>
-                  <option value="center_banner">Sadece Ortada Klasik Sûre Şeridi</option>
+                  <option value="both">Ortada Sûre Şeridi + Sol Üst Köşe</option>
+                  <option value="center_banner">Sadece Ortada Sûre &amp; Âyet Şeridi</option>
                   <option value="corner_only">Sadece Sol Üst Köşe Yazısı</option>
                   <option value="off">Gizle</option>
                 </select>
               </div>
             </div>
-          </div>
 
-          <div class="glass-card">
-            <div class="field-label">Köşe Yazısı Anahtarları (Sol Üst Bilgi Rozeti)</div>
-            <label class="toggle-row">
-              <span>Sûre Adı</span>
-              <input id="chkCornerSurah" type="checkbox" class="sebat-switch" checked />
-            </label>
-            <label class="toggle-row">
-              <span>Âyet Aralığı</span>
-              <input id="chkCornerAyahs" type="checkbox" class="sebat-switch" checked />
-            </label>
-            <label class="toggle-row">
-              <span>Hâfız İsmi</span>
-              <input id="chkCornerReciter" type="checkbox" class="sebat-switch" checked />
-            </label>
-          </div>
-        </div>
-
-        <!-- 8. FİLTRE (Parlaklık, Sıcaklık, Karartma + Kilit, Bulanıklık, Sinema Şeridi, Vignette, Parçacık + Yoğunluk) -->
-        <div id="pane-filtre" class="tab-pane">
-          <div class="grid-2">
-            <div class="field-group">
-              <label class="field-label" for="rngBrightnessOffset">
-                <span>Parlaklık</span>
-                <span id="valBrightnessOffset" class="field-val">+5</span>
-              </label>
-              <input id="rngBrightnessOffset" type="range" min="-50" max="50" value="5" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="rngBgWarmth">
-                <span>Sıcaklık (Soğuk / Sıcak)</span>
-                <span id="valBgWarmth" class="field-val">0</span>
-              </label>
-              <input id="rngBgWarmth" type="range" min="-50" max="50" value="0" />
-            </div>
-          </div>
-
-          <div class="grid-2">
-            <div class="field-group">
-              <label class="field-label" for="rngBgDim">
-                <span>Karartma</span>
-                <span id="valBgDim" class="field-val">%48</span>
-              </label>
-              <input id="rngBgDim" type="range" min="0" max="85" value="48" />
-              <label style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:5px;cursor:pointer;">
-                <input id="chkLockBgDim" type="checkbox" checked />
-                Zemin değişince karartmayı koru
-              </label>
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="rngBgBlur">
-                <span>Bulanıklık</span>
-                <span id="valBgBlur" class="field-val">%0</span>
-              </label>
-              <input id="rngBgBlur" type="range" min="0" max="20" value="0" />
+            <div class="sebat-btn-group">
+              <button type="button" id="btnCornerSurah" class="sebat-opt-btn active">Köşede Sûre</button>
+              <button type="button" id="btnCornerAyahs" class="sebat-opt-btn active">Köşede Âyetler</button>
+              <button type="button" id="btnCornerReciter" class="sebat-opt-btn active">Köşede Hâfız</button>
             </div>
           </div>
 
           <div class="glass-card">
-            <label class="toggle-row">
-              <span>Sinema şeridi (Üst / Alt Siyah Bant)</span>
-              <input id="chkCinemaBars" type="checkbox" class="sebat-switch" />
-            </label>
-            <div class="grid-2" style="margin-top:4px;">
-              <div class="field-group">
-                <label class="field-label" for="selVisualEffect">Parçacık Efekti</label>
-                <select id="selVisualEffect" class="select-box">
-                  <option value="none">Yok</option>
-                  <option value="rain">Yağmur Damlaları</option>
-                  <option value="snow">Kar Yağışı</option>
-                  <option value="dust">Altın Toz Zerrecikleri</option>
-                  <option value="sparks">Ocak Kıvılcımı</option>
-                  <option value="stars">Yıldız Parıltısı</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rngEffectIntensity">
-                  <span>Efekt Yoğunluğu</span>
-                  <span id="valEffectIntensity" class="field-val">%50</span>
-                </label>
-                <input id="rngEffectIntensity" type="range" min="10" max="100" value="50" />
-              </div>
+            <div class="field-label">Metin Kutusu &amp; Okunabilirlik</div>
+            <div class="sebat-btn-group" id="textBoxStyleGroup">
+              <button type="button" class="sebat-opt-btn active" data-box="none">Kutusuz</button>
+              <button type="button" class="sebat-opt-btn" data-box="frosted">Buzlu Cam</button>
+              <button type="button" class="sebat-opt-btn" data-box="dark_pill">Koyu Kutu</button>
+            </div>
+            <div class="sebat-btn-group" id="textReadabilityGroup">
+              <button type="button" class="sebat-opt-btn active" data-read="shadow">Gölge</button>
+              <button type="button" class="sebat-opt-btn" data-read="outline">Dış Kontur</button>
+              <button type="button" class="sebat-opt-btn" data-read="plain">Yumuşak</button>
             </div>
           </div>
-        </div>
-
-        <!-- 9. KAPAK (Tam Birleşik: 9 Şablon + Kapağın Âyeti Daireleri + Sûre Adı Büyük + Özel Başlık/Alt Başlık + Yazı Boyutu Ölçeği + Konum + Hassas Dikey/Yatay Kaydırıcı + Kapak Zemini) -->
-        <div id="pane-kapak" class="tab-pane">
-          <div class="field-group">
-            <label class="field-label">1. Hazır Kapak Şablonları (9 Tasarım)</label>
-            <div id="coverTemplateChips" class="chip-scroll"></div>
-          </div>
 
           <div class="glass-card">
-            <div class="field-label">2. Kapağın Âyeti (Kesitten Seçin)</div>
-            <div id="coverAyahCircles" class="cover-ayah-circles"></div>
-            <label class="toggle-row">
-              <span>Sûre adı büyük (Arapça Hat Başlığı)</span>
-              <input id="chkCoverLargeSurah" type="checkbox" class="sebat-switch" checked />
-            </label>
-            <label class="toggle-row">
-              <span>Videoyla birlikte kaydet (İlk 1.2 sn)</span>
-              <input id="chkCoverWithVideo" type="checkbox" class="sebat-switch" checked />
-            </label>
-            <label class="toggle-row">
-              <span>Şu an ekranda kapağı önizle</span>
-              <input id="chkPreviewCoverNow" type="checkbox" class="sebat-switch" />
-            </label>
-          </div>
+            <div class="field-label">Metin Konumu (Tuvalde Parmağınızla da Sürükleyebilirsiniz)</div>
+            <div class="sebat-btn-group" id="textAlignPosGroup">
+              <button type="button" class="sebat-opt-btn" data-pos="top">Üst</button>
+              <button type="button" class="sebat-opt-btn active" data-pos="center">Orta</button>
+              <button type="button" class="sebat-opt-btn" data-pos="bottom">Alt</button>
+            </div>
 
-          <div class="glass-card">
-            <div class="field-label">3. Detaylı Kapak Metin, Boyut &amp; Konum Ayarları</div>
             <div class="grid-2">
-              <div class="field-group">
-                <label class="field-label" for="inpCoverTitle">Üst Başlık (Boşsa Otomatik)</label>
-                <input id="inpCoverTitle" type="text" class="input-box" placeholder="Örn: Kalplere Şifa Tilâvet" />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="inpCoverSubtitle">Alt Başlık (Boşsa Otomatik)</label>
-                <input id="inpCoverSubtitle" type="text" class="input-box" placeholder="Örn: A'lâ Sûresi · 1-5. Âyetler" />
-              </div>
-            </div>
-
-            <div class="grid-3">
-              <div class="field-group">
-                <label class="field-label" for="rngCoverScale">
-                  <span>Yazı Boyutu</span>
-                  <span id="valCoverScale" class="field-val">%100</span>
-                </label>
-                <input id="rngCoverScale" type="range" min="60" max="160" value="100" />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rngCoverOffsetY">
+              <div class="slider-row">
+                <div class="slider-header">
                   <span>Dikey Konum (Y)</span>
-                  <span id="valCoverOffsetY" class="field-val">0%</span>
-                </label>
-                <input id="rngCoverOffsetY" type="range" min="-35" max="35" value="0" />
+                  <span id="valTextOffsetY" class="slider-val" data-reset-target="rngTextOffsetY" data-reset-val="0">0%</span>
+                </div>
+                <input id="rngTextOffsetY" type="range" min="-30" max="30" step="1" value="0" />
               </div>
-              <div class="field-group">
-                <label class="field-label" for="rngCoverOffsetX">
+              <div class="slider-row">
+                <div class="slider-header">
                   <span>Yatay Konum (X)</span>
-                  <span id="valCoverOffsetX" class="field-val">0%</span>
-                </label>
-                <input id="rngCoverOffsetX" type="range" min="-30" max="30" value="0" />
+                  <span id="valTextOffsetX" class="slider-val" data-reset-target="rngTextOffsetX" data-reset-val="0">0%</span>
+                </div>
+                <input id="rngTextOffsetX" type="range" min="-25" max="25" step="1" value="0" />
               </div>
             </div>
 
-            <div class="grid-2">
-              <div class="field-group">
-                <label class="field-label" for="selCoverPos">Hızlı Hizalama</label>
-                <select id="selCoverPos" class="select-box">
-                  <option value="center" selected>Tam Orta</option>
-                  <option value="upper">Üst Merkez</option>
-                  <option value="lower">Alt Merkez</option>
-                </select>
+            <div>
+              <label style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:3px;">Âyet Geçiş Efekti</label>
+              <div class="sebat-btn-group" id="transitionModeGroup">
+                <button type="button" class="sebat-opt-btn active" data-trans="soft">Yumuşak Belirme</button>
+                <button type="button" class="sebat-opt-btn" data-trans="slide">Yukarı Süzülme</button>
+                <button type="button" class="sebat-opt-btn" data-trans="none">Anında</button>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="selCoverBgOverride">Kapak Zemini</label>
-                <select id="selCoverBgOverride" class="select-box">
-                  <option value="same" selected>Video Zeminiyle Aynı</option>
-                  <option value="pure_black">Saf Siyah &amp; Altın</option>
-                  <option value="dark_gold">Koyu Altın Mihrap</option>
-                  <option value="emerald">Zümrüt Kubbe</option>
+            </div>
+          </div>
+        </div>
+
+        <!-- 8. FİLTRE (Sinema Barı Kaldırıldı — Tam Ekran Görüntü!) -->
+        <div id="tab-filtre" class="tab-pane">
+          <div class="glass-card">
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Karartma (Okunabilirlik İçin)</span>
+                <span id="valBgDim" class="slider-val" data-reset-target="rngBgDim" data-reset-val="45">%45</span>
+              </div>
+              <input id="rngBgDim" type="range" min="0" max="85" step="1" value="45" />
+            </div>
+
+            <label class="toggle-row">
+              <span>Zemin değiştiğinde karartma oranımı koru</span>
+              <input id="chkLockBgDim" type="checkbox" class="switch-chk" />
+            </label>
+
+            <div class="slider-row">
+              <div class="slider-header">
+                <span>Arka Plan Bulanıklık (Blur)</span>
+                <span id="valBgBlur" class="slider-val" data-reset-target="rngBgBlur" data-reset-val="0">%0</span>
+              </div>
+              <input id="rngBgBlur" type="range" min="0" max="20" step="1" value="0" />
+            </div>
+
+            <div class="grid-2">
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Parlaklık</span>
+                  <span id="valBrightnessOffset" class="slider-val" data-reset-target="rngBrightnessOffset" data-reset-val="0">0</span>
+                </div>
+                <input id="rngBrightnessOffset" type="range" min="-40" max="40" step="2" value="0" />
+              </div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Renk Sıcaklığı</span>
+                  <span id="valBgWarmth" class="slider-val" data-reset-target="rngBgWarmth" data-reset-val="0">0</span>
+                </div>
+                <input id="rngBgWarmth" type="range" min="-50" max="50" step="2" value="0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="field-label">Atmosferik Parçacık Efekti</div>
+            <div class="grid-2">
+              <select id="selVisualEffect" class="select-box">
+                <option value="none">Efekt Yok</option>
+                <option value="rain">Rahmet Yağmuru</option>
+                <option value="snow">Huzurlu Kar</option>
+                <option value="dust">Altın Zerreler</option>
+                <option value="sparks">Kıvılcım Korları</option>
+                <option value="stars">Gece Yıldızları</option>
+              </select>
+              <div class="slider-row" style="justify-content:center;">
+                <div class="slider-header">
+                  <span>Yoğunluk</span>
+                  <span id="valEffectIntensity" class="slider-val" data-reset-target="rngEffectIntensity" data-reset-val="65">%65</span>
+                </div>
+                <input id="rngEffectIntensity" type="range" min="15" max="100" step="5" value="65" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 9. KAPAK (Hap Alt Sekmeli: [Şablon & Yazılar] · [Boyut & Konum]) -->
+        <div id="tab-kapak" class="tab-pane">
+          <div class="subtab-bar" data-subtab-group="kapak">
+            <button type="button" class="subtab-btn active" data-subtab="kapak-text">Şablon &amp; Yazılar</button>
+            <button type="button" class="subtab-btn" data-subtab="kapak-pos">Boyut &amp; Konum</button>
+          </div>
+
+          <!-- Sub-tab 1: Şablon & Yazılar (Kapakta Sûre Adı Düzeltme Eklendi!) -->
+          <div id="subtab-kapak-text" class="subtab-pane active" data-subtab-group="kapak">
+            <div class="glass-card">
+              <div class="field-label">Kapak Şablonu (9 Tasarım)</div>
+              <div id="coverTemplateChips" class="chip-scroll"></div>
+
+              <div class="field-label" style="margin-top:2px;">Kapağın Âyeti</div>
+              <div id="coverAyahCircles" class="circle-num-row tabular-nums"></div>
+
+              <div>
+                <label for="inpCoverSurahName" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Kapak Sûre Adı (İstediğiniz Gibi Düzenleyin)</label>
+                <div style="display:flex;gap:6px;">
+                  <input id="inpCoverSurahName" type="text" class="input-box" placeholder="Örn: Fâtiha Sûresi" />
+                  <button id="btnResetCoverSurahName" type="button" class="btn btn-sm" title="Varsayılan sûre adına sıfırla">Sıfırla</button>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div>
+                  <label for="inpCoverTitle" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Özel Üst Başlık (Opsiyonel)</label>
+                  <input id="inpCoverTitle" type="text" class="input-box" placeholder="Örn: Günün Âyeti..." />
+                </div>
+                <div>
+                  <label for="inpCoverSubtitle" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Özel Alt Başlık / Meal</label>
+                  <input id="inpCoverSubtitle" type="text" class="input-box" placeholder="Boşsa âyet meali yazılır..." />
+                </div>
+              </div>
+
+              <label class="toggle-row">
+                <span>Sûre adı büyük gösterilsin</span>
+                <input id="chkCoverLargeSurah" type="checkbox" class="switch-chk" checked />
+              </label>
+              <label class="toggle-row">
+                <span>Videonun ilk 1.2 saniyesine kapak ekle</span>
+                <input id="chkCoverWithVideo" type="checkbox" class="switch-chk" checked />
+              </label>
+              <label class="toggle-row">
+                <span>Şu an tuvalde kapağı önizle</span>
+                <input id="chkPreviewCoverNow" type="checkbox" class="switch-chk" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Sub-tab 2: Kapak Boyut & Konum -->
+          <div id="subtab-kapak-pos" class="subtab-pane" data-subtab-group="kapak">
+            <div class="glass-card">
+              <div class="field-label">Kapak Metin Boyutu ve Konumu (Tuvalde de Sürüklenebilir)</div>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Kapak Yazı Boyutu Ölçeği</span>
+                  <span id="valCoverScale" class="slider-val" data-reset-target="rngCoverScale" data-reset-val="100">%100</span>
+                </div>
+                <input id="rngCoverScale" type="range" min="60" max="160" step="5" value="100" />
+              </div>
+
+              <div class="grid-2">
+                <div>
+                  <label for="selCoverPos" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Hızlı Hizalama</label>
+                  <select id="selCoverPos" class="select-box">
+                    <option value="top">Üst Bölge</option>
+                    <option value="center" selected>Tam Merkez</option>
+                    <option value="bottom">Alt Bölge</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="selCoverBgOverride" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Kapak Zemini</label>
+                  <select id="selCoverBgOverride" class="select-box">
+                    <option value="same">Video Zemini İle Aynı</option>
+                    <option value="dark_emerald">Derin Zümrüt &amp; Altın</option>
+                    <option value="pure_black">Saf Siyah &amp; Altın</option>
+                    <option value="royal_navy">Gece Mavisi &amp; Altın</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Dikey Konum (Y)</span>
+                    <span id="valCoverOffsetY" class="slider-val" data-reset-target="rngCoverOffsetY" data-reset-val="0">0%</span>
+                  </div>
+                  <input id="rngCoverOffsetY" type="range" min="-35" max="35" step="1" value="0" />
+                </div>
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Yatay Konum (X)</span>
+                    <span id="valCoverOffsetX" class="slider-val" data-reset-target="rngCoverOffsetX" data-reset-val="0">0%</span>
+                  </div>
+                  <input id="rngCoverOffsetX" type="range" min="-30" max="30" step="1" value="0" />
+                </div>
+              </div>
+
+              <button id="btnDownloadCoverPng" type="button" class="btn btn-gold" style="width:100%;">🖼 Kapağı PNG Olarak İndir</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 10. BİÇİM (Hap Alt Sekmeli: [Boyut & Kalite] · [Logo & İmza] · [Ön Ayar & Paylaş]) -->
+        <div id="tab-bicim" class="tab-pane">
+          <div class="subtab-bar" data-subtab-group="bicim">
+            <button type="button" class="subtab-btn active" data-subtab="bicim-res">Boyut &amp; Kalite</button>
+            <button type="button" class="subtab-btn" data-subtab="bicim-logo">Logo &amp; İmza</button>
+            <button type="button" class="subtab-btn" data-subtab="bicim-share">Ön Ayar &amp; Paylaş</button>
+          </div>
+
+          <!-- Sub-tab 1: Boyut & Kalite -->
+          <div id="subtab-bicim-res" class="subtab-pane active" data-subtab-group="bicim">
+            <div class="glass-card">
+              <div class="field-label">Video En-Boy Oranı</div>
+              <div class="sebat-list" id="ratioCardsList">
+                <div class="sebat-list-item active" data-ratio="9:16">
+                  <div class="sebat-item-left">
+                    <div class="sebat-item-title">9:16 Dikey (Varsayılan)</div>
+                    <div class="sebat-item-sub">Reels, Shorts, TikTok, Hikaye</div>
+                  </div>
+                  <span class="ratio-dot" style="color:var(--gold-bright);">●</span>
+                </div>
+                <div class="sebat-list-item" data-ratio="4:5">
+                  <div class="sebat-item-left">
+                    <div class="sebat-item-title">4:5 Portre</div>
+                    <div class="sebat-item-sub">Instagram / Facebook Gönderi</div>
+                  </div>
+                  <span class="ratio-dot" style="color:var(--gold-bright);"></span>
+                </div>
+                <div class="sebat-list-item" data-ratio="1:1">
+                  <div class="sebat-item-left">
+                    <div class="sebat-item-title">1:1 Kare</div>
+                    <div class="sebat-item-sub">Kare Akış &amp; WhatsApp</div>
+                  </div>
+                  <span class="ratio-dot" style="color:var(--gold-bright);"></span>
+                </div>
+                <div class="sebat-list-item" data-ratio="16:9">
+                  <div class="sebat-item-left">
+                    <div class="sebat-item-title">16:9 Yatay</div>
+                    <div class="sebat-item-sub">YouTube, TV ve Sunum</div>
+                  </div>
+                  <span class="ratio-dot" style="color:var(--gold-bright);"></span>
+                </div>
+              </div>
+
+              <div class="field-label" style="margin-top:2px;">Çözünürlük ve Kayıt Kalitesi</div>
+              <div class="sebat-btn-group" id="qualityGroup">
+                <button type="button" class="sebat-opt-btn" data-res="720">720p HD (Hızlı)</button>
+                <button type="button" class="sebat-opt-btn active" data-res="1080">1080p Full HD (Keskin)</button>
+              </div>
+
+              <div class="grid-3">
+                <div>
+                  <label for="selBitrateMbps" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Bitrate</label>
+                  <select id="selBitrateMbps" class="select-box">
+                    <option value="5">5 Mbps</option>
+                    <option value="8" selected>8 Mbps</option>
+                    <option value="12">12 Mbps</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="selExportEngine" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Kayıt Motoru</label>
+                  <select id="selExportEngine" class="select-box">
+                    <option value="auto" selected>Otomatik MP4</option>
+                    <option value="webcodecs">H.264 Öncelikli</option>
+                    <option value="mediarecorder">Standart</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="selFileNameFormat" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Dosya Adı</label>
+                  <select id="selFileNameFormat" class="select-box">
+                    <option value="surah_ayah_reciter" selected>Sûre_Âyet_Hâfız</option>
+                    <option value="tilawah_date">Tilawah_Tarih</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab 2: Logo & İmza (512px Yüksek Çözünürlüklü & Süre Şeridiyle Çakışmaz!) -->
+          <div id="subtab-bicim-logo" class="subtab-pane" data-subtab-group="bicim">
+            <div class="glass-card">
+              <label class="toggle-row">
+                <span>Videoda Logo ve İmza Göster (512px Net Kalite)</span>
+                <input id="chkShowSignature" type="checkbox" class="switch-chk" checked />
+              </label>
+
+              <div class="grid-2">
+                <div>
+                  <label for="selLogoPos" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Logo Konumu</label>
+                  <select id="selLogoPos" class="select-box">
+                    <option value="top-right" selected>Sağ Üst Köşe</option>
+                    <option value="top-left">Sol Üst Köşe</option>
+                    <option value="bottom-center">Alt Orta (Süre Şeridi Üstü)</option>
+                    <option value="floating">Yüzen Filigran</option>
+                    <option value="hidden">Gizle</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="inpWatermarkText" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Kanal / İmza Metni</label>
+                  <input id="inpWatermarkText" type="text" class="input-box" value="Tilawah World" placeholder="Kanal veya sayfa adı..." />
+                </div>
+              </div>
+
+              <div class="grid-2">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Logo Boyutu</span>
+                    <span id="valLogoScale" class="slider-val" data-reset-target="rngLogoScale" data-reset-val="100">%100</span>
+                  </div>
+                  <input id="rngLogoScale" type="range" min="60" max="160" step="5" value="100" />
+                </div>
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Logo Saydamlığı</span>
+                    <span id="valLogoOpacity" class="slider-val" data-reset-target="rngLogoOpacity" data-reset-val="90">%90</span>
+                  </div>
+                  <input id="rngLogoOpacity" type="range" min="20" max="100" step="5" value="90" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tab 3: Ön Ayar, Sosyal Medya Hashtag & Yedekleme -->
+          <div id="subtab-bicim-share" class="subtab-pane" data-subtab-group="bicim">
+            <div class="glass-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="field-label">Sosyal Medya Açıklaması &amp; Etiketler</span>
+                <div style="display:flex;gap:4px;">
+                  <select id="selCaptionPlatform" class="select-box" style="width:auto;padding:3px 7px;font-size:11px;">
+                    <option value="reels">Reels</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="shorts">Shorts</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="whatsapp">WhatsApp</option>
+                  </select>
+                  <button id="btnCopyCaption" type="button" class="btn btn-sm">Kopyala</button>
+                </div>
+              </div>
+              <textarea id="txtSocialCaption" class="textarea-box"></textarea>
+            </div>
+
+            <div class="glass-card">
+              <div class="field-label">Kişisel Ön Ayarlarım (Presets)</div>
+              <div style="display:flex;gap:6px;">
+                <input id="inpNewPresetName" type="text" class="input-box" placeholder="Ön ayar adı (örn: Gece Reels)..." />
+                <button id="btnSaveUserPreset" type="button" class="btn btn-gold btn-sm">Kaydet</button>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <select id="selUserPreset" class="select-box"></select>
+                <button id="btnLoadUserPreset" type="button" class="btn btn-sm">Yükle</button>
+              </div>
+            </div>
+
+            <div class="glass-card">
+              <div class="field-label">Stüdyo Teması &amp; Veri Yönetimi</div>
+              <div class="grid-2">
+                <select id="selUiTheme" class="select-box">
+                  <option value="black" selected>Siyah &amp; Altın (Varsayılan)</option>
+                  <option value="emerald">Derin Zümrüt</option>
                   <option value="midnight">Gece Mavisi</option>
                 </select>
+                <button id="btnResetAllSettings" type="button" class="btn btn-danger btn-sm">Ayarları Sıfırla</button>
               </div>
-            </div>
-          </div>
-
-          <button id="btnDownloadCoverPng" type="button" class="btn btn-gold">
-            ⬇ Kapak Görselini İndir (.PNG)
-          </button>
-        </div>
-
-        <!-- 10. BİÇİM & AYARLAR (Varsayılan 9:16 + Kalite + Detaylı Logo/İmza + Ön Ayarlar + Tema + JSON Yedekleme) -->
-        <div id="pane-bicim" class="tab-pane">
-          <div class="field-label">Boyut (Varsayılan: 9:16 Dikey)</div>
-          <div id="ratioCardsList" class="sebat-list">
-            <div class="sebat-list-item active" data-ratio="9:16">
-              <div>
-                <div class="sebat-item-title">9:16</div>
-                <div class="sebat-item-sub">Reels · Shorts · TikTok · Durum</div>
-              </div>
-              <span class="ratio-dot">●</span>
-            </div>
-            <div class="sebat-list-item" data-ratio="4:5">
-              <div>
-                <div class="sebat-item-title">4:5</div>
-                <div class="sebat-item-sub">Instagram · Facebook gönderisi</div>
-              </div>
-              <span class="ratio-dot"></span>
-            </div>
-            <div class="sebat-list-item" data-ratio="1:1">
-              <div>
-                <div class="sebat-item-title">1:1</div>
-                <div class="sebat-item-sub">Kare gönderi · X</div>
-              </div>
-              <span class="ratio-dot"></span>
-            </div>
-            <div class="sebat-list-item" data-ratio="16:9">
-              <div>
-                <div class="sebat-item-title">16:9</div>
-                <div class="sebat-item-sub">YouTube · Yatay Video · X</div>
-              </div>
-              <span class="ratio-dot"></span>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">Kalite &amp; Kodlayıcı</div>
-            <div id="qualityGroup" class="sebat-option-row">
-              <button type="button" class="sebat-opt-btn" data-res="720">720p (Hızlı)</button>
-              <button type="button" class="sebat-opt-btn active" data-res="1080">1080p (Full HD)</button>
-            </div>
-            <div class="grid-3" style="margin-top:4px;">
-              <div class="field-group">
-                <label class="field-label" for="selBitrateMbps">Bitrate</label>
-                <select id="selBitrateMbps" class="select-box">
-                  <option value="4">4 Mbps</option>
-                  <option value="6" selected>6 Mbps</option>
-                  <option value="10">10 Mbps</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="selExportEngine">Motor</label>
-                <select id="selExportEngine" class="select-box">
-                  <option value="auto" selected>Otomatik MP4</option>
-                  <option value="mediarecorder">MediaRecorder</option>
-                  <option value="webcodecs">WebCodecs</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="selFileNameFormat">Dosya Adı</label>
-                <select id="selFileNameFormat" class="select-box">
-                  <option value="surah_ayah" selected>Sûre_Âyet</option>
-                  <option value="date_surah">Tarih_Sûre</option>
-                  <option value="reciter_surah">Hâfız_Sûre</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">Detaylı Logo &amp; İmza Ayarları</div>
-            <label class="toggle-row">
-              <span>İmza / Logo Göster</span>
-              <input id="chkShowSignature" type="checkbox" class="sebat-switch" checked />
-            </label>
-            <div class="grid-3">
-              <div class="field-group">
-                <label class="field-label" for="selLogoPos">Logo Konumu</label>
-                <select id="selLogoPos" class="select-box">
-                  <option value="top-right" selected>Sağ Üst</option>
-                  <option value="top-left">Sol Üst</option>
-                  <option value="bottom-center">Alt Orta</option>
-                  <option value="floating">Yüzen</option>
-                  <option value="hidden">Gizle</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rngLogoScale">
-                  <span>Boyut</span>
-                  <span id="valLogoScale" class="field-val">%100</span>
+              <div class="grid-2">
+                <button id="btnExportSettingsJson" type="button" class="btn btn-sm">⬇ JSON Dışa Aktar</button>
+                <label for="inpImportSettingsJson" class="btn btn-sm" style="cursor:pointer;">
+                  ⬆ JSON İçe Aktar
+                  <input id="inpImportSettingsJson" type="file" accept="application/json,.json" style="display:none;" />
                 </label>
-                <input id="rngLogoScale" type="range" min="70" max="180" value="100" />
               </div>
-              <div class="field-group">
-                <label class="field-label" for="rngLogoOpacity">
-                  <span>Opaklık</span>
-                  <span id="valLogoOpacity" class="field-val">%90</span>
-                </label>
-                <input id="rngLogoOpacity" type="range" min="20" max="100" value="90" />
-              </div>
+              <div id="lblStorageStatsSummary" style="font-size:11px;color:var(--text-muted);"></div>
             </div>
-            <input id="inpWatermarkText" type="text" value="Tilawah World" class="input-box" placeholder="İmza metni..." />
-          </div>
-
-          <div id="exportResultCard" class="export-card">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <strong style="color:var(--gold-bright);">✓ Video Hazır</strong>
-              <span id="lblExportMeta" class="tabular-nums" style="font-size:11px;color:var(--text-muted);"></span>
-            </div>
-            <div class="grid-2">
-              <button id="btnDownloadExport" type="button" class="btn btn-sm">⬇ Cihaza İndir</button>
-              <button id="btnShareExport" type="button" class="btn btn-gold btn-sm">Paylaş</button>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">
-              <span>Sosyal Medya Açıklaması &amp; Etiketler</span>
-              <div style="display:flex;gap:4px;">
-                <select id="selCaptionPlatform" class="select-box" style="min-height:28px;padding:2px 6px;font-size:11px;width:auto;">
-                  <option value="reels">Reels</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="shorts">Shorts</option>
-                  <option value="youtube">YouTube</option>
-                  <option value="whatsapp">WhatsApp</option>
-                </select>
-                <button id="btnCopyCaption" type="button" class="btn btn-sm">Kopyala</button>
-              </div>
-            </div>
-            <textarea id="txtSocialCaption" class="textarea-box selectable"></textarea>
-          </div>
-
-          <!-- Kişisel Ön Ayarlar (Presets) & Tema & JSON Yedekleme -->
-          <div class="glass-card">
-            <div class="field-label">Kişisel Ön Ayarlarım (Presets)</div>
-            <div style="display:flex;gap:6px;">
-              <input id="inpNewPresetName" type="text" class="input-box" placeholder="Ön ayar adı (örn: Gece Reels)..." />
-              <button id="btnSaveUserPreset" type="button" class="btn btn-gold btn-sm">Kaydet</button>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <select id="selUserPreset" class="select-box"></select>
-              <button id="btnLoadUserPreset" type="button" class="btn btn-sm">Yükle</button>
-            </div>
-          </div>
-
-          <div class="glass-card">
-            <div class="field-label">Stüdyo Teması &amp; Veri Yönetimi</div>
-            <div class="grid-2">
-              <select id="selUiTheme" class="select-box">
-                <option value="black" selected>Siyah &amp; Altın (Varsayılan)</option>
-                <option value="emerald">Derin Zümrüt</option>
-                <option value="midnight">Gece Mavisi</option>
-              </select>
-              <button id="btnResetAllSettings" type="button" class="btn btn-danger btn-sm">Ayarları Sıfırla</button>
-            </div>
-            <div class="grid-2">
-              <button id="btnExportSettingsJson" type="button" class="btn btn-sm">⬇ JSON Dışa Aktar</button>
-              <label for="inpImportSettingsJson" class="btn btn-sm" style="cursor:pointer;">
-                ⬆ JSON İçe Aktar
-                <input id="inpImportSettingsJson" type="file" accept="application/json,.json" style="display:none;" />
-              </label>
-            </div>
-            <div id="lblStorageStatsSummary" style="font-size:11px;color:var(--text-muted);"></div>
           </div>
         </div>
       </div>
@@ -879,22 +958,24 @@
         <span>Kapak</span>
       </button>
       <button type="button" class="tool-btn" data-tab="bicim">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
         <span>Biçim</span>
       </button>
     </nav>
 
-    <!-- Bottom Summary & Create Bar -->
-    <footer class="bottom-export-bar">
-      <div class="export-meta-col">
-        <div id="lblBottomExportSpecs" class="export-spec-line">9:16 · 1080p · ≈ 0:25</div>
-        <div class="export-est-line">
-          <span id="lblBottomEstRender">⏱ ≈ 0:07</span>
-          <span id="lblBottomEstSize">💾 19 MB</span>
+    <!-- Bottom Export & Estimate Bar -->
+    <footer class="studio-bottom-bar">
+      <div class="export-specs-col tabular-nums">
+        <div id="lblExportSpecsMain" class="export-spec-main">9:16 · 1080p · ≈ 0:25</div>
+        <div class="export-spec-sub">
+          <span id="lblExportEstTime">⏱ ≈ 0:06</span>
+          <span id="lblExportEstSize">💾 18 MB</span>
         </div>
       </div>
+
       <div class="export-actions-col">
-        <button id="btnQuickShare" type="button" class="btn btn-sm" title="Son Videoyu Paylaş" disabled>Paylaş</button>
+        <button id="btnShareLastVideo" type="button" class="btn btn-sm" style="display:none;">↗ Paylaş</button>
+        <button id="btnDownloadLastVideo" type="button" class="btn btn-sm" disabled title="Son hazırlanan videoyu indir">⬇ İndir</button>
         <button id="btnRecordExport" type="button" class="btn btn-gold" disabled>
           <span id="lblRecordBtn">🎬 Oluştur</span>
         </button>
@@ -902,8 +983,9 @@
     </footer>
   </div>
 
-  <div id="toastBox" class="toast-box"></div>
+  <div id="toastNotification" class="toast" role="status" aria-live="polite"></div>
 
+  <!-- Modular Studio Scripts -->
   <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/scenes.js"></script>
