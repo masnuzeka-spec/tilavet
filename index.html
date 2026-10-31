@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#090A0D" />
+  <meta name="theme-color" content="#10251F" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Tilawah World" />
@@ -14,13 +14,13 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&family=Noto+Naskh+Arabic:wght@400;600;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet" />
 
   <style>
     :root {
-      --bg-main: #090A0D;
-      --bg-panel: #12141A;
-      --bg-card: #181B24;
+      --bg-main: #0B1512;
+      --bg-panel: #101D18;
+      --bg-card: #172720;
       --bg-input: #0E1016;
       --gold: #D8B456;
       --gold-light: #F3D77D;
@@ -60,7 +60,7 @@
       overflow: hidden;
       background-color: var(--bg-main);
       color: var(--text-main);
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: 'Inter', 'Noto Sans', 'DejaVu Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       font-size: 14px;
       line-height: 1.45;
       overscroll-behavior: none;
@@ -137,16 +137,7 @@
     .header-actions {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 5px;
-      min-width: 0;
-      flex-wrap: wrap;
-    }
-    .header-actions .btn {
-      white-space: nowrap;
-      font-size: 10px !important;
-      padding-left: 8px !important;
-      padding-right: 8px !important;
+      gap: 8px;
     }
 
     .stage-area {
@@ -179,6 +170,9 @@
     }
     .canvas-container.ratio-1-1 {
       aspect-ratio: 1 / 1;
+    }
+    .canvas-container.ratio-16-9 {
+      aspect-ratio: 16 / 9;
     }
     #studioCanvas {
       width: 100%;
@@ -741,10 +735,6 @@
         margin: 0 auto;
       }
     }
-
-    .canvas-container.ratio-16-9{aspect-ratio:16/9;max-height:56vh}.canvas-container.ratio-16-9 canvas{width:100%;height:100%;object-fit:contain}
-    .pro-editor{position:fixed;inset:0;z-index:1000;background:#0d1017;color:#f3f4f6;display:none;flex-direction:column;font-family:inherit}.pro-editor.open{display:flex}.pro-editor-head,.pro-editor-foot{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid #292d38;gap:12px}.pro-editor-head strong{display:block;font-size:17px;letter-spacing:.04em}.pro-editor-head small{display:block;color:#9ca3af;margin-top:5px}.pro-editor-tools{display:flex;gap:8px;padding:12px;overflow-x:auto;border-bottom:1px solid #292d38}.pro-tool{white-space:nowrap;border:1px solid #343947;border-radius:24px;background:#191d27;color:#d1d5db;padding:10px 16px}.pro-tool.active{border-color:#c7a957;color:#f1d98c;background:#29251b}.pro-editor-content{overflow:auto;padding:16px;flex:1}.editor-pane{background:#171c27;border:1px solid #2b303d;border-radius:18px;padding:16px}.editor-section-title{display:flex;justify-content:space-between;font-size:18px;font-weight:700;color:#f0d98f;margin-bottom:12px}.editor-hint{color:#aab2c0;font-size:13px;line-height:1.55}.editor-track{margin:18px 0}.editor-track>label{display:block;color:#aab2c0;font-size:12px;letter-spacing:.05em;margin-bottom:7px}.track-clip,.verse-clip{height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:12px;overflow:hidden;white-space:nowrap}.track-bg{background:linear-gradient(90deg,#4c566b,#8290a7);color:white}.track-fx{background:linear-gradient(90deg,#604c77,#9977b9);color:white}.verse-track,.audio-track{display:flex;gap:4px;min-height:52px}.verse-clip{flex:1;min-width:52px;background:linear-gradient(90deg,#96723a,#e2bd65);color:#1b1a17;border:2px solid transparent;padding:0 8px;cursor:pointer}.verse-clip.selected{border-color:#fff2bd;box-shadow:0 0 0 2px #b18d42}.audio-track .verse-clip{background:linear-gradient(90deg,#28647d,#62afc7);color:#061923}.timeline-ruler{height:18px;border-bottom:1px solid #434958;margin:12px 0;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(10% - 1px),#586071 calc(10% - 1px),#586071 10%)}.editor-scrub{margin-top:20px}.editor-scrub label,.editor-label{display:block;color:#c0c6d2;font-size:13px;margin:14px 0 7px}.editor-scrub input,.editor-pane input[type=range]{width:100%;accent-color:#d8b75d}.editor-scrub>div{display:flex;justify-content:space-between;color:#9ca3af;font-size:12px}.editor-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}.editor-selected-text{padding:12px;border-radius:12px;background:#10141d;color:#f1d98c;line-height:1.7}.editor-check{display:flex;align-items:center;gap:9px;color:#cbd0da;margin-top:16px}.editor-check input{accent-color:#d8b75d}.social-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.social-preset{padding:13px;text-align:left;border:1px solid #343947;border-radius:12px;background:#10141d;color:#f3f4f6}.social-preset b,.social-preset small{display:block}.social-preset small{color:#aab2c0;margin-top:5px}.social-preset.active{border-color:#d8b75d;background:#29251b}.pro-editor-foot{border-top:1px solid #292d38;border-bottom:0;color:#aab2c0}.pro-editor .btn{min-height:42px}.pro-editor select,.pro-editor textarea{width:100%;background:#0e121a;color:#f3f4f6;border:1px solid #394050;border-radius:10px;padding:11px}.pro-editor [hidden]{display:none!important}
-
   </style>
 </head>
 <body>
@@ -763,9 +753,6 @@
         </div>
       </div>
       <div class="header-actions">
-        <button id="btnOpenProEditor" class="btn btn-gold" style="min-height:36px;padding:0 10px;font-size:11px;">Pro Editör</button>
-        <button id="btnProjectSave" class="btn" style="min-height:36px;padding:0 10px;font-size:11px;">Projeyi Kaydet</button>
-        <button id="btnProjectOpen" class="btn" style="min-height:36px;padding:0 10px;font-size:11px;">Projeler</button>
         <button id="btnSafeZoneToggle" class="btn" style="min-height:36px;padding:0 10px;font-size:11px;" title="Reels/TikTok Güvenli Alan Rehberi">
           Güvenli Alan
         </button>
@@ -1212,7 +1199,6 @@
                 <option value="9:16" selected>Reels / TikTok / Shorts (9:16 Dikey)</option>
                 <option value="4:5">Instagram Gönderi (4:5 Dikey)</option>
                 <option value="1:1">Kare Gönderi (1:1)</option>
-                <option value="16:9">YouTube Yatay (16:9)</option>
               </select>
             </div>
             <div class="field-group">
@@ -1274,56 +1260,6 @@
         <span>Paylaş</span>
       </button>
     </nav>
-  </div>
-
-
-  <div id="proEditor" class="pro-editor" aria-hidden="true">
-    <div class="pro-editor-head"><div><strong>TILAWAH WORLD · PRO EDİTÖR</strong><small>Katmanları seç · süreleri düzenle · platforma hazırla</small></div><button id="btnCloseProEditor" class="btn">✕</button></div>
-    <div class="pro-editor-tools">
-      <button class="pro-tool active" data-editor-tab="timeline">Zaman çizelgesi</button>
-      <button class="pro-tool" data-editor-tab="clip">Seçili klip</button>
-      <button class="pro-tool" data-editor-tab="social">Sosyal medya</button>
-    </div>
-    <div class="pro-editor-content">
-      <section id="editorTimelinePane" class="editor-pane">
-        <div class="editor-section-title">Video zaman çizelgesi <span id="editorDuration">00:00</span></div>
-        <p class="editor-hint">Ayet kliplerine dokunarak seç. Başlangıç ve bitiş noktalarını “Seçili klip” bölümünden düzenle. Değişiklikler önizleme ve dışa aktarmaya uygulanır.</p>
-        <div class="timeline-ruler" id="editorRuler"></div>
-        <div class="editor-track"><label>ARKA PLAN</label><div class="track-clip track-bg" id="editorBgClip">Arka plan · tam video</div></div>
-        <div class="editor-track"><label>AYET / MEAL</label><div id="editorVerseTrack" class="verse-track"></div></div>
-        <div class="editor-track"><label>TİLAVET SESİ</label><div id="editorAudioTrack" class="audio-track"></div></div>
-        <div class="editor-track"><label>LOGO / EFEKT</label><div class="track-clip track-fx">Logo ve görsel efektler</div></div>
-        <div class="editor-scrub"><label for="editorPlayhead">Önizleme konumu</label><input id="editorPlayhead" type="range" min="0" max="1000" value="0"><div><span id="editorPlayheadTime">00:00.0</span><span id="editorSelectedLabel">Klip seçilmedi</span></div></div>
-        <div class="editor-actions"><button id="btnEditorPreview" class="btn btn-gold">Seçili ayetten önizle</button><button id="btnEditorRefresh" class="btn">Yenile</button></div>
-      </section>
-      <section id="editorClipPane" class="editor-pane" hidden>
-        <div class="editor-section-title">Klip özellikleri</div>
-        <div class="editor-selected-text" id="editorVerseText">Önce zaman çizelgesinden bir ayet seç.</div>
-        <label class="editor-label">Başlangıç (saniye) <output id="clipInOut">0.00</output></label><input id="clipIn" type="range" min="0" max="100" step="0.05" value="0">
-        <label class="editor-label">Bitiş (saniye) <output id="clipOutOut">0.00</output></label><input id="clipOut" type="range" min="0.1" max="100" step="0.05" value="10">
-        <label class="editor-label">Tilavet ses seviyesi <output id="clipVolumeOut">100%</output></label><input id="clipVolume" type="range" min="0" max="150" value="100">
-        <label class="editor-check"><input id="clipShowMeal" type="checkbox" checked> Bu ayetin mealini göster</label>
-        <div class="editor-actions"><button id="btnClipReset" class="btn">Klibi sıfırla</button><button id="btnClipApply" class="btn btn-gold">Değişiklikleri uygula</button></div>
-        <p class="editor-hint">Not: Klip başlangıç/bitiş değerleri ilgili tilavet kaydının içinden kırpılır. Ayetler sıralı oynatılır; bağımsız sürükleyerek yer değiştirme bu sürümde yoktur.</p>
-      </section>
-      <section id="editorSocialPane" class="editor-pane" hidden>
-        <div class="editor-section-title">Platforma göre dışa aktar</div>
-        <div class="social-presets">
-          <button class="social-preset" data-ratio="9:16" data-res="1080"><b>Instagram Reels</b><small>1080 × 1920 · Dikey</small></button>
-          <button class="social-preset" data-ratio="9:16" data-res="1080"><b>TikTok</b><small>1080 × 1920 · Dikey</small></button>
-          <button class="social-preset" data-ratio="9:16" data-res="1080"><b>YouTube Shorts</b><small>1080 × 1920 · Dikey</small></button>
-          <button class="social-preset" data-ratio="16:9" data-res="1080"><b>YouTube</b><small>1920 × 1080 · Yatay</small></button>
-          <button class="social-preset" data-ratio="4:5" data-res="1080"><b>Instagram Gönderi</b><small>1080 × 1350 · Dikey</small></button>
-          <button class="social-preset" data-ratio="1:1" data-res="1080"><b>Kare paylaşım</b><small>1080 × 1080 · Kare</small></button>
-        </div>
-        <label class="editor-label">Çıkış çözünürlüğü</label><select id="editorResolution" class="select-box"><option value="720">720p · Daha hızlı</option><option value="1080" selected>1080p · Full HD</option></select>
-        <label class="editor-check"><input id="editorSafeZone" type="checkbox"> Sosyal medya güvenli alanlarını göster</label>
-        <label class="editor-label">Video açıklaması / paylaşım metni</label><textarea id="editorCaption" class="textarea-box" rows="4"></textarea>
-        <div class="editor-actions"><button id="btnEditorCopyCaption" class="btn">Açıklamayı kopyala</button><button id="btnEditorApplySocial" class="btn btn-gold">Platform ayarlarını uygula</button></div>
-        <p class="editor-hint">Platforma yükleme işlemi uygulama içinden otomatik yapılmaz. Video hazırlanır; ardından cihazın paylaşım menüsü veya ilgili platform kullanılır.</p>
-      </section>
-    </div>
-    <div class="pro-editor-foot"><span>Mobil odaklı · Yerel proje</span><button id="btnCloseProEditor2" class="btn">Kapat</button></div>
   </div>
 
   <div id="toastBox" class="toast-box"></div>
@@ -1554,6 +1490,27 @@
       { id: "cinematic_bar", name: "8. Sinematik Alt Bant", border: false, accent: "#F3D77D", badge: "TİLÂVET STÜDYOSU" }
     ];
 
+    const TW_PREFS_KEY = "tilawah_world_preferences_v1";
+    let twSavePrefsTimer = null;
+    function twReadPrefs() {
+      try { return JSON.parse(localStorage.getItem(TW_PREFS_KEY) || "{}"); }
+      catch (_) { return {}; }
+    }
+    function twSavePrefs() {
+      clearTimeout(twSavePrefsTimer);
+      twSavePrefsTimer = setTimeout(() => {
+        try {
+          const fields = ["surahNo","ayahStart","ayahEnd","reciterId","subtitleMode","bismillahMode",
+            "zeminId","zeminCategory","visualEffect","effectIntensity","bgDim","bgBlur","bgBrightness",
+            "bgZoom","bgPanX","bgPanY","kenBurns","videoAudioMode","videoTrimStart","videoTrimEnd",
+            "arabicFont","arabicSize","mealSize","transitionMode","textShadow","platformRatio","resolution"];
+          const saved = {};
+          fields.forEach(k => { if (typeof state[k] !== "undefined") saved[k] = state[k]; });
+          localStorage.setItem(TW_PREFS_KEY, JSON.stringify(saved));
+        } catch (_) {}
+      }, 250);
+    }
+    const twSavedPrefs = twReadPrefs();
     const state = {
       surahNo: 93,
       ayahStart: 1,
@@ -1606,7 +1563,6 @@
       verses: [],
       audioElements: [],
       audioDurations: [],
-      clipEdits: {},
       totalDuration: 0,
       audioReady: false,
       activeVerseIdx: 0,
@@ -1986,7 +1942,7 @@
         vid.crossOrigin = "anonymous";
         vid.playsInline = true;
         vid.loop = true;
-        vid.muted = false;
+        vid.muted = state.videoAudioMode === "muted";
         vid.volume = state.bgVideoVol / 100;
         let srcUrl = item.src;
         if (item.blob) {
@@ -2006,7 +1962,6 @@
           }
         };
         activeBgVideo = vid;
-        if (audioCtx) ensureAudioGraph();
       } else {
         trimBox.style.display = "none";
       }
@@ -2135,25 +2090,6 @@
       ).trim() || text;
     }
 
-    const VERSE_CACHE_PREFIX = "tw_verse_cache_v2_";
-    function verseCacheKey(surahNo, start, end) {
-      return `${VERSE_CACHE_PREFIX}${surahNo}_${start}_${end}`;
-    }
-    function readCachedVerses(surahNo, start, end) {
-      try {
-        const raw = localStorage.getItem(verseCacheKey(surahNo, start, end));
-        const parsed = raw ? JSON.parse(raw) : null;
-        return Array.isArray(parsed) && parsed.length === end - start + 1 ? parsed : null;
-      } catch (_) { return null; }
-    }
-    function writeCachedVerses(surahNo, start, end, verses) {
-      try {
-        if (Array.isArray(verses) && verses.length === end - start + 1) {
-          localStorage.setItem(verseCacheKey(surahNo, start, end), JSON.stringify(verses));
-        }
-      } catch (_) { showToast("Ayet önbelleği kaydedilemedi; cihaz depolama alanı dolu olabilir."); }
-    }
-
     async function loadVersesAndPreloadAudio() {
       const token = ++currentLoadToken;
       stopPlaybackAndRecording();
@@ -2193,23 +2129,16 @@
           });
         }
         state.verses = verses;
-        writeCachedVerses(sNo, start, end, verses);
       } catch (err) {
         if (token !== currentLoadToken) return;
-        const cachedVerses = readCachedVerses(sNo, start, end);
-        if (cachedVerses) {
-          state.verses = cachedVerses;
-          showToast("İnternet yok: Daha önce kaydedilmiş seçili ayetler kullanılıyor.");
-        } else {
-          state.verses = [];
-          state.audioElements = [];
-          state.audioDurations = [];
-          state.audioReady = false;
-          document.getElementById("lblTotalDuration").textContent = "—";
-          document.getElementById("lblAudioReadyState").textContent = "Ayet verisi çevrimdışı mevcut değil.";
-          showToast("Bu ayet aralığı daha önce önbelleğe alınmamış. İnternet bağlantısı gerekli.", 5000);
-          return;
-        }
+        state.verses = [{
+          numberInSurah: start,
+          arabic: "وَٱلضُّحَىٰ",
+          hasBismillahHeader: (start === 1 && sNo !== 1 && sNo !== 9),
+          tr: "Kuşluk vaktine andolsun;",
+          en: "By the morning brightness"
+        }];
+        showToast("Çevrimdışı mod: Önbellekteki ayet metni kullanılıyor.");
       }
 
       const audioList = [];
@@ -2226,22 +2155,19 @@
           aud.src = audioUrl;
 
           const timeoutId = setTimeout(() => {
-            aud.dataset.loadError = "timeout";
-            durations[idx] = 0;
+            durations[idx] = 6.0;
             resolve();
-          }, 15000);
+          }, 9000);
 
           aud.onloadedmetadata = () => {
             clearTimeout(timeoutId);
-            const d = Number.isFinite(aud.duration) && aud.duration > 0 ? aud.duration : 0;
+            const d = Number.isFinite(aud.duration) && aud.duration > 0 ? aud.duration : 6.0;
             durations[idx] = d;
-            if (!d) aud.dataset.loadError = "invalid-duration";
             resolve();
           };
           aud.onerror = () => {
             clearTimeout(timeoutId);
-            aud.dataset.loadError = "network-or-decode";
-            durations[idx] = 0;
+            durations[idx] = 6.0;
             resolve();
           };
           audioList[idx] = aud;
@@ -2253,27 +2179,11 @@
 
       state.audioElements = audioList;
       state.audioDurations = durations;
-      const failedAudioCount = durations.filter(d => !Number.isFinite(d) || d <= 0).length;
-      if (failedAudioCount > 0) {
-        state.audioReady = false;
-        state.totalDuration = 0;
-        document.getElementById("lblTotalDuration").textContent = "—";
-        document.getElementById("lblAudioReadyState").textContent = `${failedAudioCount} ses dosyası yüklenemedi`;
-        document.getElementById("btnPlayPreview").disabled = true;
-        document.getElementById("btnRecordExport").disabled = true;
-        showToast(`${failedAudioCount} ayetin tilavet sesi yüklenemedi. Bağlantıyı kontrol edip tekrar deneyin.`, 5000);
-        return;
-      }
 
       let total = state.coverFirstFrame === "on" ? 1.2 : 0;
-      state.clipEdits = state.clipEdits || {};
       for (let i = 0; i < durations.length; i++) {
-        const edit = state.clipEdits[i] || {};
-        const clipStart = Math.max(0, Math.min(durations[i] - 0.1, Number(edit.start) || 0));
-        const clipEnd = Math.max(clipStart + 0.1, Math.min(durations[i], Number(edit.end) || durations[i]));
-        const clipDuration = clipEnd - clipStart;
         const isLast = (i === durations.length - 1);
-        const eff = isLast ? clipDuration : Math.max(0.4, clipDuration - state.gaplessTrimSec);
+        const eff = isLast ? durations[i] : Math.max(0.4, durations[i] - state.gaplessTrimSec);
         total += eff;
       }
 
@@ -2288,7 +2198,6 @@
 
       updateSocialCaptionText();
       updatePlatformDurationWarning();
-      if (document.getElementById("proEditor")) renderProTimeline();
     }
 
     const canvas = document.getElementById("studioCanvas");
@@ -2691,8 +2600,7 @@
 
           ctx.direction = "ltr";
           let mealCursorY = arStartY + totalArH + 28 * scaleFactor;
-          const clipDisplay = (state.clipEdits && state.clipEdits[state.activeVerseIdx]) || {};
-          if (clipDisplay.showMeal !== false && (state.subtitleMode === "tr" || state.subtitleMode === "both")) {
+          if (state.subtitleMode === "tr" || state.subtitleMode === "both") {
             ctx.fillStyle = state.mealColor;
             ctx.font = `500 ${mealPx}px 'Inter', sans-serif`;
             const trLines = wrapCanvasText(ctx, verse.tr, maxTextW);
@@ -2703,7 +2611,7 @@
             mealCursorY += trLines.length * trLineH + 16 * scaleFactor;
           }
 
-          if (clipDisplay.showMeal !== false && (state.subtitleMode === "en" || state.subtitleMode === "both")) {
+          if (state.subtitleMode === "en" || state.subtitleMode === "both") {
             ctx.fillStyle = state.subtitleMode === "both" ? "#CBD5E1" : state.mealColor;
             const enPx = state.subtitleMode === "both" ? Math.round(mealPx * 0.88) : mealPx;
             ctx.font = `400 ${enPx}px 'Inter', sans-serif`;
@@ -2736,7 +2644,6 @@
     let mixDest = null;
     let reciterGain = null;
     let ambientGain = null;
-    let bgVideoGain = null;
     let ambientSourceNode = null;
     const connectedAudioNodes = new WeakMap();
 
@@ -2752,13 +2659,10 @@
         mixDest = audioCtx.createMediaStreamDestination();
         reciterGain = audioCtx.createGain();
         ambientGain = audioCtx.createGain();
-        bgVideoGain = audioCtx.createGain();
         reciterGain.connect(audioCtx.destination);
         reciterGain.connect(mixDest);
         ambientGain.connect(audioCtx.destination);
         ambientGain.connect(mixDest);
-        bgVideoGain.connect(audioCtx.destination);
-        bgVideoGain.connect(mixDest);
       }
       if (audioCtx.state === "suspended") {
         audioCtx.resume().catch(() => {});
@@ -2775,18 +2679,6 @@
           } catch (_) {}
         }
       });
-      if (activeBgVideo && !connectedAudioNodes.has(activeBgVideo)) {
-        try {
-          const src = audioCtx.createMediaElementSource(activeBgVideo);
-          activeBgVideo.muted = false;
-          activeBgVideo.volume = 1;
-          src.connect(bgVideoGain);
-          connectedAudioNodes.set(activeBgVideo, src);
-        } catch (_) {}
-      }
-      if (bgVideoGain) {
-        bgVideoGain.gain.value = state.videoAudioMode === "muted" ? 0 : state.bgVideoVol / 100;
-      }
     }
 
     function startAmbientSound() {
@@ -2870,11 +2762,10 @@
         { mime: "video/webm;codecs=vp8,opus", ext: "webm" },
         { mime: "video/webm", ext: "webm" }
       ];
-      if (!window.MediaRecorder) return null;
       for (const c of candidates) {
-        try { if (MediaRecorder.isTypeSupported(c.mime)) return c; } catch (_) {}
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported(c.mime)) return c;
       }
-      return null;
+      return { mime: "", ext: "webm" };
     }
 
     function stopPlaybackAndRecording() {
@@ -2914,24 +2805,12 @@
         return;
       }
 
-      if (recordMode && (!window.MediaRecorder || !canvas.captureStream || !window.MediaStream)) {
-        showToast("Bu tarayıcı video kaydını desteklemiyor. Güncel Chrome veya Edge deneyin.", 5000);
-        return;
-      }
-      if (!(window.AudioContext || window.webkitAudioContext)) {
-        showToast("Bu tarayıcı Web Audio API desteği sunmuyor; ses mikseri başlatılamadı.", 5000);
-        return;
-      }
-      if (recordMode && !getSupportedRecorderMime()) {
-        showToast("Bu tarayıcı desteklenen MP4/WebM kayıt biçimlerinden hiçbirini sunmuyor.", 5000);
-        return;
-      }
       stopPlaybackAndRecording();
       ensureAudioGraph();
 
       state.isPlaying = !recordMode;
       state.isRecording = recordMode;
-      state.activeVerseIdx = Math.max(0, Math.min(state.activeVerseIdx || 0, state.audioElements.length - 1));
+      state.activeVerseIdx = 0;
       state.elapsedTime = 0;
 
       document.getElementById("lblPlayBtn").textContent = recordMode ? "Önizle" : "Durdur";
@@ -2948,13 +2827,6 @@
 
       if (recordMode) {
         const format = getSupportedRecorderMime();
-        if (!format) {
-          state.isRecording = false;
-          document.getElementById("lblRecordBtn").textContent = "Oluştur";
-          document.getElementById("lblPlayBtn").textContent = "Önizle";
-          showToast("Bu tarayıcı desteklenen MP4/WebM kayıt biçimlerinden hiçbirini sunmuyor.", 5000);
-          return;
-        }
         state.lastExportExt = format.ext;
         const canvasStream = canvas.captureStream(30);
         const combinedTracks = [
@@ -3000,11 +2872,7 @@
         const isLastVerse = (idx === state.audioElements.length - 1);
         let handedOver = false;
 
-        const clipEdit = (state.clipEdits && state.clipEdits[idx]) || {};
-        const clipStart = Math.max(0, Number(clipEdit.start) || 0);
-        const clipEnd = Math.min(aud.duration || state.audioDurations[idx], Number(clipEdit.end) || aud.duration || state.audioDurations[idx]);
-        aud.currentTime = clipStart;
-        aud.volume = Math.max(0, Math.min(1, (Number(clipEdit.volume) || 100) / 100)) * (state.reciterVol / 100);
+        aud.currentTime = 0;
 
         aud.onwaiting = () => {
           state.isBuffering = true;
@@ -3049,21 +2917,17 @@
 
           let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
           for (let i = 0; i < idx; i++) {
-            const pe = (state.clipEdits && state.clipEdits[i]) || {};
-            const ps = Math.max(0, Number(pe.start) || 0);
-            const pend = Math.min(state.audioDurations[i], Number(pe.end) || state.audioDurations[i]);
-            passed += Math.max(0.4, (pend - ps) - state.gaplessTrimSec);
+            passed += Math.max(0.4, state.audioDurations[i] - state.gaplessTrimSec);
           }
-          passed += Math.max(0, (aud.currentTime || 0) - clipStart);
+          passed += aud.currentTime || 0;
           state.elapsedTime = Math.min(state.totalDuration, passed);
 
           document.getElementById("lblCurrentTime").textContent = formatTime(state.elapsedTime);
           const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
           document.getElementById("progressBarFill").style.width = `${pct}%`;
 
-          if (!handedOver && aud.duration > 0 && state.gaplessTrimSec >= 0) {
-            const effectiveEnd = Math.max(clipStart + 0.1, clipEnd - (isLastVerse ? 0 : state.gaplessTrimSec));
-            if (aud.currentTime >= effectiveEnd) {
+          if (!isLastVerse && !handedOver && aud.duration > 0 && state.gaplessTrimSec > 0) {
+            if (aud.currentTime >= aud.duration - state.gaplessTrimSec) {
               handedOver = true;
               aud.onended = null;
               aud.pause();
@@ -3077,7 +2941,7 @@
         playbackRafId = requestAnimationFrame(monitorStep);
       };
 
-      if (state.coverFirstFrame === "on" && state.activeVerseIdx === 0) {
+      if (state.coverFirstFrame === "on") {
         if (recordMode && !recorderStarted) {
           recorderStarted = true;
           recordStartPerf = performance.now();
@@ -3087,11 +2951,11 @@
         }
         setTimeout(() => {
           if (state.isPlaying || state.isRecording) {
-            playVerseAtIndex(Math.max(0, Math.min(state.activeVerseIdx || 0, state.audioElements.length - 1)));
+            playVerseAtIndex(0);
           }
         }, 1200);
       } else {
-        playVerseAtIndex(Math.max(0, Math.min(state.activeVerseIdx || 0, state.audioElements.length - 1)));
+        playVerseAtIndex(0);
       }
     }
 
@@ -3167,132 +3031,6 @@
       downloadExportedVideo();
       showToast("Cihazınız doğrudan dosya paylaşımını desteklemiyor. Video indirildi; Instagram, TikTok veya YouTube uygulamasından galeriden seçerek yükleyebilirsiniz.", 4500);
     }
-
-    const PROJECTS_STORAGE_KEY = "tilawah_world_projects_v1";
-    const PROJECT_FIELDS = [
-      "surahNo", "ayahStart", "ayahEnd", "reciterId", "subtitleMode", "bismillahMode",
-      "arabicFont", "arabicFontSize", "arabicColor", "mealFont", "mealFontSize", "mealColor",
-      "bgDim", "bgBlur", "bgBrightness", "bgZoom", "bgVideoVol", "videoAudioMode",
-      "reciterVol", "ambientType", "ambientVol", "gaplessTrimSec", "coverTemplateId",
-      "coverFirstFrame", "coverPreviewMode", "coverTitle", "coverSubtitle", "coverPos", "coverScale",
-      "platformRatio", "resolution", "logoPos", "logoScale", "watermarkText", "visualEffect", "kenBurns"
-    ];
-    function readProjects() {
-      try {
-        const value = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY) || "[]");
-        return Array.isArray(value) ? value : [];
-      } catch (_) { return []; }
-    }
-    function saveCurrentProject() {
-      const name = (prompt("Proje adı:", `${SURAHS.find(x => x[0] === state.surahNo)?.[1] || "Tilavet"} ${state.ayahStart}-${state.ayahEnd}`) || "").trim();
-      if (!name) return;
-      const settings = {};
-      PROJECT_FIELDS.forEach(key => { if (state[key] !== undefined) settings[key] = state[key]; });
-      settings.clipEdits = JSON.parse(JSON.stringify(state.clipEdits || {}));
-      const projects = readProjects();
-      projects.unshift({ id: `p_${Date.now()}`, name, updatedAt: new Date().toISOString(), settings });
-      try {
-        localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects.slice(0, 40)));
-        showToast(`“${name}” projesi kaydedildi.`);
-      } catch (_) { showToast("Proje kaydedilemedi. Tarayıcı depolama alanı dolu olabilir.", 4500); }
-    }
-    function openSavedProjects() {
-      const projects = readProjects();
-      if (!projects.length) { showToast("Henüz kaydedilmiş proje yok."); return; }
-      const menu = projects.map((p, i) => `${i + 1}. ${p.name}`).join("\n");
-      const answer = prompt(`Açmak istediğiniz proje numarasını yazın.\n\n${menu}\n\nSilmek için numaranın başına - koyun.`);
-      if (answer === null || !answer.trim()) return;
-      const n = Number(answer.trim());
-      if (!Number.isInteger(n) || n === 0 || Math.abs(n) > projects.length) { showToast("Geçersiz proje numarası."); return; }
-      if (n < 0) {
-        const removed = projects.splice(Math.abs(n) - 1, 1)[0];
-        localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(projects));
-        showToast(`“${removed.name}” projesi silindi.`);
-        return;
-      }
-      const project = projects[n - 1];
-      Object.assign(state, project.settings || {});
-      const surahSelect = document.getElementById("selSurah");
-      const reciterSelect = document.getElementById("selReciter");
-      if (surahSelect) surahSelect.value = String(state.surahNo);
-      if (typeof populateAyahRangeSelectors === "function") populateAyahRangeSelectors(false);
-      const startSelect = document.getElementById("selAyahStart");
-      const endSelect = document.getElementById("selAyahEnd");
-      if (startSelect) startSelect.value = String(state.ayahStart);
-      if (endSelect) endSelect.value = String(state.ayahEnd);
-      if (reciterSelect) reciterSelect.value = state.reciterId;
-      ["selSubtitleMode", "selBismillahMode"].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (el) el.value = i === 0 ? state.subtitleMode : state.bismillahMode;
-      });
-      showToast(`“${project.name}” projesi açıldı; ayet ve sesler yeniden yükleniyor.`);
-      loadVersesAndPreloadAudio();
-    }
-
-
-    // Pro Editor: editable per-ayah trim, per-clip volume, timeline selection and platform presets.
-    let editorSelectedClip = 0;
-    function editorClipRange(i) {
-      const d = Number(state.audioDurations[i]) || 0;
-      const e = (state.clipEdits && state.clipEdits[i]) || {};
-      const start = Math.max(0, Math.min(Math.max(0,d-.1), Number(e.start) || 0));
-      const end = Math.max(start+.1, Math.min(d, Number(e.end) || d));
-      return {start, end, volume: Number(e.volume) || 100, showMeal: e.showMeal !== false};
-    }
-    function editorRecalculateDuration() {
-      let sum = state.coverFirstFrame === "on" ? 1.2 : 0;
-      state.audioDurations.forEach((d,i)=>{const r=editorClipRange(i);sum+=Math.max(.1,(r.end-r.start)-(i===state.audioDurations.length-1?0:state.gaplessTrimSec));});
-      state.totalDuration=sum;
-      const total=document.getElementById("lblTotalDuration"); if(total) total.textContent=formatTime(sum);
-      const ed=document.getElementById("editorDuration"); if(ed) ed.textContent=formatTime(sum);
-    }
-    function renderProTimeline() {
-      const verseTrack=document.getElementById("editorVerseTrack"), audioTrack=document.getElementById("editorAudioTrack");
-      if(!verseTrack||!audioTrack)return;
-      verseTrack.innerHTML=""; audioTrack.innerHTML="";
-      state.verses.forEach((v,i)=>{
-        const r=editorClipRange(i); const label=`${v.numberInSurah}. Ayet`;
-        const make=(audio)=>{const el=document.createElement("button");el.type="button";el.className="verse-clip"+(i===editorSelectedClip?" selected":"");el.textContent=label;el.title=`${label} · ${(r.end-r.start).toFixed(1)} sn`;el.style.flex=`${Math.max(.35,r.end-r.start)} 1 0`;el.addEventListener("click",()=>{editorSelectedClip=i;renderProTimeline();loadEditorClip();});return el;};
-        verseTrack.appendChild(make(false)); audioTrack.appendChild(make(true));
-      });
-      const playhead=document.getElementById("editorPlayhead"); if(playhead)playhead.max="1000";
-      editorRecalculateDuration();
-      const ruler=document.getElementById("editorRuler"); if(ruler)ruler.title=`Toplam ${formatTime(state.totalDuration)}`;
-    }
-    function loadEditorClip(){
-      if(!state.verses.length)return;
-      editorSelectedClip=Math.max(0,Math.min(state.verses.length-1,editorSelectedClip));
-      const v=state.verses[editorSelectedClip],r=editorClipRange(editorSelectedClip),d=state.audioDurations[editorSelectedClip]||1;
-      document.getElementById("editorVerseText").textContent=`${v.numberInSurah}. Ayet · ${v.arabic||""} · ${v.tr||"Meal bulunamadı"}`;
-      const cin=document.getElementById("clipIn"),cout=document.getElementById("clipOut"),vol=document.getElementById("clipVolume");
-      cin.max=Math.max(.1,d-.1);cin.value=r.start;cout.max=d;cout.min=Math.min(d,r.start+.1);cout.value=r.end;vol.value=r.volume;
-      document.getElementById("clipInOut").textContent=r.start.toFixed(2)+" sn";document.getElementById("clipOutOut").textContent=r.end.toFixed(2)+" sn";document.getElementById("clipVolumeOut").textContent=r.volume+"%";document.getElementById("clipShowMeal").checked=r.showMeal;
-      document.getElementById("editorSelectedLabel").textContent=`${v.numberInSurah}. Ayet seçili`;
-    }
-    function openProEditor(){document.getElementById("proEditor").classList.add("open");document.getElementById("proEditor").setAttribute("aria-hidden","false");renderProTimeline();loadEditorClip();document.getElementById("editorCaption").value=document.getElementById("txtSocialCaption")?.value||"";}
-    function closeProEditor(){document.getElementById("proEditor").classList.remove("open");document.getElementById("proEditor").setAttribute("aria-hidden","true");}
-    function selectEditorTab(tab){document.querySelectorAll(".pro-tool").forEach(b=>b.classList.toggle("active",b.dataset.editorTab===tab));document.getElementById("editorTimelinePane").hidden=tab!=="timeline";document.getElementById("editorClipPane").hidden=tab!=="clip";document.getElementById("editorSocialPane").hidden=tab!=="social";}
-    function applyEditorClip(){
-      if(!state.clipEdits)state.clipEdits={};
-      const d=state.audioDurations[editorSelectedClip]||1;let start=Math.max(0,Math.min(d-.1,Number(document.getElementById("clipIn").value)||0));let end=Math.max(start+.1,Math.min(d,Number(document.getElementById("clipOut").value)||d));
-      state.clipEdits[editorSelectedClip]={start,end,volume:Number(document.getElementById("clipVolume").value),showMeal:document.getElementById("clipShowMeal").checked};
-      editorRecalculateDuration();renderProTimeline();loadEditorClip();showToast("Ayet klibi güncellendi. Yeni kırpma önizleme ve video çıktısına uygulanır.");
-    }
-    function applySocialPreset(ratio,res){state.platformRatio=ratio;state.resolution=Number(res);const ratioEl=document.getElementById("selPlatformRatio");if(ratioEl&&["9:16","4:5","1:1"].includes(ratio))ratioEl.value=ratio;const resEl=document.getElementById("selResolution");if(resEl)resEl.value=String(res);document.querySelectorAll(".social-preset").forEach(b=>b.classList.toggle("active",b.dataset.ratio===ratio));updateCanvasResolutionAndRatio();showToast(`${ratio} platform formatı seçildi.`);}
-    document.getElementById("btnOpenProEditor")?.addEventListener("click",openProEditor);
-    ["btnCloseProEditor","btnCloseProEditor2"].forEach(id=>document.getElementById(id)?.addEventListener("click",closeProEditor));
-    document.querySelectorAll(".pro-tool").forEach(b=>b.addEventListener("click",()=>selectEditorTab(b.dataset.editorTab)));
-    document.getElementById("btnEditorRefresh")?.addEventListener("click",()=>{renderProTimeline();loadEditorClip();showToast("Zaman çizelgesi yenilendi.");});
-    document.getElementById("btnClipApply")?.addEventListener("click",applyEditorClip);
-    document.getElementById("btnClipReset")?.addEventListener("click",()=>{if(state.clipEdits)delete state.clipEdits[editorSelectedClip];loadEditorClip();renderProTimeline();showToast("Klip varsayılan süreye döndürüldü.");});
-    document.getElementById("clipIn")?.addEventListener("input",e=>{document.getElementById("clipInOut").textContent=Number(e.target.value).toFixed(2)+" sn";document.getElementById("clipOut").min=String(Math.min(Number(document.getElementById("clipOut").max),Number(e.target.value)+.1));});
-    document.getElementById("clipOut")?.addEventListener("input",e=>document.getElementById("clipOutOut").textContent=Number(e.target.value).toFixed(2)+" sn");
-    document.getElementById("clipVolume")?.addEventListener("input",e=>document.getElementById("clipVolumeOut").textContent=e.target.value+"%");
-    document.getElementById("btnEditorPreview")?.addEventListener("click",()=>{closeProEditor();state.activeVerseIdx=editorSelectedClip;startStudioSession(false);});
-    document.querySelectorAll(".social-preset").forEach(b=>b.addEventListener("click",()=>{applySocialPreset(b.dataset.ratio,Number(b.dataset.res));document.getElementById("editorResolution").value=b.dataset.res;}));
-    document.getElementById("btnEditorApplySocial")?.addEventListener("click",()=>{const res=Number(document.getElementById("editorResolution").value);state.resolution=res;updateCanvasResolutionAndRatio();const cap=document.getElementById("editorCaption").value;const main=document.getElementById("txtSocialCaption");if(main)main.value=cap;const safe=document.getElementById("editorSafeZone").checked;state.safeZoneVisible=safe;const overlay=document.getElementById("safeZoneOverlay");if(overlay)overlay.classList.toggle("visible",safe);updatePlatformDurationWarning();showToast("Sosyal medya ayarları uygulandı.");});
-    document.getElementById("btnEditorCopyCaption")?.addEventListener("click",async()=>{const t=document.getElementById("editorCaption").value;try{await navigator.clipboard.writeText(t);showToast("Açıklama kopyalandı.");}catch(_){showToast("Kopyalama desteklenmiyor; metni seçip kopyalayın.");}});
-    document.getElementById("editorPlayhead")?.addEventListener("input",e=>{const pct=Number(e.target.value)/1000;const time=pct*state.totalDuration;document.getElementById("editorPlayheadTime").textContent=formatTime(time);let acc=state.coverFirstFrame==="on"?1.2:0;let idx=0;for(;idx<state.verses.length;idx++){const r=editorClipRange(idx),dur=Math.max(.1,(r.end-r.start)-(idx===state.verses.length-1?0:state.gaplessTrimSec));if(time<=acc+dur)break;acc+=dur;}editorSelectedClip=Math.min(idx,Math.max(0,state.verses.length-1));renderProTimeline();loadEditorClip();});
 
     const sheetTitles = {
       ayet: "Ayet & Hâfız Seçimi",
@@ -3474,8 +3212,10 @@
     }
 
     function bindEvents() {
-      document.getElementById("btnProjectSave").onclick = saveCurrentProject;
-      document.getElementById("btnProjectOpen").onclick = openSavedProjects;
+      document.addEventListener("change", (event) => {
+        if (event.target && event.target.matches("input,select,textarea")) twSavePrefs();
+      });
+
       document.querySelectorAll(".nav-tab").forEach(btn => {
         btn.addEventListener("click", () => {
           const tab = btn.dataset.tab;
@@ -3796,10 +3536,12 @@
       document.getElementById("selPlatformRatio").onchange = (e) => {
         state.platformRatio = e.target.value;
         updateCanvasResolutionAndRatio();
+        twSavePrefs();
       };
       document.getElementById("selResolution").onchange = (e) => {
         state.resolution = Number(e.target.value);
         updateCanvasResolutionAndRatio();
+        twSavePrefs();
       };
       document.getElementById("btnCopyCaption").onclick = async () => {
         hapticTap();
@@ -3862,13 +3604,8 @@
       bindEvents();
       startRenderLoop();
 
-      try {
-        await initGalleryDB();
-        await loadGalleryItemsFromDB();
-      } catch (dbError) {
-        galleryItems = [];
-        showToast("Galeri veritabanı açılamadı. Uygulama galerisiz modda devam ediyor.", 5000);
-      }
+      await initGalleryDB().catch(() => {});
+      await loadGalleryItemsFromDB();
       await loadExternalCatalogJson();
 
       renderZeminCategories();
