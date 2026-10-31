@@ -210,7 +210,13 @@
     return `${m}:${String(s).padStart(2, "0")}`;
   }
 
-  // Update Header Summary ("A'lâ 2-10 · Mâhir el-Muaykılî") & Bottom Export Bar ("16:9 · 1080p · ≈ 0:58 | ⏱ ≈ 0:14 · 💾 45 MB")
+  function formatPreciseTime(sec) {
+    if (!Number.isFinite(sec) || sec < 0) return "00:00.0";
+    const m = Math.floor(sec / 60);
+    const s = (sec % 60).toFixed(1);
+    return `${String(m).padStart(2, "0")}:${s.padStart(4, "0")}`;
+  }
+
   function updateHeaderAndBottomSummary() {
     const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
     const recMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
@@ -226,7 +232,7 @@
       kesitRec.textContent = recMeta.name;
     }
 
-    const durSec = state.totalDuration || ((state.ayahEnd - state.ayahStart + 1) * 6.2);
+    const durSec = state.totalDuration || ((state.ayahEnd - state.ayahStart + 1) * 5.8);
     const durFormatted = formatShortTime(durSec);
 
     const specLine = document.getElementById("lblBottomExportSpecs");
@@ -234,8 +240,8 @@
       specLine.textContent = `${state.platformRatio} · ${state.resolution}p · ≈ ${durFormatted}`;
     }
 
-    const estRenderSec = Math.max(4, Math.round(durSec * 0.25));
-    const estMB = Math.max(2, Math.round((durSec * (state.resolution === 1080 ? 0.76 : 0.42))));
+    const estRenderSec = Math.max(3, Math.round(durSec * 0.25));
+    const estMB = Math.max(2, Math.round((durSec * (state.resolution === 1080 ? 0.75 : 0.42))));
     const elRender = document.getElementById("lblBottomEstRender");
     const elSize = document.getElementById("lblBottomEstSize");
     if (elRender) elRender.textContent = `⏱ ≈ ${formatShortTime(estRenderSec)}`;
@@ -248,6 +254,19 @@
       const pct = Math.min(100, Math.max(4, (durSec / 600) * 100));
       kesitFill.style.width = `${pct}%`;
     }
+
+    updateTimelineRulerMarks(durSec);
+  }
+
+  function updateTimelineRulerMarks(totalSec) {
+    const ruler = document.getElementById("timelineRulerRow");
+    if (!ruler) return;
+    const dur = Math.max(5, totalSec || 20);
+    const marks = [];
+    for (let i = 0; i <= 4; i++) {
+      marks.push(`<span>${formatShortTime((dur * i) / 4)}</span>`);
+    }
+    ruler.innerHTML = marks.join("");
   }
 
   async function ensureFontsLoaded() {
@@ -268,7 +287,6 @@
     state.fontsReady = true;
   }
 
-  // Logo setup
   const appLogoImg = new Image();
   let appLogoLoaded = false;
   const fallbackLogoCanvas = document.createElement("canvas");
@@ -279,16 +297,16 @@
     const lctx = fallbackLogoCanvas.getContext("2d");
     lctx.clearRect(0, 0, 256, 256);
     const grad = lctx.createRadialGradient(128, 128, 20, 128, 128, 120);
-    grad.addColorStop(0, "#143026");
-    grad.addColorStop(1, "#08110E");
+    grad.addColorStop(0, "#1A1C23");
+    grad.addColorStop(1, "#070809");
     lctx.fillStyle = grad;
     lctx.beginPath();
     lctx.arc(128, 128, 120, 0, Math.PI * 2);
     lctx.fill();
     lctx.lineWidth = 6;
-    lctx.strokeStyle = "#D8B456";
+    lctx.strokeStyle = "#E0B84C";
     lctx.stroke();
-    lctx.fillStyle = "#F0D78A";
+    lctx.fillStyle = "#F5DF98";
     lctx.font = "bold 54px 'Amiri', serif";
     lctx.textAlign = "center";
     lctx.textBaseline = "middle";
@@ -344,7 +362,7 @@
     } catch (_) {}
   }
 
-  function generateProceduralThumb(palette = ["#08110E", "#142820", "#d8b456"], label = "") {
+  function generateProceduralThumb(palette = ["#070809", "#181A20", "#E0B84C"], label = "") {
     const key = palette.join("_") + "_" + label;
     if (thumbCache.has(key)) return thumbCache.get(key);
 
@@ -354,14 +372,14 @@
     const tctx = c.getContext("2d");
 
     const grad = tctx.createLinearGradient(0, 0, 0, 320);
-    grad.addColorStop(0, palette[0] || "#08110E");
-    grad.addColorStop(0.55, palette[1] || "#142820");
-    grad.addColorStop(1, "#040806");
+    grad.addColorStop(0, palette[0] || "#070809");
+    grad.addColorStop(0.55, palette[1] || "#181A20");
+    grad.addColorStop(1, "#040506");
     tctx.fillStyle = grad;
     tctx.fillRect(0, 0, 180, 320);
 
     const rad = tctx.createRadialGradient(90, 110, 8, 90, 110, 110);
-    rad.addColorStop(0, (palette[2] || "#d8b456") + "66");
+    rad.addColorStop(0, (palette[2] || "#E0B84C") + "66");
     rad.addColorStop(1, "transparent");
     tctx.fillStyle = rad;
     tctx.fillRect(0, 0, 180, 320);
@@ -394,7 +412,23 @@
     activeBgImage = null;
     revokeActiveMediaUrls();
 
+    if (item && !isInitialRestore) {
+      if (!state.lockBgDim && typeof item.recommendedDarkness === "number") {
+        state.bgDim = item.recommendedDarkness;
+        const rng = document.getElementById("rngBgDim");
+        const val = document.getElementById("valBgDim");
+        if (rng) rng.value = state.bgDim;
+        if (val) val.textContent = `%${state.bgDim}`;
+      }
+    }
+
+    if (state.zeminId) {
+      state.recentZeminIds = [state.zeminId, ...(state.recentZeminIds || []).filter((x) => x !== state.zeminId)].slice(0, 12);
+    }
+
+    const trimBox = document.getElementById("videoTrimBox");
     if (item && item.type === "image") {
+      if (trimBox) trimBox.style.display = "none";
       const img = new Image();
       let srcUrl = item.src;
       if (item.blob) {
@@ -407,6 +441,7 @@
       img.onerror = () => { activeBgImage = null; };
       img.src = srcUrl;
     } else if (item && item.type === "video") {
+      if (trimBox) trimBox.style.display = "grid";
       const vid = document.createElement("video");
       let srcUrl = item.src;
       if (item.blob) {
@@ -420,17 +455,26 @@
       vid.muted = (state.videoAudioMode === "muted" || state.bgVideoVol <= 0);
       vid.src = srcUrl;
       vid.onloadedmetadata = () => {
+        if (state.videoTrimStart > 0 && state.videoTrimStart < vid.duration) {
+          vid.currentTime = state.videoTrimStart;
+        }
         connectBgVideoToGraph(vid, state);
         vid.play().catch(() => {});
       };
+      vid.ontimeupdate = () => {
+        if (state.videoTrimEnd > state.videoTrimStart && vid.currentTime >= state.videoTrimEnd) {
+          vid.currentTime = state.videoTrimStart || 0;
+        }
+      };
       activeBgVideo = vid;
+    } else {
+      if (trimBox) trimBox.style.display = "none";
     }
 
     renderZeminGrid();
     if (!isInitialRestore) persistState();
   }
 
-  // Render 1. STİL Presets Grid
   function renderStylePresetsGrid() {
     const grid = document.getElementById("stylePresetGrid");
     if (!grid) return;
@@ -466,7 +510,7 @@
         state.zeminId = st.zeminId;
         state.ambientType = st.ambientType;
         if (st.ambientType !== "none" && state.ambientVol === 0) state.ambientVol = st.ambientVol || 20;
-        state.bgDim = st.bgDim;
+        if (!state.lockBgDim) state.bgDim = st.bgDim;
         state.bgWarmth = st.bgWarmth;
         state.visualEffect = st.visualEffect;
         state.arabicColor = st.arabicColor;
@@ -488,7 +532,6 @@
     });
   }
 
-  // Render 2. BİLİNEN KESİTLER List (with Arabic calligraphy on right)
   function renderKnownExcerptsList() {
     const wrap = document.getElementById("knownExcerptsList");
     if (!wrap) return;
@@ -522,7 +565,6 @@
     });
   }
 
-  // Render 3. HÂFIZ Alphabetical List with Sebat Metadata Tags
   function renderRecitersList() {
     const wrap = document.getElementById("reciterFullList");
     if (!wrap) return;
@@ -565,7 +607,6 @@
     });
   }
 
-  // Render 4. ZEMİN Categories & Grid
   function renderZeminCategories() {
     const bar = document.getElementById("zeminCategoryBar");
     if (!bar) return;
@@ -588,12 +629,19 @@
 
   function renderZeminGrid() {
     const grid = document.getElementById("zeminGrid");
+    const manageBar = document.getElementById("galleryManageBar");
+    const lblCount = document.getElementById("lblGalleryCount");
     if (!grid) return;
+
+    if (manageBar) manageBar.style.display = state.zeminCategory === "Galerim" ? "flex" : "none";
+    if (lblCount) lblCount.textContent = `${galleryItems.length} kişisel medya kayıtlı`;
 
     const query = (state.zeminSearch || "").trim().toLowerCase();
     let list = getAllZeminItems();
 
-    if (state.zeminCategory !== "Tümü") {
+    if (state.zeminCategory === "Son Kullanılanlar") {
+      list = (state.recentZeminIds || []).map((id) => getZeminById(id)).filter(Boolean);
+    } else if (state.zeminCategory !== "Tümü") {
       list = list.filter((i) => i.category === state.zeminCategory);
     }
     if (query) {
@@ -618,7 +666,7 @@
       img.className = "zemin-thumb";
       img.loading = "lazy";
       img.alt = item.name;
-      const fallbackThumb = generateProceduralThumb(item.palette || ["#08110E", "#142820", "#d8b456"], item.name);
+      const fallbackThumb = generateProceduralThumb(item.palette || ["#070809", "#181A20", "#E0B84C"], item.name);
       img.src = item.thumbDataUrl || item.thumb || fallbackThumb;
       img.onerror = () => { img.onerror = null; img.src = fallbackThumb; };
 
@@ -659,7 +707,6 @@
     });
   }
 
-  // Render 5. ORTAM Ambient Sounds List
   function renderAmbientSoundList() {
     const wrap = document.getElementById("ambientSoundList");
     if (!wrap) return;
@@ -700,7 +747,6 @@
     });
   }
 
-  // Render 6. METİN Color Swatch Rows (Fildişi, Zer, Zümrüt, Kehribar, Gül Kurusu...)
   function renderColorSwatches() {
     const arRow = document.getElementById("arabicSwatchRow");
     const mealRow = document.getElementById("mealSwatchRow");
@@ -718,6 +764,8 @@
           state.arabicColorName = sw.name;
           const lbl = document.getElementById("lblArabicColorName");
           if (lbl) lbl.textContent = sw.name;
+          const inp = document.getElementById("inpArabicColor");
+          if (inp) inp.value = sw.hex;
           renderColorSwatches();
           persistState();
         });
@@ -739,6 +787,8 @@
           state.mealColorName = sw.name;
           const lbl = document.getElementById("lblMealColorName");
           if (lbl) lbl.textContent = sw.name;
+          const inp = document.getElementById("inpMealColor");
+          if (inp) inp.value = sw.hex;
           renderColorSwatches();
           persistState();
         });
@@ -760,7 +810,6 @@
     if (shouldPersist) persistState();
   }
 
-  // Render Interactive Ayah Timeline Strip (00:00, 00:27: "1 | 2 ٱلَّذِى | 3 وَٱلَّذِى")
   function renderAyahTimelineStrip() {
     const strip = document.getElementById("ayahTimelineStrip");
     if (!strip) return;
@@ -785,17 +834,53 @@
 
       btn.addEventListener("click", () => {
         hapticTap();
-        state.activeVerseIdx = idx;
-        state.verseStartTime = performance.now();
-        state.activeVerseElapsed = 0;
-        renderAyahTimelineStrip();
+        jumpToVerseIndex(idx);
       });
 
       strip.appendChild(btn);
     });
   }
 
-  // Render 9. KAPAK Ayah Number Circles (02:03–02:11: 2, 3, 4, 5, 6, 7, 8)
+  function jumpToVerseIndex(idx) {
+    if (!state.versesLoaded || idx < 0 || idx >= state.verses.length) return;
+    state.activeVerseIdx = idx;
+    state.verseStartTime = performance.now();
+    state.activeVerseElapsed = 0;
+
+    let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
+    for (let i = 0; i < idx; i++) {
+      passed += Math.max(0.4, (state.audioDurations[i] || 5) - state.gaplessTrimSec);
+    }
+    state.elapsedTime = passed;
+    document.getElementById("lblCurrentTime").textContent = formatPreciseTime(state.elapsedTime);
+    const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
+    document.getElementById("progressBarFill").style.width = `${pct}%`;
+
+    renderAyahTimelineStrip();
+  }
+
+  function renderCoverTemplateChips() {
+    const wrap = document.getElementById("coverTemplateChips");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    COVER_TEMPLATES.forEach((tpl) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip" + (state.coverTemplateId === tpl.id ? " active" : "");
+      chip.textContent = tpl.name;
+      chip.addEventListener("click", () => {
+        hapticTap();
+        state.coverTemplateId = tpl.id;
+        state.coverPreviewMode = "cover";
+        const chk = document.getElementById("chkPreviewCoverNow");
+        if (chk) chk.checked = true;
+        renderCoverTemplateChips();
+        persistState();
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
   function renderCoverAyahCircles() {
     const wrap = document.getElementById("coverAyahCircles");
     if (!wrap) return;
@@ -825,7 +910,18 @@
     }
   }
 
-  // Upload processing
+  function renderUserPresetsList() {
+    const sel = document.getElementById("selUserPreset");
+    if (!sel) return;
+    sel.innerHTML = `<option value="">-- Kayıtlı Ön Ayar Seçin --</option>`;
+    (state.userPresets || []).forEach((p) => {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      sel.appendChild(opt);
+    });
+  }
+
   async function processUploadedFile(file) {
     const lower = file.name.toLowerCase();
     const isVideo = file.type.startsWith("video/") || lower.endsWith(".mp4") || lower.endsWith(".webm") || lower.endsWith(".mov");
@@ -862,7 +958,7 @@
         name: file.name.replace(/\.[^.]+$/, ""),
         type: "video",
         blob: file,
-        thumbDataUrl: generateProceduralThumb(["#08110E", "#142820", "#d8b456"], "VİDEO"),
+        thumbDataUrl: generateProceduralThumb(["#070809", "#181A20", "#E0B84C"], "VİDEO"),
         category: "Galerim",
         recommendedDarkness: 40,
         defaultEffect: "none",
@@ -891,7 +987,6 @@
     ).trim() || text;
   }
 
-  // Load Verses (Diyanet + Elmalılı Hamdi Yazır + Diyanet Vakfı + English) & Real MP3 Durations
   let currentLoadToken = 0;
 
   async function loadVersesAndPreloadAudio() {
@@ -1004,7 +1099,7 @@
       state.audioReady = true;
       state.textOnlyMode = false;
 
-      if (lblDur) lblDur.textContent = `≈ ${formatShortTime(total)}`;
+      if (lblDur) lblDur.textContent = formatPreciseTime(total);
       if (lblState) {
         lblState.textContent = `✓ Hazır (${state.audioDurations.length} âyet · ${formatShortTime(total)}${fromOfflineCache ? " · Çevrimdışı" : ""})`;
       }
@@ -1022,8 +1117,12 @@
             .join("");
         }
       }
-      if (lblState) lblState.textContent = `${failedItems.length} âyetin sesi yüklenemedi.`;
-      updateStageBadge("error", "Ses Eksik");
+      if (state.audioFailPolicy === "text_only") {
+        enableTextOnlyContinueMode();
+      } else {
+        if (lblState) lblState.textContent = `${failedItems.length} âyetin sesi yüklenemedi.`;
+        updateStageBadge("error", "Ses Eksik");
+      }
     }
 
     renderAyahTimelineStrip();
@@ -1044,7 +1143,7 @@
     for (const d of state.audioDurations) total += d;
     state.totalDuration = total;
 
-    document.getElementById("lblTotalDuration").textContent = `≈ ${formatShortTime(total)}`;
+    document.getElementById("lblTotalDuration").textContent = formatPreciseTime(total);
     document.getElementById("lblAudioReadyState").textContent = `Sadece Metin Modu (${state.verses.length} âyet · ${formatShortTime(total)})`;
     document.getElementById("btnPlayPreview").disabled = false;
     document.getElementById("btnRecordExport").disabled = false;
@@ -1071,7 +1170,7 @@
     }
   }
 
-  // Canvas Studio Drawing Engine (Includes Word-by-Word Highlight, Corner Info Badges, Readability Modes, Cover Modes)
+  // Canvas Studio Drawing Engine
   const canvas = document.getElementById("studioCanvas");
   const ctx = canvas.getContext("2d");
 
@@ -1100,79 +1199,148 @@
     return verse.tr || "";
   }
 
-  // Sebat Cover Scene (02:03–02:12: Supports "Kapağın Âyeti" circle selection + "Sûre adı büyük" toggle!)
-  function drawSebatCoverScene(w, h, scaleFactor) {
+  // Unified Cover Scene: Combines 9 Templates (Borders/Mihrab Arch/Badges) + Sebat Cover Ayah & Large Surah Calligraphy + Custom Title/Subtitle + Scale (60-160%) + Precise X/Y Offset + Cover Background Override!
+  function drawUnifiedCoverScene(w, h, scaleFactor) {
+    const tpl = COVER_TEMPLATES.find((t) => t.id === state.coverTemplateId) || COVER_TEMPLATES[0];
     const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
     const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
     const coverVerse =
       state.verses.find((v) => v.numberInSurah === state.coverAyahNo) ||
       state.verses[0];
 
-    const centerY = h * 0.5;
+    // 1. Optional Cover Background Override
+    if (state.coverBgOverride && state.coverBgOverride !== "same") {
+      const map = {
+        pure_black: ["#050608", "#0d0f14"],
+        dark_gold: ["#120e07", "#291f0e"],
+        emerald: ["#061612", "#0f2e24"],
+        midnight: ["#060b16", "#132242"]
+      };
+      const pal = map[state.coverBgOverride] || map.pure_black;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, pal[0]);
+      g.addColorStop(1, pal[1]);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    const cScale = ((state.coverScale || 100) / 100) * scaleFactor;
+    const baseCenterY = state.coverPos === "upper" ? h * 0.34 : state.coverPos === "lower" ? h * 0.66 : h * 0.5;
+    const centerY = baseCenterY + ((state.coverOffsetY || 0) / 100) * h;
+    const centerX = w * 0.5 + ((state.coverOffsetX || 0) / 100) * w;
+
     ctx.save();
+
+    // 2. Template Decorative Frame & Mihrab Arch
+    if (tpl.border) {
+      const pad = 38 * scaleFactor;
+      ctx.strokeStyle = (tpl.accent || "#D8B456") + "88";
+      ctx.lineWidth = 2.5 * scaleFactor;
+      ctx.strokeRect(pad, pad, w - pad * 2, h - pad * 2);
+    }
+    if (tpl.arch) {
+      ctx.strokeStyle = (tpl.accent || "#F3D77D") + "55";
+      ctx.lineWidth = 2 * scaleFactor;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY - 52 * cScale, 178 * cScale, Math.PI, 0);
+      ctx.stroke();
+    }
+
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.shadowColor = "rgba(0,0,0,0.85)";
-    ctx.shadowBlur = 16 * scaleFactor;
+    ctx.shadowColor = "rgba(0,0,0,0.88)";
+    ctx.shadowBlur = (state.textShadow || 14) * scaleFactor;
+
+    // 3. Optional Template Badge
+    if (tpl.badge) {
+      ctx.direction = "ltr";
+      ctx.fillStyle = tpl.accent || "#E0B84C";
+      ctx.font = `700 ${Math.round(14 * cScale)}px 'DM Sans', sans-serif`;
+      ctx.fillText(tpl.badge, centerX, centerY - 128 * cScale);
+    }
+
+    const customMain = (state.coverTitle || "").trim();
+    const customSub = (state.coverSubtitle || "").trim();
 
     if (state.coverLargeSurah) {
-      // "Sûre adı büyük" AÇIK (02:03–02:08): Dev Arapça sûre hattı + Türkçe Sûre adı + Ayet aralığı & Hâfız + Seçilen Kapağın Âyeti
+      // Large Arabic Surah Calligraphy + Title + Subtitle + Selected Cover Ayah
       ctx.direction = "rtl";
-      ctx.fillStyle = "rgba(255, 253, 247, 0.92)";
-      ctx.font = `700 ${Math.round(68 * scaleFactor)}px '${state.arabicFont}', serif`;
-      ctx.fillText(surahMeta[4] || surahMeta[2], w / 2, centerY - 68 * scaleFactor);
+      ctx.fillStyle = "rgba(255, 253, 247, 0.94)";
+      ctx.font = `700 ${Math.round(66 * cScale)}px '${state.arabicFont}', serif`;
+      ctx.fillText(surahMeta[4] || surahMeta[2], centerX, centerY - 64 * cScale);
 
       ctx.direction = "ltr";
-      ctx.fillStyle = "#FFFDF7";
-      ctx.font = `600 ${Math.round(28 * scaleFactor)}px '${state.mealFont || "DM Sans"}', serif`;
-      ctx.fillText(surahMeta[1], w / 2, centerY - 6 * scaleFactor);
+      ctx.fillStyle = tpl.accent || "#FFFDF7";
+      ctx.font = `700 ${Math.round(28 * cScale)}px '${state.mealFont || "DM Sans"}', serif`;
+      ctx.fillText(customMain || surahMeta[1], centerX, centerY - 2 * cScale);
 
-      const rangeLabel = `${state.ayahStart}-${state.ayahEnd}. âyetler · ${reciterMeta.name}`;
-      ctx.fillStyle = "rgba(229, 224, 213, 0.82)";
-      ctx.font = `400 ${Math.round(14 * scaleFactor)}px 'DM Sans', sans-serif`;
-      ctx.fillText(rangeLabel, w / 2, centerY + 26 * scaleFactor);
+      const rangeLabel = customSub || `${state.ayahStart}-${state.ayahEnd}. âyetler · ${reciterMeta.name}`;
+      ctx.fillStyle = "rgba(229, 224, 213, 0.85)";
+      ctx.font = `500 ${Math.round(14.5 * cScale)}px 'DM Sans', sans-serif`;
+      ctx.fillText(rangeLabel, centerX, centerY + 30 * cScale);
 
       if (coverVerse) {
         ctx.direction = "rtl";
         ctx.fillStyle = state.arabicColor;
-        ctx.font = `700 ${Math.round(26 * scaleFactor)}px '${state.arabicFont}', serif`;
-        ctx.fillText(coverVerse.arabic, w / 2, centerY + 72 * scaleFactor);
+        ctx.font = `700 ${Math.round(25 * cScale)}px '${state.arabicFont}', serif`;
+        const maxW = w * 0.82;
+        const lines = wrapCanvasText(ctx, coverVerse.arabic, maxW);
+        lines.slice(0, 2).forEach((ln, i) => {
+          ctx.fillText(ln, centerX, centerY + (74 + i * 34) * cScale);
+        });
       }
     } else if (coverVerse) {
-      // "Sûre adı büyük" KAPALI (02:10): Seçilen ayetin Arapçası + Meali
+      // Selected Cover Ayah Arabic + Meal (with custom title override if typed)
+      if (customMain) {
+        ctx.direction = "ltr";
+        ctx.fillStyle = tpl.accent || "#E0B84C";
+        ctx.font = `700 ${Math.round(22 * cScale)}px 'DM Sans', sans-serif`;
+        ctx.fillText(customMain, centerX, centerY - 78 * cScale);
+      }
+
       ctx.direction = "rtl";
       ctx.fillStyle = state.arabicColor;
-      ctx.font = `700 ${Math.round(38 * scaleFactor)}px '${state.arabicFont}', serif`;
-      ctx.fillText(coverVerse.arabic, w / 2, centerY - 22 * scaleFactor);
+      ctx.font = `700 ${Math.round(38 * cScale)}px '${state.arabicFont}', serif`;
+      const arLines = wrapCanvasText(ctx, coverVerse.arabic, w * 0.82);
+      arLines.slice(0, 2).forEach((ln, i) => {
+        ctx.fillText(ln, centerX, centerY - 22 * cScale + i * 48 * cScale);
+      });
 
       ctx.direction = "ltr";
       ctx.fillStyle = state.mealColor;
       const italicPrefix = state.mealItalic ? "italic " : "";
-      ctx.font = `${italicPrefix}${state.mealWeight || 500} ${Math.round(21 * scaleFactor)}px '${state.mealFont}', serif`;
-      ctx.fillText(`${coverVerse.numberInSurah}- ${getSelectedMealText(coverVerse)}`, w / 2, centerY + 32 * scaleFactor);
+      ctx.font = `${italicPrefix}${state.mealWeight || 500} ${Math.round(20 * cScale)}px '${state.mealFont}', serif`;
+      const subStr = customSub || `${coverVerse.numberInSurah}- ${getSelectedMealText(coverVerse)}`;
+      const trLines = wrapCanvasText(ctx, subStr, w * 0.82);
+      trLines.slice(0, 2).forEach((ln, i) => {
+        ctx.fillText(ln, centerX, centerY + (36 + (arLines.length > 1 ? 32 : 0) + i * 28) * cScale);
+      });
     }
 
     ctx.restore();
   }
 
-  // Sebat Corner Overlays: Top-Left ("A'lâ 2-10 / Mâhir el-Muaykılî") & Top-Right ("Tilawah" Signature)
-  function drawCornerOverlays(w, h, scaleFactor) {
+  // Draws Top-Left Corner Info + Centered Surah Header + Top-Right/Bottom Logo Signature
+  function drawOverlaysAndLogo(w, h, scaleFactor, t, verse) {
     const barOffset = state.cinemaBars ? Math.round(h * 0.085) : 0;
     const padX = 28 * scaleFactor;
     const padY = barOffset + 26 * scaleFactor;
+    const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
+    const recMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
 
     ctx.save();
     ctx.direction = "ltr";
     ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
     ctx.shadowBlur = 8 * scaleFactor;
 
-    // 1. Top-Left Corner Info (Sûre / Âyetler / Hâfız)
-    if (state.cornerShowSurah || state.cornerShowAyahs || state.cornerShowReciter) {
-      const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[86];
-      const recMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
-      const rangeStr = state.ayahStart === state.ayahEnd ? `${state.ayahStart}` : `${state.ayahStart}-${state.ayahEnd}`;
+    // 1. Top-Left Corner Info Badge ("Köşe Yazısı": Sûre / Âyetler / Hâfız)
+    const showCorner =
+      (state.inVideoSurahHeader === "both" || state.inVideoSurahHeader === "corner_only") &&
+      (state.cornerShowSurah || state.cornerShowAyahs || state.cornerShowReciter);
 
-      let line1Parts = [];
+    if (showCorner) {
+      const rangeStr = state.ayahStart === state.ayahEnd ? `${state.ayahStart}` : `${state.ayahStart}-${state.ayahEnd}`;
+      const line1Parts = [];
       if (state.cornerShowSurah) line1Parts.push(surahMeta[1]);
       if (state.cornerShowAyahs) line1Parts.push(rangeStr);
       const line1 = line1Parts.join(" ");
@@ -1194,35 +1362,132 @@
       }
     }
 
-    // 2. Top-Right Signature Badge ("Tilawah")
-    if (state.showSignature) {
-      const text = (state.watermarkText || "Tilawah").trim();
-      const iconSize = 22 * scaleFactor;
-      ctx.font = `600 ${Math.round(13 * scaleFactor)}px 'DM Sans', sans-serif`;
-      const tw = text ? ctx.measureText(text).width : 0;
-      const rightX = w - padX;
+    // 2. Centered Classic Surah & Ayah Header Strip inside video ("A'lâ Sûresi · 1. Âyet")
+    const showCenterBanner =
+      verse &&
+      state.coverPreviewMode !== "cover" &&
+      (state.inVideoSurahHeader === "both" || state.inVideoSurahHeader === "center_banner");
 
-      ctx.fillStyle = "rgba(255, 253, 247, 0.88)";
-      ctx.textAlign = "right";
+    if (showCenterBanner) {
+      ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      const midY = padY + 10 * scaleFactor;
-      if (text) {
-        ctx.fillText(text, rightX, midY);
-      }
+      ctx.fillStyle = "#E8C978";
+      ctx.font = `600 ${Math.round(15.5 * scaleFactor)}px 'DM Sans', sans-serif`;
+      const bannerY = w > h ? h * 0.14 : h * 0.16;
+      ctx.fillText(`${surahMeta[1]} Sûresi · ${verse.numberInSurah}. Âyet`, w / 2, bannerY);
+    }
+
+    // 3. Detailed Logo & Signature Watermark
+    if (state.showSignature && state.logoPos !== "hidden") {
+      const lScale = (state.logoScale || 100) / 100;
+      const iconSize = 26 * lScale * scaleFactor;
+      const text = (state.watermarkText || "Tilawah World").trim();
+      ctx.globalAlpha = Math.max(0.15, Math.min(1, (state.logoOpacity || 90) / 100));
+      ctx.font = `600 ${Math.round(13.5 * lScale * scaleFactor)}px 'DM Sans', sans-serif`;
+      const tw = text ? ctx.measureText(text).width : 0;
       const logoSource = appLogoLoaded ? appLogoImg : fallbackLogoCanvas;
-      ctx.drawImage(logoSource, rightX - tw - iconSize - 6 * scaleFactor, midY - iconSize / 2, iconSize, iconSize);
+
+      if (state.logoPos === "top-right") {
+        const rightX = w - padX;
+        const midY = padY + iconSize * 0.5;
+        ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        if (text) ctx.fillText(text, rightX, midY);
+        ctx.drawImage(logoSource, rightX - tw - iconSize - (text ? 7 * scaleFactor : 0), midY - iconSize / 2, iconSize, iconSize);
+      } else if (state.logoPos === "top-left") {
+        const leftX = padX;
+        const midY = padY + (showCorner ? 42 * scaleFactor : 0) + iconSize * 0.5;
+        ctx.drawImage(logoSource, leftX, midY - iconSize / 2, iconSize, iconSize);
+        if (text) {
+          ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, leftX + iconSize + 7 * scaleFactor, midY);
+        }
+      } else {
+        // bottom-center or floating
+        const totalW = iconSize + (text ? 8 * scaleFactor + tw : 0);
+        const cx = state.logoPos === "floating" ? w * 0.5 + Math.sin(t * 0.45) * (w * 0.22) : w * 0.5;
+        const cy = state.logoPos === "floating" ? h * 0.82 + Math.cos(t * 0.35) * (h * 0.04) : h - barOffset - 36 * scaleFactor;
+        const startX = cx - totalW / 2;
+        ctx.drawImage(logoSource, startX, cy - iconSize / 2, iconSize, iconSize);
+        if (text) {
+          ctx.fillStyle = "rgba(255, 253, 247, 0.9)";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          ctx.fillText(text, startX + iconSize + 8 * scaleFactor, cy);
+        }
+      }
     }
 
     ctx.restore();
   }
 
-  // Draws Arabic text with Word-by-Word Highlight ("Vurgulu") support!
+  // In-Video Progress Bar (Süre İlerleme Şeridi directly inside the exported video!)
+  function drawInVideoProgressBar(w, h, scaleFactor, underTextY) {
+    const mode = state.inVideoProgressBar || "bottom";
+    if (mode === "off") return;
+
+    let prog = 0;
+    if (state.isPlaying || state.isRecording) {
+      prog = state.totalDuration > 0 ? Math.max(0, Math.min(1, state.elapsedTime / state.totalDuration)) : 0;
+    } else if (state.verses.length > 0) {
+      prog = Math.max(0.08, Math.min(1, (state.activeVerseIdx + 0.35) / state.verses.length));
+    }
+
+    const barOffset = state.cinemaBars ? Math.round(h * 0.085) : 0;
+
+    ctx.save();
+    if (mode === "bottom" || mode === "top") {
+      const barH = Math.max(4, Math.round(5.5 * scaleFactor));
+      const padSide = Math.round(w * 0.06);
+      const trackW = w - padSide * 2;
+      const y = mode === "bottom"
+        ? h - barOffset - Math.round(16 * scaleFactor) - barH
+        : barOffset + Math.round(12 * scaleFactor);
+
+      // Track background
+      ctx.fillStyle = "rgba(255, 255, 255, 0.18)";
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(padSide, y, trackW, barH, 999);
+      else ctx.rect(padSide, y, trackW, barH);
+      ctx.fill();
+
+      // Active fill
+      const fillW = Math.max(barH, trackW * prog);
+      const grad = ctx.createLinearGradient(padSide, y, padSide + fillW, y);
+      grad.addColorStop(0, "#D8B456");
+      grad.addColorStop(1, "#F8E5A6");
+      ctx.fillStyle = grad;
+      ctx.shadowColor = "rgba(240, 215, 138, 0.65)";
+      ctx.shadowBlur = 8 * scaleFactor;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(padSide, y, fillW, barH, 999);
+      else ctx.rect(padSide, y, fillW, barH);
+      ctx.fill();
+    } else if (mode === "under_text" && underTextY) {
+      const barW = Math.round(w * 0.44);
+      const barH = Math.max(3, Math.round(4 * scaleFactor));
+      const x = Math.round((w - barW) / 2);
+      const y = Math.min(h - barOffset - 45 * scaleFactor, underTextY + Math.round(18 * scaleFactor));
+
+      ctx.fillStyle = "rgba(255, 255, 255, 0.16)";
+      ctx.fillRect(x, y, barW, barH);
+
+      ctx.fillStyle = "#F0D78A";
+      ctx.shadowColor = "rgba(240, 215, 138, 0.65)";
+      ctx.shadowBlur = 6 * scaleFactor;
+      ctx.fillRect(x, y, barW * prog, barH);
+    }
+    ctx.restore();
+  }
+
   function drawArabicLinesWithWordHighlight(ctx, verse, maxTextW, centerX, startY, lineH, arPx, scaleFactor, activeWordGlobalIdx, highlightEnabled) {
     const rawWords = (verse.arabic || "").trim().split(/\s+/).filter(Boolean);
     const ayahBadge = `\uFD3F${toArabicIndicDigits(verse.numberInSurah)}\uFD3E`;
     const allTokens = [...rawWords, ayahBadge];
 
-    // Group tokens into wrapped lines
     const lines = [];
     let curTokens = [];
     for (let i = 0; i < allTokens.length; i++) {
@@ -1252,12 +1517,9 @@
         return;
       }
 
-      // Word-by-word RTL positioning along centered line
       const spaceW = ctx.measureText(" ").width;
       const tokenWidths = lineTokens.map((t) => ctx.measureText(t.text).width);
       const totalLineW = tokenWidths.reduce((a, b) => a + b, 0) + Math.max(0, lineTokens.length - 1) * spaceW;
-
-      // In RTL, first word starts on the RIGHT edge (centerX + totalLineW / 2)
       let rightEdgeCursor = centerX + totalLineW / 2;
 
       lineTokens.forEach((tokObj, tIdx) => {
@@ -1267,8 +1529,8 @@
 
         ctx.save();
         if (isHighlighted) {
-          ctx.fillStyle = "#F472B6"; // Sebat soft rose-gold word highlight
-          ctx.shadowColor = "rgba(244, 114, 182, 0.75)";
+          ctx.fillStyle = "#F472B6";
+          ctx.shadowColor = "rgba(244, 114, 182, 0.8)";
           ctx.shadowBlur = 18 * scaleFactor;
         } else {
           ctx.fillStyle = state.arabicColor;
@@ -1317,7 +1579,7 @@
 
     // 2. Darkness
     if (state.bgDim > 0) {
-      ctx.fillStyle = `rgba(4, 8, 6, ${state.bgDim / 100})`;
+      ctx.fillStyle = `rgba(4, 6, 8, ${state.bgDim / 100})`;
       ctx.fillRect(0, 0, w, h);
     }
 
@@ -1325,182 +1587,200 @@
     drawCinematicVignette(ctx, w, h, state.vignette !== "off");
     drawVisualEffectOverlay(ctx, w, h, t, dt, state);
 
-    // 4. Filter Warmth & Cinema Letterbox Bars (01:58)
+    // 4. Filter Warmth & Cinema Letterbox Bars
     drawFilterWarmthAndCinemaBars(ctx, w, h, state);
 
-    // 5. Corner Info Badges & Signature
-    drawCornerOverlays(w, h, scaleFactor);
+    const activeVerse = state.verses[state.activeVerseIdx] || state.verses[0];
+
+    // 5. Corner Info Badges, Centered Surah Header & Logo Signature
+    drawOverlaysAndLogo(w, h, scaleFactor, t, activeVerse);
 
     // 6. Main Content (Cover or Verse)
     const showCoverNow =
       state.coverPreviewMode === "cover" ||
       (state.coverFirstFrame === "on" && (state.isPlaying || state.isRecording) && state.elapsedTime < 1.2);
 
+    let lastContentBottomY = h * 0.65;
+
     if (showCoverNow) {
-      drawSebatCoverScene(w, h, scaleFactor);
-    } else if (state.subtitleMode !== "blank") {
-      const verse = state.verses[state.activeVerseIdx] || state.verses[0];
-      if (verse) {
-        let alpha = 1;
-        let slideY = 0;
-        const sinceVerse = Math.max(0, (performance.now() - state.verseStartTime) / 1000);
-        if (state.transitionMode !== "none") {
-          const dur = state.transitionMode === "soft" ? 0.65 : 0.42;
-          const prog = Math.min(1, sinceVerse / dur);
-          const ease = 1 - Math.pow(1 - prog, 3);
-          alpha = ease;
-          if (state.transitionMode === "slide") {
-            slideY = (1 - ease) * 26 * scaleFactor;
-          }
+      drawUnifiedCoverScene(w, h, scaleFactor);
+    } else if (state.subtitleMode !== "blank" && activeVerse) {
+      let alpha = 1;
+      let slideY = 0;
+      const sinceVerse = Math.max(0, (performance.now() - state.verseStartTime) / 1000);
+      if (state.transitionMode !== "none") {
+        const dur = state.transitionMode === "soft" ? 0.65 : 0.42;
+        const prog = Math.min(1, sinceVerse / dur);
+        const ease = 1 - Math.pow(1 - prog, 3);
+        alpha = ease;
+        if (state.transitionMode === "slide") {
+          slideY = (1 - ease) * 26 * scaleFactor;
         }
-
-        ctx.save();
-        ctx.globalAlpha = alpha;
-        ctx.translate(0, slideY);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        if (state.textReadability === "shadow") {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.92)";
-          ctx.shadowBlur = 18 * scaleFactor;
-        } else if (state.textReadability === "plain") {
-          ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
-          ctx.shadowBlur = 6 * scaleFactor;
-        } else {
-          ctx.shadowBlur = 0;
-        }
-
-        const maxTextW = isLandscape ? w * 0.8 : w * 0.84;
-        const arPx = Math.round(state.arabicSize * scaleFactor * (isLandscape ? 0.86 : 1));
-        const mealPx = Math.round(state.mealSize * scaleFactor * (isLandscape ? 0.86 : 1));
-
-        const showAr = (state.subtitleMode !== "meal_only");
-        const showTr = (state.subtitleMode === "tr" || state.subtitleMode === "meal_only" || state.subtitleMode === "both");
-        const showEn = (state.subtitleMode === "en" || state.subtitleMode === "both");
-
-        ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
-        const ayahBadge = `\uFD3F${toArabicIndicDigits(verse.numberInSurah)}\uFD3E`;
-        const arLinesPreview = showAr ? wrapCanvasText(ctx, `${verse.arabic} ${ayahBadge}`, maxTextW) : [];
-        const arLineH = arPx * 1.62;
-        const totalArH = arLinesPreview.length * arLineH;
-
-        const italicStr = state.mealItalic ? "italic " : "";
-        ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
-        const mealTextStr = `${verse.numberInSurah}- ${getSelectedMealText(verse)}`;
-        const trLines = showTr ? wrapCanvasText(ctx, mealTextStr, maxTextW) : [];
-        const trLineH = mealPx * 1.44;
-
-        const enPx = Math.round(mealPx * 0.86);
-        ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
-        const enLines = showEn ? wrapCanvasText(ctx, verse.en, maxTextW) : [];
-        const enLineH = enPx * 1.38;
-
-        const totalBlockH =
-          totalArH +
-          (trLines.length > 0 ? (showAr ? 20 * scaleFactor : 0) + trLines.length * trLineH : 0) +
-          (enLines.length > 0 ? 14 * scaleFactor + enLines.length * enLineH : 0);
-
-        const posMap = {
-          top: isLandscape ? h * 0.34 : h * 0.30,
-          center: h * 0.50,
-          bottom: isLandscape ? h * 0.68 : h * 0.70
-        };
-        const anchorY = posMap[state.textPosition] || h * 0.50;
-        const blockStartY = anchorY - totalBlockH / 2;
-
-        // Readability Box ("Kutu")
-        if (state.textReadability === "box") {
-          const padY = 22 * scaleFactor;
-          ctx.fillStyle = "rgba(6, 12, 10, 0.68)";
-          const bx = w * 0.06;
-          const bw = w * 0.88;
-          ctx.beginPath();
-          if (ctx.roundRect) {
-            ctx.roundRect(bx, blockStartY - padY, bw, totalBlockH + padY * 2, 16 * scaleFactor);
-          } else {
-            ctx.rect(bx, blockStartY - padY, bw, totalBlockH + padY * 2);
-          }
-          ctx.fill();
-        }
-
-        let cursorY = blockStartY + arLineH / 2;
-
-        if (showAr) {
-          ctx.direction = "rtl";
-          ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
-
-          // Compute active word index for "Vurgulu" (word_highlight)
-          const words = (verse.arabic || "").trim().split(/\s+/).filter(Boolean);
-          let activeWordIdx = -1;
-          const isWordHighlight = (state.transitionMode === "word_highlight");
-          if (isWordHighlight && words.length > 0) {
-            const vDur = state.audioDurations[state.activeVerseIdx] || 5.0;
-            if (state.isPlaying || state.isRecording) {
-              const frac = Math.max(0, Math.min(0.999, (state.activeVerseElapsed || 0) / vDur));
-              // Weight by character length so longer words get proportional highlight time
-              const weights = words.map((wStr) => Math.max(2, wStr.length));
-              const totalWeight = weights.reduce((a, b) => a + b, 0);
-              let target = frac * totalWeight;
-              for (let wi = 0; wi < weights.length; wi++) {
-                if (target <= weights[wi]) {
-                  activeWordIdx = wi;
-                  break;
-                }
-                target -= weights[wi];
-              }
-              if (activeWordIdx === -1) activeWordIdx = words.length - 1;
-            } else {
-              // When paused in preview, highlight the first or cycling word so user immediately sees "Vurgulu" style!
-              activeWordIdx = Math.floor(t * 1.1) % words.length;
-            }
-          }
-
-          drawArabicLinesWithWordHighlight(
-            ctx,
-            verse,
-            maxTextW,
-            w / 2,
-            cursorY,
-            arLineH,
-            arPx,
-            scaleFactor,
-            activeWordIdx,
-            isWordHighlight
-          );
-          cursorY += totalArH + 18 * scaleFactor;
-        }
-
-        ctx.direction = "ltr";
-        if (trLines.length > 0) {
-          ctx.fillStyle = state.mealColor;
-          ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
-          trLines.forEach((line, i) => {
-            const ly = cursorY + i * trLineH;
-            if (state.textReadability === "outline") {
-              ctx.strokeStyle = "rgba(0,0,0,0.9)";
-              ctx.lineWidth = 2.8 * scaleFactor;
-              ctx.strokeText(line, w / 2, ly);
-            }
-            ctx.fillText(line, w / 2, ly);
-          });
-          cursorY += trLines.length * trLineH + 14 * scaleFactor;
-        }
-
-        if (enLines.length > 0) {
-          ctx.fillStyle = "#CBD5E1";
-          ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
-          enLines.forEach((line, i) => {
-            ctx.fillText(line, w / 2, cursorY + i * enLineH);
-          });
-        }
-
-        ctx.restore();
       }
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(0, slideY);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (state.textReadability === "shadow") {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.92)";
+        ctx.shadowBlur = (state.textShadow || 14) * scaleFactor;
+      } else if (state.textReadability === "plain") {
+        ctx.shadowColor = "rgba(0, 0, 0, 0.45)";
+        ctx.shadowBlur = 5 * scaleFactor;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
+      const maxTextW = isLandscape ? w * 0.8 : w * 0.84;
+      const arPx = Math.round(state.arabicSize * scaleFactor * (isLandscape ? 0.86 : 1));
+      const mealPx = Math.round(state.mealSize * scaleFactor * (isLandscape ? 0.86 : 1));
+
+      const showAr = (state.subtitleMode !== "meal_only");
+      const showTr = (state.subtitleMode === "tr" || state.subtitleMode === "meal_only" || state.subtitleMode === "both");
+      const showEn = (state.subtitleMode === "en" || state.subtitleMode === "both");
+
+      ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
+      const ayahBadge = `\uFD3F${toArabicIndicDigits(activeVerse.numberInSurah)}\uFD3E`;
+      const arLinesPreview = showAr ? wrapCanvasText(ctx, `${activeVerse.arabic} ${ayahBadge}`, maxTextW) : [];
+      const arLineH = arPx * 1.62;
+      const totalArH = arLinesPreview.length * arLineH;
+
+      const italicStr = state.mealItalic ? "italic " : "";
+      ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
+      const mealTextStr = `${activeVerse.numberInSurah}- ${getSelectedMealText(activeVerse)}`;
+      const trLines = showTr ? wrapCanvasText(ctx, mealTextStr, maxTextW) : [];
+      const trLineH = mealPx * 1.44;
+
+      const enPx = Math.round(mealPx * 0.86);
+      ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
+      const enLines = showEn ? wrapCanvasText(ctx, activeVerse.en, maxTextW) : [];
+      const enLineH = enPx * 1.38;
+
+      const totalBlockH =
+        totalArH +
+        (trLines.length > 0 ? (showAr ? 20 * scaleFactor : 0) + trLines.length * trLineH : 0) +
+        (enLines.length > 0 ? 14 * scaleFactor + enLines.length * enLineH : 0);
+
+      const posMap = {
+        top: isLandscape ? h * 0.36 : h * 0.33,
+        center: h * 0.50,
+        bottom: isLandscape ? h * 0.68 : h * 0.68
+      };
+      const anchorY = posMap[state.textPosition] || h * 0.50;
+      const blockStartY = anchorY - totalBlockH / 2;
+
+      // Optional Bismillah Header above Ayah 1
+      const showBismillah =
+        activeVerse.hasBismillahHeader &&
+        (state.bismillahMode === "separate" || (state.bismillahMode === "first_only" && state.activeVerseIdx === 0));
+
+      if (showBismillah) {
+        ctx.direction = "rtl";
+        ctx.fillStyle = "#F0D78A";
+        ctx.font = `700 ${Math.round(arPx * 0.72)}px '${state.arabicFont}', serif`;
+        ctx.fillText("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", w / 2, blockStartY - 38 * scaleFactor);
+      }
+
+      if (state.textReadability === "box") {
+        const padY = 22 * scaleFactor;
+        ctx.fillStyle = "rgba(5, 7, 10, 0.70)";
+        const bx = w * 0.06;
+        const bw = w * 0.88;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(bx, blockStartY - padY, bw, totalBlockH + padY * 2, 16 * scaleFactor);
+        } else {
+          ctx.rect(bx, blockStartY - padY, bw, totalBlockH + padY * 2);
+        }
+        ctx.fill();
+      }
+
+      let cursorY = blockStartY + arLineH / 2;
+
+      if (showAr) {
+        ctx.direction = "rtl";
+        ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
+        if (state.arabicLetterSpacing > 0 && "letterSpacing" in ctx) {
+          ctx.letterSpacing = `${state.arabicLetterSpacing}px`;
+        }
+
+        const words = (activeVerse.arabic || "").trim().split(/\s+/).filter(Boolean);
+        let activeWordIdx = -1;
+        const isWordHighlight = (state.transitionMode === "word_highlight");
+        if (isWordHighlight && words.length > 0) {
+          const vDur = state.audioDurations[state.activeVerseIdx] || 5.0;
+          if (state.isPlaying || state.isRecording) {
+            const frac = Math.max(0, Math.min(0.999, (state.activeVerseElapsed || 0) / vDur));
+            const weights = words.map((wStr) => Math.max(2, wStr.length));
+            const totalWeight = weights.reduce((a, b) => a + b, 0);
+            let target = frac * totalWeight;
+            for (let wi = 0; wi < weights.length; wi++) {
+              if (target <= weights[wi]) {
+                activeWordIdx = wi;
+                break;
+              }
+              target -= weights[wi];
+            }
+            if (activeWordIdx === -1) activeWordIdx = words.length - 1;
+          } else {
+            activeWordIdx = Math.floor(t * 1.1) % words.length;
+          }
+        }
+
+        drawArabicLinesWithWordHighlight(
+          ctx,
+          activeVerse,
+          maxTextW,
+          w / 2,
+          cursorY,
+          arLineH,
+          arPx,
+          scaleFactor,
+          activeWordIdx,
+          isWordHighlight
+        );
+        if ("letterSpacing" in ctx) ctx.letterSpacing = "0px";
+        cursorY += totalArH + 18 * scaleFactor;
+      }
+
+      ctx.direction = "ltr";
+      if (trLines.length > 0) {
+        ctx.fillStyle = state.mealColor;
+        ctx.font = `${italicStr}${state.mealWeight || 500} ${mealPx}px '${state.mealFont || "DM Sans"}', serif`;
+        trLines.forEach((line, i) => {
+          const ly = cursorY + i * trLineH;
+          if (state.textReadability === "outline") {
+            ctx.strokeStyle = "rgba(0,0,0,0.9)";
+            ctx.lineWidth = 2.8 * scaleFactor;
+            ctx.strokeText(line, w / 2, ly);
+          }
+          ctx.fillText(line, w / 2, ly);
+        });
+        cursorY += trLines.length * trLineH + 14 * scaleFactor;
+      }
+
+      if (enLines.length > 0) {
+        ctx.fillStyle = "#CBD5E1";
+        ctx.font = `400 ${enPx}px 'DM Sans', sans-serif`;
+        enLines.forEach((line, i) => {
+          ctx.fillText(line, w / 2, cursorY + i * enLineH);
+        });
+        cursorY += enLines.length * enLineH;
+      }
+
+      lastContentBottomY = cursorY;
+      ctx.restore();
     }
+
+    // 7. In-Video Progress Bar (Süre Şeridi videonun içinde!)
+    drawInVideoProgressBar(w, h, scaleFactor, lastContentBottomY);
 
     if (state.isFadingOut && state.fadeOutProgress > 0) {
       ctx.save();
-      ctx.fillStyle = `rgba(4, 8, 6, ${Math.min(0.92, state.fadeOutProgress)})`;
+      ctx.fillStyle = `rgba(4, 6, 8, ${Math.min(0.92, state.fadeOutProgress)})`;
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
@@ -1737,7 +2017,7 @@
           passed += Math.min(vDur, curInVerse);
           state.elapsedTime = Math.min(state.totalDuration, passed);
 
-          document.getElementById("lblCurrentTime").textContent = formatShortTime(state.elapsedTime);
+          document.getElementById("lblCurrentTime").textContent = formatPreciseTime(state.elapsedTime);
           const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
           document.getElementById("progressBarFill").style.width = `${pct}%`;
 
@@ -1803,7 +2083,7 @@
         passed += state.activeVerseElapsed;
         state.elapsedTime = Math.min(state.totalDuration, passed);
 
-        document.getElementById("lblCurrentTime").textContent = formatShortTime(state.elapsedTime);
+        document.getElementById("lblCurrentTime").textContent = formatPreciseTime(state.elapsedTime);
         const pct = state.totalDuration > 0 ? Math.min(100, (state.elapsedTime / state.totalDuration) * 100) : 0;
         document.getElementById("progressBarFill").style.width = `${pct}%`;
 
@@ -1909,18 +2189,17 @@
     downloadExportedVideo();
   }
 
-  // Tool Grid Switching (10 Sebat Tools, Always-Visible Top Preview)
   const sheetTitles = {
     stil: "Stil",
     kesit: "Kesit",
     hafiz: "Hâfız",
-    zemin: "Zemin",
-    ortam: "Ortam",
-    metin: "Metin",
-    gorunum: "Görünüm",
-    filtre: "Filtre",
-    kapak: "Kapak",
-    bicim: "Biçim & Çıktı"
+    zemin: "Zemin & Kadraj",
+    ortam: "Ortam & Ses",
+    metin: "Metin & Hat",
+    gorunum: "Görünüm & Video İçi Şerit",
+    filtre: "Filtre & Atmosfer",
+    kapak: "Kapak Tasarımı & Konum",
+    bicim: "Biçim, İmza & Ayarlar"
   };
 
   let activeTabName = "stil";
@@ -1942,7 +2221,6 @@
     const titleEl = document.getElementById("sheetTitleText");
     if (titleEl) titleEl.textContent = sheetTitles[tabName] || "Ayarlar";
 
-    // Automatically preview cover when Kapak tab is opened, or ayah when other tabs are opened
     if (tabName === "kapak") {
       state.coverPreviewMode = "cover";
       const chk = document.getElementById("chkPreviewCoverNow");
@@ -2025,7 +2303,6 @@
       canvas.height = baseDim;
     }
 
-    // Update ratio cards in Biçim tab
     document.querySelectorAll("#ratioCardsList .sebat-list-item").forEach((el) => {
       const isAct = el.dataset.ratio === state.platformRatio;
       el.classList.toggle("active", isAct);
@@ -2037,7 +2314,7 @@
   }
 
   function syncAllControlsFromState() {
-    document.documentElement.setAttribute("data-theme", state.uiTheme || "emerald");
+    document.documentElement.setAttribute("data-theme", state.uiTheme || "black");
 
     populateSurahAndReciterSelectors();
     renderStylePresetsGrid();
@@ -2045,26 +2322,32 @@
     renderRecitersList();
     renderAmbientSoundList();
     renderColorSwatches();
+    renderCoverTemplateChips();
     renderCoverAyahCircles();
+    renderUserPresetsList();
 
     const setVal = (id, v) => { const el = document.getElementById(id); if (el && typeof v !== "undefined") el.value = v; };
     const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
     const setChk = (id, b) => { const el = document.getElementById(id); if (el) el.checked = Boolean(b); };
 
-    // Photo motion buttons
     document.querySelectorAll("#photoMotionGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.motion === state.photoMotion);
     });
+    setVal("rngBgZoom", state.bgZoom);
+    setTxt("valBgZoom", `${(state.bgZoom / 100).toFixed(2)}x`);
+    setVal("rngBgPanX", state.bgPanX);
+    setTxt("valBgPanX", `${state.bgPanX}%`);
+    setVal("rngBgPanY", state.bgPanY);
+    setTxt("valBgPanY", `${state.bgPanY}%`);
+    setVal("inpVideoTrimStart", state.videoTrimStart);
+    setVal("inpVideoTrimEnd", state.videoTrimEnd);
 
-    // Meal style & Arabic font buttons
     document.querySelectorAll("#mealStyleGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.mstyle === state.mealStyle);
     });
     document.querySelectorAll("#arabicFontGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.afont === state.arabicFont);
     });
-
-    // Readability & Position buttons
     document.querySelectorAll("#readabilityGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.read === state.textReadability);
     });
@@ -2072,7 +2355,6 @@
       b.classList.toggle("active", b.dataset.pos === state.textPosition);
     });
 
-    // Display mode, Meal edition, Transition buttons
     document.querySelectorAll("#displayModeGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", b.dataset.disp === state.subtitleMode);
     });
@@ -2083,18 +2365,24 @@
       b.classList.toggle("active", b.dataset.trans === state.transitionMode);
     });
 
-    // Quality buttons
     document.querySelectorAll("#qualityGroup .sebat-opt-btn").forEach((b) => {
       b.classList.toggle("active", Number(b.dataset.res) === Number(state.resolution));
     });
 
     setTxt("lblArabicColorName", state.arabicColorName || "Fildişi");
     setTxt("lblMealColorName", state.mealColorName || "Zer");
+    setVal("inpArabicColor", state.arabicColor);
+    setVal("inpMealColor", state.mealColor);
 
     setVal("rngArabicSize", state.arabicSize);
     setTxt("valArabicSize", `${state.arabicSize} px`);
     setVal("rngMealSize", state.mealSize);
     setTxt("valMealSize", `${state.mealSize} px`);
+    setVal("rngTextShadow", state.textShadow);
+    setTxt("valTextShadow", `${state.textShadow} px`);
+    setVal("rngArabicLetterSpacing", state.arabicLetterSpacing);
+    setTxt("valArabicLetterSpacing", `${state.arabicLetterSpacing} px`);
+    setVal("selBismillahMode", state.bismillahMode);
 
     setVal("rngReciterVol", state.reciterVol);
     setTxt("valReciterVol", `%${state.reciterVol}`);
@@ -2102,7 +2390,13 @@
     setTxt("valAmbientVol", `%${state.ambientVol}`);
     setVal("rngBgVideoVol", state.bgVideoVol);
     setTxt("valBgVideoVol", `%${state.bgVideoVol}`);
+    setVal("rngGaplessTrim", Math.round(state.gaplessTrimSec * 100));
+    setTxt("valGaplessTrim", `${state.gaplessTrimSec.toFixed(2)} sn`);
+    setVal("selFadeOutEnd", state.fadeOutEnd);
+    setVal("selAudioFailPolicy", state.audioFailPolicy);
 
+    setVal("selInVideoProgressBar", state.inVideoProgressBar);
+    setVal("selInVideoSurahHeader", state.inVideoSurahHeader);
     setChk("chkCornerSurah", state.cornerShowSurah);
     setChk("chkCornerAyahs", state.cornerShowAyahs);
     setChk("chkCornerReciter", state.cornerShowReciter);
@@ -2117,16 +2411,37 @@
 
     setVal("rngBgDim", state.bgDim);
     setTxt("valBgDim", `%${state.bgDim}`);
+    setChk("chkLockBgDim", state.lockBgDim);
     setVal("rngBgBlur", state.bgBlur);
     setTxt("valBgBlur", `%${Math.round((state.bgBlur / 20) * 100)}`);
     setChk("chkCinemaBars", state.cinemaBars);
     setVal("selVisualEffect", state.visualEffect);
+    setVal("rngEffectIntensity", state.effectIntensity);
+    setTxt("valEffectIntensity", `%${state.effectIntensity}`);
 
     setChk("chkCoverLargeSurah", state.coverLargeSurah);
     setChk("chkCoverWithVideo", state.coverFirstFrame === "on");
     setChk("chkPreviewCoverNow", state.coverPreviewMode === "cover");
+    setVal("inpCoverTitle", state.coverTitle);
+    setVal("inpCoverSubtitle", state.coverSubtitle);
+    setVal("rngCoverScale", state.coverScale);
+    setTxt("valCoverScale", `%${state.coverScale}`);
+    setVal("rngCoverOffsetY", state.coverOffsetY);
+    setTxt("valCoverOffsetY", `${state.coverOffsetY}%`);
+    setVal("rngCoverOffsetX", state.coverOffsetX);
+    setTxt("valCoverOffsetX", `${state.coverOffsetX}%`);
+    setVal("selCoverPos", state.coverPos);
+    setVal("selCoverBgOverride", state.coverBgOverride);
 
+    setVal("selBitrateMbps", state.bitrateMbps);
+    setVal("selExportEngine", state.exportEngine);
+    setVal("selFileNameFormat", state.fileNameFormat);
     setChk("chkShowSignature", state.showSignature);
+    setVal("selLogoPos", state.logoPos);
+    setVal("rngLogoScale", state.logoScale);
+    setTxt("valLogoScale", `%${state.logoScale}`);
+    setVal("rngLogoOpacity", state.logoOpacity);
+    setTxt("valLogoOpacity", `%${state.logoOpacity}`);
     setVal("inpWatermarkText", state.watermarkText);
     setVal("selCaptionPlatform", state.captionPlatform);
     setVal("selUiTheme", state.uiTheme);
@@ -2179,7 +2494,7 @@
               category: "Hareketli",
               recommendedDarkness: 40,
               defaultEffect: "none",
-              palette: ["#08110E", "#142820", "#d8b456"]
+              palette: ["#070809", "#181A20", "#E0B84C"]
             });
           }
         });
@@ -2197,7 +2512,6 @@
   }
 
   function bindEvents() {
-    // 10-Tool Grid Buttons
     document.querySelectorAll(".tool-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const tab = btn.dataset.tab;
@@ -2229,7 +2543,15 @@
       shell.classList.toggle("panel-collapsed");
     });
 
-    // Undo / Redo & Safe-Zone
+    // Interactive Progress Scrubber Bar Click
+    document.getElementById("progressTrackBar").addEventListener("click", (e) => {
+      if (!state.versesLoaded || state.verses.length === 0) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const frac = Math.max(0, Math.min(0.999, (e.clientX - rect.left) / rect.width));
+      const targetIdx = Math.min(state.verses.length - 1, Math.floor(frac * state.verses.length));
+      jumpToVerseIndex(targetIdx);
+    });
+
     document.getElementById("btnUndo").addEventListener("click", () => performUndo());
     document.getElementById("btnRedo").addEventListener("click", () => performRedo());
 
@@ -2250,7 +2572,6 @@
       }
     });
 
-    // Play & Record Buttons
     document.getElementById("btnPlayPreview").addEventListener("click", () => {
       hapticTap();
       if (state.isPlaying || state.isRecording) {
@@ -2274,7 +2595,7 @@
     document.getElementById("btnDownloadExport").addEventListener("click", () => downloadExportedVideo());
     document.getElementById("btnShareExport").addEventListener("click", () => shareExportedVideo());
 
-    // Kesit & Hâfız Controls
+    // Kesit & Hâfız
     document.getElementById("btnJumpToHafizFromKesit").addEventListener("click", () => switchTab("hafiz"));
 
     document.getElementById("selSurah").addEventListener("change", (e) => {
@@ -2330,7 +2651,7 @@
       renderRecitersList();
     });
 
-    // Zemin & Hareket Controls
+    // Zemin & Kadraj
     document.getElementById("inpZeminSearch").addEventListener("input", (e) => {
       state.zeminSearch = e.target.value;
       renderZeminGrid();
@@ -2367,6 +2688,16 @@
       showToast("Medya Galerim'e eklendi.");
     });
 
+    document.getElementById("btnClearGallery").addEventListener("click", async () => {
+      hapticTap();
+      await clearAllGallery();
+      galleryItems = [];
+      renderZeminCategories();
+      await selectZemin("vid_forest_stream");
+      refreshStorageStatsUI();
+      showToast("Kişisel galeriniz temizlendi.");
+    });
+
     document.querySelectorAll("#photoMotionGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
@@ -2376,7 +2707,59 @@
       });
     });
 
-    // Ortam Controls
+    document.getElementById("rngBgZoom").addEventListener("input", (e) => {
+      state.bgZoom = Number(e.target.value);
+      document.getElementById("valBgZoom").textContent = `${(state.bgZoom / 100).toFixed(2)}x`;
+      persistState();
+    });
+    document.getElementById("rngBgPanX").addEventListener("input", (e) => {
+      state.bgPanX = Number(e.target.value);
+      document.getElementById("valBgPanX").textContent = `${state.bgPanX}%`;
+      persistState();
+    });
+    document.getElementById("rngBgPanY").addEventListener("input", (e) => {
+      state.bgPanY = Number(e.target.value);
+      document.getElementById("valBgPanY").textContent = `${state.bgPanY}%`;
+      persistState();
+    });
+    document.getElementById("inpVideoTrimStart").addEventListener("change", (e) => {
+      state.videoTrimStart = Math.max(0, Number(e.target.value) || 0);
+      persistState();
+    });
+    document.getElementById("inpVideoTrimEnd").addEventListener("change", (e) => {
+      state.videoTrimEnd = Math.max(0, Number(e.target.value) || 0);
+      persistState();
+    });
+    document.getElementById("btnLoadDirectUrl").addEventListener("click", async () => {
+      const url = document.getElementById("inpDirectMediaUrl").value.trim();
+      if (!url) {
+        showToast("Lütfen doğrudan bir .mp4, .webm veya .jpg bağlantısı girin.");
+        return;
+      }
+      showToast("Bağlantı indiriliyor...");
+      try {
+        const res = await fetch(url, { mode: "cors" });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const blob = await res.blob();
+        const ext = url.split("?")[0].split(".").pop().toLowerCase() || "mp4";
+        const fakeFile = new File([blob], `Baglanti_${Date.now()}.${ext}`, {
+          type: blob.type || (ext === "jpg" ? "image/jpeg" : "video/mp4")
+        });
+        const item = await processUploadedFile(fakeFile);
+        await saveGalleryItem(item);
+        galleryItems = await getAllGalleryItems();
+        state.zeminCategory = "Galerim";
+        renderZeminCategories();
+        await selectZemin(item.id);
+        document.getElementById("inpDirectMediaUrl").value = "";
+        refreshStorageStatsUI();
+        showToast("Bağlantıdaki medya eklendi.");
+      } catch (_) {
+        showToast("CORS engeli nedeniyle indirilemedi. Lütfen cihazınızdan '+ Yükle' ile seçin.");
+      }
+    });
+
+    // Ortam & Ses
     document.getElementById("rngReciterVol").addEventListener("input", (e) => {
       state.reciterVol = Number(e.target.value);
       document.getElementById("valReciterVol").textContent = `%${state.reciterVol}`;
@@ -2397,8 +2780,21 @@
       updateVolumes(state, activeBgVideo);
       persistState();
     });
+    document.getElementById("rngGaplessTrim").addEventListener("input", (e) => {
+      state.gaplessTrimSec = Number(e.target.value) / 100;
+      document.getElementById("valGaplessTrim").textContent = `${state.gaplessTrimSec.toFixed(2)} sn`;
+      persistState();
+    });
+    document.getElementById("selFadeOutEnd").addEventListener("change", (e) => {
+      state.fadeOutEnd = e.target.value;
+      persistState();
+    });
+    document.getElementById("selAudioFailPolicy").addEventListener("change", (e) => {
+      state.audioFailPolicy = e.target.value;
+      persistState();
+    });
 
-    // Metin Controls
+    // Metin & Hat
     document.querySelectorAll("#mealStyleGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
@@ -2414,6 +2810,21 @@
         ensureFontsLoaded();
         persistState();
       });
+    });
+
+    document.getElementById("inpArabicColor").addEventListener("input", (e) => {
+      state.arabicColor = e.target.value;
+      state.arabicColorName = e.target.value.toUpperCase();
+      document.getElementById("lblArabicColorName").textContent = state.arabicColorName;
+      renderColorSwatches();
+      persistState();
+    });
+    document.getElementById("inpMealColor").addEventListener("input", (e) => {
+      state.mealColor = e.target.value;
+      state.mealColorName = e.target.value.toUpperCase();
+      document.getElementById("lblMealColorName").textContent = state.mealColorName;
+      renderColorSwatches();
+      persistState();
     });
 
     document.querySelectorAll("#readabilityGroup .sebat-opt-btn").forEach((btn) => {
@@ -2444,8 +2855,22 @@
       document.getElementById("valMealSize").textContent = `${state.mealSize} px`;
       persistState();
     });
+    document.getElementById("rngTextShadow").addEventListener("input", (e) => {
+      state.textShadow = Number(e.target.value);
+      document.getElementById("valTextShadow").textContent = `${state.textShadow} px`;
+      persistState();
+    });
+    document.getElementById("rngArabicLetterSpacing").addEventListener("input", (e) => {
+      state.arabicLetterSpacing = Number(e.target.value);
+      document.getElementById("valArabicLetterSpacing").textContent = `${state.arabicLetterSpacing} px`;
+      persistState();
+    });
+    document.getElementById("selBismillahMode").addEventListener("change", (e) => {
+      state.bismillahMode = e.target.value;
+      persistState();
+    });
 
-    // Görünüm Controls
+    // Görünüm & Video İçi Şerit
     document.querySelectorAll("#displayModeGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
@@ -2475,6 +2900,15 @@
       });
     });
 
+    document.getElementById("selInVideoProgressBar").addEventListener("change", (e) => {
+      state.inVideoProgressBar = e.target.value;
+      persistState();
+    });
+    document.getElementById("selInVideoSurahHeader").addEventListener("change", (e) => {
+      state.inVideoSurahHeader = e.target.value;
+      persistState();
+    });
+
     document.getElementById("chkCornerSurah").addEventListener("change", (e) => {
       state.cornerShowSurah = e.target.checked;
       persistState();
@@ -2488,7 +2922,7 @@
       persistState();
     });
 
-    // Filtre Controls
+    // Filtre
     document.getElementById("rngBrightnessOffset").addEventListener("input", (e) => {
       const v = Number(e.target.value);
       state.bgBrightnessOffset = v;
@@ -2504,7 +2938,13 @@
     });
     document.getElementById("rngBgDim").addEventListener("input", (e) => {
       state.bgDim = Number(e.target.value);
+      state.lockBgDim = true;
+      document.getElementById("chkLockBgDim").checked = true;
       document.getElementById("valBgDim").textContent = `%${state.bgDim}`;
+      persistState();
+    });
+    document.getElementById("chkLockBgDim").addEventListener("change", (e) => {
+      state.lockBgDim = e.target.checked;
       persistState();
     });
     document.getElementById("rngBgBlur").addEventListener("input", (e) => {
@@ -2520,8 +2960,13 @@
       state.visualEffect = e.target.value;
       persistState();
     });
+    document.getElementById("rngEffectIntensity").addEventListener("input", (e) => {
+      state.effectIntensity = Number(e.target.value);
+      document.getElementById("valEffectIntensity").textContent = `%${state.effectIntensity}`;
+      persistState();
+    });
 
-    // Kapak Controls
+    // Kapak (Full Unified Controls: Scale, Offset X/Y, Pos, Title, Subtitle, Bg Override)
     document.getElementById("chkCoverLargeSurah").addEventListener("change", (e) => {
       state.coverLargeSurah = e.target.checked;
       state.coverPreviewMode = "cover";
@@ -2536,6 +2981,52 @@
       state.coverPreviewMode = e.target.checked ? "cover" : "ayah";
       persistState();
     });
+    document.getElementById("inpCoverTitle").addEventListener("input", (e) => {
+      state.coverTitle = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("inpCoverSubtitle").addEventListener("input", (e) => {
+      state.coverSubtitle = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("rngCoverScale").addEventListener("input", (e) => {
+      state.coverScale = Number(e.target.value);
+      document.getElementById("valCoverScale").textContent = `%${state.coverScale}`;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("rngCoverOffsetY").addEventListener("input", (e) => {
+      state.coverOffsetY = Number(e.target.value);
+      document.getElementById("valCoverOffsetY").textContent = `${state.coverOffsetY}%`;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("rngCoverOffsetX").addEventListener("input", (e) => {
+      state.coverOffsetX = Number(e.target.value);
+      document.getElementById("valCoverOffsetX").textContent = `${state.coverOffsetX}%`;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("selCoverPos").addEventListener("change", (e) => {
+      state.coverPos = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+    document.getElementById("selCoverBgOverride").addEventListener("change", (e) => {
+      state.coverBgOverride = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      persistState();
+    });
+
     document.getElementById("btnDownloadCoverPng").addEventListener("click", () => {
       hapticTap();
       const prev = state.coverPreviewMode;
@@ -2553,7 +3044,7 @@
       showToast("Kapak görseli (.PNG) indirildi.");
     });
 
-    // Biçim & Ayarlar Controls
+    // Biçim, Logo, Ön Ayarlar & Ayarlar
     document.querySelectorAll("#ratioCardsList .sebat-list-item").forEach((item) => {
       item.addEventListener("click", () => {
         hapticTap();
@@ -2573,8 +3064,35 @@
       });
     });
 
+    document.getElementById("selBitrateMbps").addEventListener("change", (e) => {
+      state.bitrateMbps = Number(e.target.value);
+      persistState();
+    });
+    document.getElementById("selExportEngine").addEventListener("change", (e) => {
+      state.exportEngine = e.target.value;
+      persistState();
+    });
+    document.getElementById("selFileNameFormat").addEventListener("change", (e) => {
+      state.fileNameFormat = e.target.value;
+      persistState();
+    });
+
     document.getElementById("chkShowSignature").addEventListener("change", (e) => {
       state.showSignature = e.target.checked;
+      persistState();
+    });
+    document.getElementById("selLogoPos").addEventListener("change", (e) => {
+      state.logoPos = e.target.value;
+      persistState();
+    });
+    document.getElementById("rngLogoScale").addEventListener("input", (e) => {
+      state.logoScale = Number(e.target.value);
+      document.getElementById("valLogoScale").textContent = `%${state.logoScale}`;
+      persistState();
+    });
+    document.getElementById("rngLogoOpacity").addEventListener("input", (e) => {
+      state.logoOpacity = Number(e.target.value);
+      document.getElementById("valLogoOpacity").textContent = `%${state.logoOpacity}`;
       persistState();
     });
     document.getElementById("inpWatermarkText").addEventListener("input", (e) => {
@@ -2600,6 +3118,40 @@
       }
     });
 
+    document.getElementById("btnSaveUserPreset").addEventListener("click", () => {
+      hapticTap();
+      const nameInp = document.getElementById("inpNewPresetName");
+      const name = (nameInp.value || "").trim() || `Ön Ayar ${(state.userPresets || []).length + 1}`;
+      const snapshot = {};
+      PERSISTED_KEYS.forEach((k) => {
+        if (k !== "userPresets" && k !== "favoriteAyahs") snapshot[k] = state[k];
+      });
+      state.userPresets = [
+        { id: "preset_" + Date.now(), name, data: snapshot },
+        ...(state.userPresets || [])
+      ];
+      nameInp.value = "";
+      renderUserPresetsList();
+      persistState();
+      showToast(`✓ "${name}" ön ayarı kaydedildi.`);
+    });
+
+    document.getElementById("btnLoadUserPreset").addEventListener("click", async () => {
+      hapticTap();
+      const sel = document.getElementById("selUserPreset");
+      const preset = (state.userPresets || []).find((p) => p.id === sel.value);
+      if (!preset) {
+        showToast("Lütfen listeden bir ön ayar seçin.");
+        return;
+      }
+      Object.assign(state, preset.data);
+      syncAllControlsFromState();
+      await selectZemin(state.zeminId, true);
+      await loadVersesAndPreloadAudio();
+      persistState();
+      showToast(`✓ "${preset.name}" ön ayarı yüklendi!`);
+    });
+
     document.getElementById("selUiTheme").addEventListener("change", (e) => {
       state.uiTheme = e.target.value;
       document.documentElement.setAttribute("data-theme", state.uiTheme);
@@ -2614,7 +3166,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `TilawahWorld_v4_Ayarlar.json`;
+      a.download = `TilawahWorld_v5_Ayarlar.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -2649,7 +3201,7 @@
       await selectZemin(state.zeminId, true);
       await loadVersesAndPreloadAudio();
       saveSettings(state, null, true);
-      showToast("Tüm ayarlar varsayılanlara döndürüldü.");
+      showToast("Tüm ayarlar varsayılanlara döndürüldü (9:16 · Siyah Tema).");
     });
 
     document.addEventListener("visibilitychange", () => {

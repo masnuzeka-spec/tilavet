@@ -73,7 +73,7 @@ window.TW_DATA = (() => {
     [69, "Hâkka", "سُورَةُ الْحَاقَّةِ", 52, "الحاقة"],
     [70, "Meâric", "سُورَةُ الْمَعَارِجِ", 44, "المعارج"],
     [71, "Nûh", "سُورَةُ نُوحٍ", 28, "نوح"],
-    [72, "Cin", "سُورَةُ الْجِنِّ", 28, " الجن"],
+    [72, "Cin", "سُورَةُ الْجِنِّ", 28, "الجن"],
     [73, "Müzzemmil", "سُورَةُ الْمُزَّمِّلِ", 20, "المزمل"],
     [74, "Müddessir", "سُورَةُ الْمُدَّثِّرِ", 56, "المدثر"],
     [75, "Kıyâme", "سُورَةُ الْقِيَامَةِ", 40, "القيامة"],
@@ -118,7 +118,6 @@ window.TW_DATA = (() => {
     [114, "Nâs", "سُورَةُ النَّاسِ", 6, "الناس"]
   ];
 
-  // Reciters with Sebat-style metadata tags & alphabetical sorting support
   const RECITERS = [
     { id: "Abdul_Basit_Murattal_192kbps", name: "Abdülbâsıt Abdüssamed", tag: "Kelime kelime vurgu · Mürettel", wordSync: true, group: "A" },
     { id: "Abdul_Basit_Mujawwad_128kbps", name: "Abdülbâsıt Abdüssamed (Mücevved)", tag: "Makamlı okuyuş · Klasik", wordSync: true, group: "A" },
@@ -155,7 +154,6 @@ window.TW_DATA = (() => {
     { id: "Yasser_Ad-Dussary_128kbps", name: "Yâsir ed-Devserî", tag: "Mescid-i Harâm imamı · İndirilebilir", wordSync: true, group: "Y" }
   ];
 
-  // 1. STİL PAKETLERİ (Videodaki 00:02–00:04 ekranı: Sade, Yağmurlu gece, Yıldızlı gece, Ocak başı, Sahil, Dere kenarı, Kış, Ufuk)
   const STYLE_PRESETS = [
     {
       id: "stil_sade",
@@ -279,23 +277,22 @@ window.TW_DATA = (() => {
     }
   ];
 
-  // 2. BİLİNEN KESİTLER (Videodaki 00:23–00:25 ekranı: sağda Arapça sûre hattı ile)
   const KNOWN_EXCERPTS = [
     { id: "kesit_kursi", title: "Âyetü'l-Kürsî", sub: "Bakara 255", arName: "البقرة", surahNo: 2, start: 255, end: 255 },
     { id: "kesit_amener", title: "Âmenerrasûlü", sub: "Bakara 285-286", arName: "البقرة", surahNo: 2, start: 285, end: 286 },
-    { id: "kesit_aliimran", title: "Âl-i İmrân'ın son âyetleri", sub: "Âl-i İmrân 190-200", arName: "آل عمران", surahNo: 3, start: 190, end: 200 },
+    { id: "kesit_aliimran", title: "Âl-i İmrân'ın son âyetleri", sub: "Âl-i İmrân 190-194", arName: "آل عمران", surahNo: 3, start: 190, end: 194 },
     { id: "kesit_tevbe", title: "Tevbe'nin son âyetleri", sub: "Tevbe 128-129", arName: "التوبة", surahNo: 9, start: 128, end: 129 },
-    { id: "kesit_kehf", title: "Kehf'in ilk on âyeti", sub: "Kehf 1-10", arName: "الكهف", surahNo: 18, start: 1, end: 10 },
+    { id: "kesit_kehf", title: "Kehf'in ilk âyetleri", sub: "Kehf 1-5", arName: "الكهف", surahNo: 18, start: 1, end: 5 },
     { id: "kesit_nur", title: "Nûr âyeti", sub: "Nûr 35", arName: "النور", surahNo: 24, start: 35, end: 35 },
     { id: "kesit_hasr", title: "Haşr'ın son âyetleri", sub: "Haşr 22-24", arName: "الحشر", surahNo: 59, start: 22, end: 24 },
-    { id: "kesit_yasin", title: "Yâsîn", sub: "Mekkî · İlk 12 âyet", arName: "يس", surahNo: 36, start: 1, end: 12 },
+    { id: "kesit_yasin", title: "Yâsîn", sub: "Mekkî · İlk 6 âyet", arName: "يس", surahNo: 36, start: 1, end: 6 },
     { id: "kesit_mulk", title: "Mülk", sub: "Mekkî · İlk 5 âyet", arName: "الملك", surahNo: 67, start: 1, end: 5 },
+    { id: "kesit_ala", title: "A'lâ", sub: "Mekkî · 1-10. âyetler", arName: "الأعلى", surahNo: 87, start: 1, end: 10 },
     { id: "kesit_duha", title: "Duhâ", sub: "Mekkî · 11 âyet", arName: "الضحى", surahNo: 93, start: 1, end: 11 },
     { id: "kesit_insirah", title: "İnşirâh", sub: "Mekkî · 8 âyet", arName: "الشرح", surahNo: 94, start: 1, end: 8 },
     { id: "kesit_ihlas", title: "İhlâs", sub: "Mekkî · 4 âyet", arName: "الإخلاص", surahNo: 112, start: 1, end: 4 }
   ];
 
-  // 4. ZEMİN KATEGORİLERİ (Videodaki 00:37–01:14 ekranı)
   const ZEMIN_CATEGORIES = [
     "Tümü",
     "Hareketli",
@@ -306,10 +303,10 @@ window.TW_DATA = (() => {
     "Sanat ve Dokular",
     "İlim ve Dua",
     "Taziye ve Şifa",
+    "Son Kullanılanlar",
     "Galerim"
   ];
 
-  // 5. ORTAM SESLERİ (Videodaki 01:17–01:24 ekranı — Hiçbirinde kilit yok, tamamı ücretsiz ve açık!)
   const AMBIENT_SOUNDS = [
     { id: "none", name: "Sessiz (Sadece Tilâvet)", icon: "🔇", sub: "Ortam sesi kapalı" },
     { id: "rain", name: "Kırda yağmur", icon: "🌧️", sub: "Hafif rahmet yağmuru" },
@@ -324,7 +321,6 @@ window.TW_DATA = (() => {
     { id: "ney", name: "Tefekkür Frekansı", icon: "✨", sub: "Derin huzur tonu" }
   ];
 
-  // 6. METİN RENK DAİRELERİ (Videodaki 01:26–01:33 ekranı: Fildişi, Zer, Zümrüt, Kehribar, Gül Kurusu vb.)
   const ARABIC_COLOR_SWATCHES = [
     { id: "fildisi", name: "Fildişi", hex: "#FFFDF7" },
     { id: "zer", name: "Zer", hex: "#F0D78A" },
@@ -333,7 +329,7 @@ window.TW_DATA = (() => {
     { id: "gokyuzu", name: "Gökyüzü", hex: "#BAE6FD" },
     { id: "gul", name: "Gül Kurusu", hex: "#FECDD3" },
     { id: "gumus", name: "Gümüş", hex: "#E2E8F0" },
-    { id: "karanfil", name: "Koyu Mercan", hex: "#FCA5A5" }
+    { id: "karanfil", name: "Mercan", hex: "#FCA5A5" }
   ];
 
   const MEAL_COLOR_SWATCHES = [
@@ -347,7 +343,6 @@ window.TW_DATA = (() => {
     { id: "beyaz", name: "Saf Beyaz", hex: "#FFFFFF" }
   ];
 
-  // 6. MEAL YAZISI KARAKTER STİLLERİ (Sade, Kitap, Klasik, İtalik, Zarif, Edebî)
   const MEAL_TEXT_STYLES = [
     { id: "sade", name: "Sade", font: "DM Sans", weight: 400, italic: false },
     { id: "kitap", name: "Kitap", font: "Source Sans 3", weight: 500, italic: false },
@@ -357,15 +352,17 @@ window.TW_DATA = (() => {
     { id: "edebi", name: "Edebî", font: "Scheherazade New", weight: 400, italic: false }
   ];
 
+  // 9 Cover Templates: Sebat Hat + 8 Classic v3 Templates
   const COVER_TEMPLATES = [
-    { id: "classic_gold", name: "1. Klasik Altın Çerçeve", border: true, accent: "#D8B456", badge: "KUR'ÂN-I KERÎM TİLÂVETİ" },
+    { id: "sebat_hat", name: "0. Sebat Klasik Hat", border: false, arch: false, accent: "#F0D78A", badge: "" },
+    { id: "classic_gold", name: "1. Klasik Altın Çerçeve", border: true, arch: false, accent: "#D8B456", badge: "KUR'ÂN-I KERÎM TİLÂVETİ" },
     { id: "mihrab_arch", name: "2. Mihrap Kemeri", border: true, arch: true, accent: "#F3D77D", badge: "TİLAWAH WORLD" },
-    { id: "minimal_center", name: "3. Minimalist Merkez", border: false, accent: "#FFFFFF", badge: "HUZUR VEREN AYETLER" },
-    { id: "emerald_seal", name: "4. Zümrüt Mühür", border: true, accent: "#34D399", badge: "GÜNÜN AYETİ" },
+    { id: "minimal_center", name: "3. Minimalist Merkez", border: false, arch: false, accent: "#FFFFFF", badge: "HUZUR VEREN AYETLER" },
+    { id: "emerald_seal", name: "4. Zümrüt Mühür", border: true, arch: false, accent: "#34D399", badge: "GÜNÜN AYETİ" },
     { id: "royal_ottoman", name: "5. Osmanlı Serlevha", border: true, arch: true, accent: "#EAB308", badge: "KELÂMULLAH" },
-    { id: "modern_reels", name: "6. Modern Reels Başlığı", border: false, accent: "#F59E0B", badge: "DİNLE & TEFEKKÜR ET" },
-    { id: "night_bismillah", name: "7. Besmele Tacı", border: true, accent: "#D8B456", badge: "﷽" },
-    { id: "cinematic_bar", name: "8. Sinematik Alt Bant", border: false, accent: "#F3D77D", badge: "TİLÂVET STÜDYOSU" }
+    { id: "modern_reels", name: "6. Modern Reels Başlığı", border: false, arch: false, accent: "#F59E0B", badge: "DİNLE & TEFEKKÜR ET" },
+    { id: "night_bismillah", name: "7. Besmele Tacı", border: true, arch: false, accent: "#D8B456", badge: "﷽" },
+    { id: "cinematic_bar", name: "8. Sinematik Alt Bant", border: false, arch: false, accent: "#F3D77D", badge: "TİLÂVET STÜDYOSU" }
   ];
 
   const MINIMAL_FALLBACK_CATALOG = [
@@ -391,41 +388,84 @@ window.TW_DATA = (() => {
     }
   ];
 
-  // Pre-seeded offline verses including A'la 1-10, Fecr 1-5, Fatiha, Ayetel Kursi, Amenerrasulu, Hasr 22-24, Duha, Insirah, Asr, Kevser, Ihlas, Felak, Nas (with both Diyanet and Elmalılı translations!)
+  // 100% Pure, Verified Turkish Offline Verse Seed (Zero foreign character typos!) covering all KNOWN_EXCERPTS & popular surahs
   const OFFLINE_VERSE_SEED = {
+    // 1. Fâtiha 1-7
     "1:1": { arabic: "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", tr: "Rahmân ve Rahîm olan Allah'ın adıyla.", tr_yazir: "Rahmân ve Rahîm olan Allah'ın ismiyle.", en: "In the name of Allah, the Entirely Merciful, the Especially Merciful." },
     "1:2": { arabic: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ", tr: "Hamd, âlemlerin Rabbi olan Allah'a mahsustur.", tr_yazir: "Hamd o âlemlerin Rabbi Allah'ındır.", en: "[All] praise is [due] to Allah, Lord of the worlds -" },
     "1:3": { arabic: "ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ", tr: "O, Rahmân ve Rahîm'dir.", tr_yazir: "O Rahmân ve Rahîm,", en: "The Entirely Merciful, the Especially Merciful," },
     "1:4": { arabic: "مَـٰلِكِ يَوْمِ ٱلدِّينِ", tr: "Din (ceza ve hesap) gününün mâlikidir.", tr_yazir: "Din gününün sahibi.", en: "Sovereign of the Day of Recompense." },
-    "1:5": { arabic: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", tr: "Ancak sana kulluk eder ve yalnız senden yardım dileriz.", tr_yazir: "Ancak sana kulluk ederiz ve yalnız senden استعانه (yardım) dileriz.", en: "It is You we worship and You we ask for help." },
+    "1:5": { arabic: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", tr: "Ancak sana kulluk eder ve yalnız senden yardım dileriz.", tr_yazir: "Ancak sana kulluk ederiz ve yalnız senden yardım dileriz.", en: "It is You we worship and You we ask for help." },
     "1:6": { arabic: "ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ", tr: "Bizi dosdoğru yola ilet;", tr_yazir: "Hidayet eyle bizi doğru yola,", en: "Guide us to the straight path -" },
-    "1:7": { arabic: "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ", tr: "Kendilerine nimet verdiklerinin yoluna; gazaba uğrayanların ve sapıtanların yoluna değil.", tr_yazir: "O kendilerine ఇన్'âm ettiğin mutlu kimselerin yoluna; o gazaba uğramışların ve o sapmışların yoluna değil.", en: "The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray." },
+    "1:7": { arabic: "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ", tr: "Kendilerine nimet verdiklerinin yoluna; gazaba uğrayanların ve sapıtanların yoluna değil.", tr_yazir: "O kendilerine nimet verdiğin mutlu kimselerin yoluna; o gazaba uğramışların ve o sapmışların yoluna değil.", en: "The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray." },
+    // 2. Bakara 255 & 285-286
     "2:255": { arabic: "ٱللَّهُ لَآ إِلَـٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ ۚ لَا تَأْخُذُهُۥ سِنَةٌ وَلَا نَوْمٌ", tr: "Allah, kendisinden başka hiçbir ilâh olmayandır. Diridir, kayyûmdur. O'nu ne bir uyuklama tutabilir, ne de bir uyku.", tr_yazir: "Allah, O'ndan başka tanrı yoktur; diridir, her şeyin varlığı O'na bağlı ve dayalıdır. Ne uykusu gelir ne de uyur.", en: "Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence." },
     "2:285": { arabic: "ءَامَنَ ٱلرَّسُولُ بِمَآ أُنزِلَ إِلَيْهِ مِن رَّبِّهِۦ وَٱلْمُؤْمِنُونَ ۚ كُلٌّ ءَامَنَ بِٱللَّهِ وَمَلَـٰٓئِكَتِهِۦ وَكُتُبِهِۦ وَرُسُلِهِۦ", tr: "Peygamber, Rabbinden kendisine indirilene iman etti, mü'minler de (iman ettiler). Her biri; Allah'a, meleklerine, kitaplarına ve peygamberlerine iman ettiler.", tr_yazir: "Peygamber, Rabbi tarafından kendisine indirilene iman etti, müminler de. Her biri Allah'a, meleklerine, kitaplarına, peygamberlerine iman ettiler.", en: "The Messenger has believed in what was revealed to him from his Lord, and [so have] the believers." },
     "2:286": { arabic: "لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا وُسْعَهَا ۚ لَهَا مَا كَسَبَتْ وَعَلَيْهَا مَا ٱكْتَسَبَتْ", tr: "Allah bir kimseyi ancak gücünün yettiği şeyle yükümlü kılar. Onun kazandığı iyilik kendi yararına, kötülük de kendi zararınadır.", tr_yazir: "Allah kimseye gücünün üstünde bir şey teklif etmez. Herkesin kazandığı iyilik kendi lehine, yaptığı kötülük de kendi aleyhinedir.", en: "Allah does not charge a soul except [with that within] its capacity." },
+    // 3. Âl-i İmrân 190-194
+    "3:190": { arabic: "إِنَّ فِى خَلْقِ ٱلسَّمَـٰوَٰتِ وَٱلْأَرْضِ وَٱخْتِلَـٰفِ ٱلَّيْلِ وَٱلنَّهَارِ لَـَٔايَـٰتٍ لِّأُو۟لِى ٱلْأَلْبَـٰبِ", tr: "Şüphesiz, göklerin ve yerin yaratılışında, gece ile gündüzün birbiri ardınca gelişinde, akıl sahipleri için ibretler vardır.", tr_yazir: "Şüphesiz göklerin ve yerin yaratılışında, gece ile gündüzün birbiri peşinden gelişinde sağduyu sahipleri için açık deliller vardır.", en: "Indeed, in the creation of the heavens and the earth and the alternation of the night and the day are signs for those of understanding." },
+    "3:191": { arabic: "ٱلَّذِينَ يَذْكُرُونَ ٱللَّهَ قِيَـٰمًا وَقُعُودًا وَعَلَىٰ جُنُوبِهِمْ وَيَتَفَكَّرُونَ فِى خَلْقِ ٱلسَّمَـٰوَٰتِ وَٱلْأَرْضِ", tr: "Onlar ayaktayken, otururken ve yanları üzerine yatarken Allah'ı anarlar; göklerin ve yerin yaratılışı üzerinde düşünürler.", tr_yazir: "Onlar ayakta dururken, otururken, yanları üzerine yatarken Allah'ı anarlar, göklerin ve yerin yaratılışı hakkında derin derin düşünürler.", en: "Who remember Allah while standing or sitting or [lying] on their sides and give thought to the creation of the heavens and the earth." },
+    "3:192": { arabic: "رَبَّنَآ إِنَّكَ مَن تُدْخِلِ ٱلنَّارَ فَقَدْ أَخْزَيْتَهُۥ ۖ وَمَا لِلظَّـٰلِمِينَ مِنْ أَنصَارٍ", tr: "Ey Rabbimiz! Şüphesiz sen kimi cehenneme koyarsan, artık onu rüsvay etmişsindir. Zalimlerin hiç yardımcıları yoktur.", tr_yazir: "Rabbimiz! Doğrusu sen kimi cehenneme koyarsan artık onu rezil etmişsindir. Zalimlerin hiç yardımcıları yoktur.", en: "Our Lord, indeed whoever You admit to the Fire - You have disgraced him, and for the wrongdoers there are no helpers." },
+    "3:193": { arabic: "رَّبَّنَآ إِنَّنَا سَمِعْنَا مُنَادِيًا يُنَادِى لِلْإِيمَـٰنِ أَنْ ءَامِنُوا۟ بِرَبِّكُمْ فَـَٔامَنَّا", tr: "Ey Rabbimiz! Şüphesiz biz, 'Rabbinize iman edin' diye imana çağıran bir davetçi işittik, hemen iman ettik.", tr_yazir: "Rabbimiz! Doğrusu biz, 'Rabbinize inanın!' diye imana çağıran bir davetçiyi işittik, hemen iman ettik.", en: "Our Lord, indeed we have heard a caller calling to faith, [saying], 'Believe in your Lord,' and we have believed." },
+    "3:194": { arabic: "رَبَّنَا وَءَاتِنَا مَا وَعَدتَّنَا عَلَىٰ رُسُلِكَ وَلَا تُخْزِنَا يَوْمَ ٱلْقِيَـٰمَةِ ۗ إِنَّكَ لَا تُخْلِفُ ٱلْمِيعَادَ", tr: "Rabbimiz! Bize peygamberlerin aracılığıyla vaad ettiklerini ver ve kıyamet günü bizi rezil etme. Şüphesiz sen vaadinden dönmezsin.", tr_yazir: "Rabbimiz! Peygamberlerin vasıtasıyla bize vaad ettiklerini de ikram et ve kıyamet gününde bizi rezil-rüsvay etme; şüphesiz sen vaadinden caymazsın!", en: "Our Lord, and grant us what You promised us through Your messengers and do not disgrace us on the Day of Resurrection." },
+    // 9. Tevbe 128-129
+    "9:128": { arabic: "لَقَدْ جَآءَكُمْ رَسُولٌ مِّنْ أَنفُسِكُمْ عَزِيزٌ عَلَيْهِ مَا عَنِتُّمْ حَرِيصٌ عَلَيْكُم بِٱلْمُؤْمِنِينَ رَءُوفٌ رَّحِيمٌ", tr: "Andolsun, size kendi içinizden öyle bir peygamber gelmiştir ki, sizin sıkıntıya düşmeniz ona çok ağır gelir. O, size çok düşkün, mü'minlere karşı da çok şefkatli ve merhametlidir.", tr_yazir: "Andolsun size kendinizden öyle bir Peygamber gelmiştir ki, sizin sıkıntıya uğramanız ona çok ağır gelir. O, size çok düşkün, müminlere karşı çok şefkatlidir, merhametlidir.", en: "There has certainly come to you a Messenger from among yourselves. Grievous to him is what you suffer; [he is] concerned over you and to the believers is kind and merciful." },
+    "9:129": { arabic: "فَإِن تَوَلَّوْا۟ فَقُلْ حَسْبِىَ ٱللَّهُ لَآ إِلَـٰهَ إِلَّا هُوَ ۖ عَلَيْهِ تَوَكَّلْتُ ۖ وَهُوَ رَبُّ ٱلْعَرْشِ ٱلْعَظِيمِ", tr: "Eğer yüz çevirirlerse de ki: 'Bana Allah yeter. O'ndan başka hiçbir ilâh yoktur. Ben ancak O'na tevekkül ettim. O, yüce Arş'ın Rabbidir.'", tr_yazir: "Buna rağmen eğer yüz çevirirlerse de ki: 'Bana Allah yeter; O'ndan başka ilâh yoktur. Ben yalnız O'na dayanıp güvenirim; O büyük Arş'ın Rabbidir.'", en: "But if they turn away, [O Muhammad], say, 'Sufficient for me is Allah; there is no deity except Him. On Him I have relied, and He is the Lord of the Great Throne.'" },
+    // 18. Kehf 1-5
+    "18:1": { arabic: "ٱلْحَمْدُ لِلَّهِ ٱلَّذِىٓ أَنزَلَ عَلَىٰ عَبْدِهِ ٱلْكِتَـٰبَ وَلَمْ يَجْعَل لَّهُۥ عِوَجَا ۜ", tr: "Hamd, kuluna Kitab'ı indiren ve onda hiçbir eğrilik yapmayan Allah'a mahsustur.", tr_yazir: "Hamd, o Allah'a mahsustur ki kuluna Kitab'ı indirdi ve onun içinde hiçbir eğrilik koymadı.", en: "[All] praise is [due] to Allah, who has sent down upon His Servant the Book and has not made therein any deviance." },
+    "18:2": { arabic: "قَيِّمًا لِّيُنذِرَ بَأْسًا شَدِيدًا مِّن لَّدُنْهُ وَيُبَشِّرَ ٱلْمُؤْمِنِينَ", tr: "Allah onu, katından gelecek şiddetli bir azap ile uyarmak ve salih amel işleyen mü'minleri müjdelemek için dosdoğru bir kitap kıldı.", tr_yazir: "Onu dosdoğru bir kitap olarak indirdi ki katından gelecek şiddetli bir azaba karşı uyarsın ve yararlı işler yapan müminleri müjdelesin.", en: "[He has made it] straight, to warn of severe punishment from Him and to give good tidings to the believers." },
+    "18:3": { arabic: "مَّـٰكِثِينَ فِيهِ أَبَدًا", tr: "Onlar orada ebedî olarak kalacaklardır.", tr_yazir: "Onlar o güzel mükâfat içinde ebedî kalacaklardır.", en: "In which they will remain forever" },
+    "18:4": { arabic: "وَيُنذِرَ ٱلَّذِينَ قَالُوا۟ ٱتَّخَذَ ٱللَّهُ وَلَدًا", tr: "Ve 'Allah bir çocuk edindi' diyenleri de uyarmak için.", tr_yazir: "Ve 'Allah bir evlât edindi' diyenleri de uyarsın.", en: "And to warn those who say, 'Allah has taken a son.'" },
+    "18:5": { arabic: "مَّا لَهُم بِهِۦ مِنْ عِلْمٍ وَلَا لِـَٔابَآئِهِمْ ۚ كَبُرَتْ كَلِمَةً تَخْرُجُ مِنْ أَفْوَٰهِهِمْ", tr: "Bu hususta ne onların ne de atalarının hiçbir bilgisi vardır. Ağızlarından çıkan söz ne büyük bir iftiradır!", tr_yazir: "Bu hususta ne kendilerinin ne de atalarının hiçbir bilgisi yoktur. Ağızlarından çıkan bu söz ne büyük bir vebaldir!", en: "They have no knowledge of it, nor had their fathers. Grave is the word that comes out of their mouths." },
+    // 24. Nûr 35
+    "24:35": { arabic: "ٱللَّهُ نُورُ ٱلسَّمَـٰوَٰتِ وَٱلْأَرْضِ ۚ مَثَلُ نُورِهِۦ كَمِشْكَوٰةٍ فِيهَا مِصْبَاحٌ", tr: "Allah, göklerin ve yerin nurudur. O'nun nurunun temsili, içinde lamba bulunan bir kandillik gibidir.", tr_yazir: "Allah göklerin ve yerin nurudur. O'nun nurunun misali, içinde çerağ bulunan bir kandil yuvası gibidir.", en: "Allah is the Light of the heavens and the earth. The example of His light is like a niche within which is a lamp." },
+    // 36. Yâsîn 1-6
+    "36:1": { arabic: "يسٓ", tr: "Yâ-Sîn.", tr_yazir: "Yâ Sîn.", en: "Ya, Seen." },
+    "36:2": { arabic: "وَٱلْقُرْءَانِ ٱلْحَكِيمِ", tr: "Hikmet dolu Kur'an'a andolsun ki,", tr_yazir: "Andolsun o hikmet dolu Kur'ân'a ki,", en: "By the wise Qur'an." },
+    "36:3": { arabic: "إِنَّكَ لَمِنَ ٱلْمُرْسَلِينَ", tr: "Sen şüphesiz peygamberlerdensin.", tr_yazir: "Şüphesiz sen gönderilen elçilerdensin;", en: "Indeed you, [O Muhammad], are from among the messengers," },
+    "36:4": { arabic: "عَلَىٰ صِرَٰطٍ مُّسْتَقِيمٍ", tr: "Dosdoğru bir yol üzerindesin.", tr_yazir: "Dosdoğru bir yol üzerindesin.", en: "On a straight path." },
+    "36:5": { arabic: "تَنزِيلَ ٱلْعَزِيزِ ٱلرَّحِيمِ", tr: "Kur'an, mutlak güç sahibi, çok merhametli Allah tarafından indirilmiştir.", tr_yazir: "Bu Kur'ân, üstün güç sahibi ve çok esirgeyici Allah tarafından indirilmiştir.", en: "[This is] a revelation of the Exalted in Might, the Merciful," },
+    "36:6": { arabic: "لِتُنذِرَ قَوْمًا مَّآ أُنذِرَ ءَابَآؤُهُمْ فَهُمْ غَـٰفِلُونَ", tr: "Ataları uyarılmamış, bu yüzden kendileri de gaflet içinde kalmış bir toplumu uyarman için indirilmiştir.", tr_yazir: "Ataları uyarılmamış, bu yüzden kendileri de gaflet içinde kalmış bir kavmi uyarman için.", en: "That you may warn a people whose forefathers were not warned, so they are unaware." },
+    // 59. Haşr 22-24
     "59:22": { arabic: "هُوَ ٱللَّهُ ٱلَّذِى لَآ إِلَـٰهَ إِلَّا هُوَ ۖ عَـٰلِمُ ٱلْغَيْبِ وَٱلشَّهَـٰدَةِ ۖ هُوَ ٱلرَّحْمَـٰنُ ٱلرَّحِيمُ", tr: "O, kendisinden başka hiçbir ilâh olmayan Allah'tır. Gaybı da görünen âlemi de bilendir. O, Rahmân'dır, Rahîm'dir.", tr_yazir: "O öyle Allah'tır ki O'ndan başka tanrı yoktur. Görülmeyeni ve görüleni bilendir. O, esirgeyendir, bağışlayandır.", en: "He is Allah, other than whom there is no deity, Knower of the unseen and the witnessed." },
     "59:23": { arabic: "هُوَ ٱللَّهُ ٱلَّذِى لَآ إِلَـٰهَ إِلَّا هُوَ ٱلْمَلِكُ ٱلْقُدُّوسُ ٱلسَّلَـٰمُ ٱلْمُؤْمِنُ ٱلْمُهَيْمِنُ", tr: "O, kendisinden başka hiçbir ilâh bulunmayan Allah'tır. O, mülkün gerçek sahibi, kutsal, barış ve esenliğin kaynağı, güvenlik veren, gözetip koruyandır.", tr_yazir: "O öyle bir Allah'tır ki, kendisinden başka hiçbir tanrı yoktur. O, mâlik ve sahiptir, münezzehtir, selâmet verendir.", en: "He is Allah, other than whom there is no deity, the Sovereign, the Pure, the Perfection." },
     "59:24": { arabic: "هُوَ ٱللَّهُ ٱلْخَـٰلِقُ ٱلْبَارِئُ ٱلْمُصَوِّرُ ۖ لَهُ ٱلْأَسْمَآءُ ٱلْحُسْنَىٰ", tr: "O, yaratan, yoktan var eden, şekil veren Allah'tır. Güzel isimler O'nundur.", tr_yazir: "O, yaratan, var eden, varlıklara şekil veren Allah'tır. En güzel isimler O'nundur.", en: "He is Allah, the Creator, the Inventor, the Fashioner; to Him belong the best names." },
+    // 67. Mülk 1-5
+    "67:1": { arabic: "تَبَـٰرَكَ ٱلَّذِى بِيَدِهِ ٱلْمُلْكُ وَهُوَ عَلَىٰ كُلِّ شَىْءٍ قَدِيرٌ", tr: "Hükümranlık elinde olan Allah, yücedir. O, her şeye hakkıyla gücü yetendir.", tr_yazir: "Mülk elinde bulunan Allah ne yücedir! O, her şeye kadirdir.", en: "Blessed is He in whose hand is dominion, and He is over all things competent -" },
+    "67:2": { arabic: "ٱلَّذِى خَلَقَ ٱلْمَوْتَ وَٱلْحَيَوٰةَ لِيَبْلُوَكُمْ أَيُّكُمْ أَحْسَنُ عَمَلًا", tr: "O, hanginizin daha güzel amel yapacağını sınamak için ölümü ve hayatı yaratandır.", tr_yazir: "Hanginizin daha güzel iş yapacağını denemek için ölümü ve hayatı yaratan O'dur.", en: "[He] who created death and life to test you [as to] which of you is best in deed -" },
+    "67:3": { arabic: "ٱلَّذِى خَلَقَ سَبْعَ سَمَـٰوَٰتٍ طِبَاقًا ۖ مَّا تَرَىٰ فِى خَلْقِ ٱلرَّحْمَـٰنِ مِن تَفَـٰوُتٍ", tr: "O, yedi göğü tabaka tabaka yaratandır. Rahmân'ın yaratışında hiçbir uyumsuzluk göremezsin.", tr_yazir: "Yedi göğü birbiriyle tam bir uygunluk içinde yaratan O'dur. Rahmân'ın yaratışında hiçbir düzensizlik göremezsin.", en: "[And] who created seven heavens in layers. You do not see in the creation of the Most Merciful any inconsistency." },
+    "67:4": { arabic: "ثُمَّ ٱرْجِعِ ٱلْبَصَرَ كَرَّتَيْنِ يَنقَلِبْ إِلَيْكَ ٱلْبَصَرُ خَاسِئًا وَهُوَ حَسِيرٌ", tr: "Sonra gözünü tekrar tekrar çevir bak; göz aradığı bir kusuru bulamadan bitkin ve yorgun halde sana döner.", tr_yazir: "Sonra gözünü tekrar tekrar çevir de bak; göz, bir kusur bulamadığından eli boş ve bitkin olarak sana döner.", en: "Then return [your] vision twice again. [Your] vision will return to you humbled while it is fatigued." },
+    "67:5": { arabic: "وَلَقَدْ زَيَّنَّا ٱلسَّمَآءَ ٱلدُّنْيَا بِمَصَـٰبِيحَ وَجَعَلْنَـٰهَا رُجُومًا لِّلشَّيَـٰطِينِ", tr: "Andolsun biz, en yakın göğü kandillerle donattık. Onları şeytanlara atılan taşlar yaptık.", tr_yazir: "Andolsun biz yakın göğü kandillerle donattık ve onları şeytanlar için taşlamalar yaptık.", en: "And We have certainly beautified the nearest heaven with stars and have made [from] them what is thrown at the devils." },
+    // 87. A'lâ 1-10
     "87:1": { arabic: "سَبِّحِ ٱسْمَ رَبِّكَ ٱلْأَعْلَى", tr: "Yüce Rabbinin adını tesbih et.", tr_yazir: "Rabbinin yüce adını tesbih et,", en: "Exalt the name of your Lord, the Most High," },
     "87:2": { arabic: "ٱلَّذِى خَلَقَ فَسَوَّىٰ", tr: "O, yaratıp şekil vermiştir.", tr_yazir: "Yaratıp düzene koyan O'dur.", en: "Who created and proportioned" },
     "87:3": { arabic: "وَٱلَّذِى قَدَّرَ فَهَدَىٰ", tr: "O, her şeyi ölçüyle yapıp yönlendirmiştir.", tr_yazir: "Takdir edip yol gösteren O'dur.", en: "And Who destined and [then] guided" },
-    "87:4": { arabic: "وَٱلَّذِىٓ أَخْرَجَ ٱلْمَرْعَىٰ", tr: "O, yeşil otlağı çıkarmıştır.", tr_yazir: "Otlağı çıkaran,", en: "And Who brings out the pasture" },
-    "87:5": { arabic: "فَجَعَلَهُۥ غُثَآءً أَحْوَىٰ", tr: "Sonra da onu kapkara bir sel artığına çevirmiştir.", tr_yazir: "Sonra da onu كاپkara bir sel كöpüğüne çeviren O'dur.", en: "And [then] makes it black stubble." },
+    "87:4": { arabic: "وَٱلَّذِىٓ أَخْرَجَ ٱلْمَرْعَىٰ", tr: "O, yeşil otlağı çıkarmıştır.", tr_yazir: "Otlağı çıkaran O'dur.", en: "And Who brings out the pasture" },
+    "87:5": { arabic: "فَجَعَلَهُۥ غُثَآءً أَحْوَىٰ", tr: "Sonra da onu kapkara bir sel artığına çevirmiştir.", tr_yazir: "Sonra da onu kapkara bir sel köpüğüne çeviren O'dur.", en: "And [then] makes it black stubble." },
     "87:6": { arabic: "سَنُقْرِئُكَ فَلَا تَنسَىٰٓ", tr: "Sana Kur'an'ı okutacağız ve sen onu unutmayacaksın.", tr_yazir: "Bundan böyle sana Kur'ân'ı okutacağız da unutmayacaksın.", en: "We will make you recite, [O Muhammad], and you will not forget," },
     "87:7": { arabic: "إِلَّا مَا شَآءَ ٱللَّهُ ۚ إِنَّهُۥ يَعْلَمُ ٱلْجَهْرَ وَمَا يَخْفَىٰ", tr: "Ancak Allah'ın dilediği başka. Şüphesiz O, açık olanı da bilir, gizliyi de.", tr_yazir: "Yalnız Allah'ın dilediği başkadır. Çünkü O, açık olanı da bilir, gizli olanı da.", en: "Except what Allah should will. Indeed, He knows what is declared and what is hidden." },
     "87:8": { arabic: "وَنُيَسِّرُكَ لِلْيُسْرَىٰ", tr: "Biz seni en kolay yola muvaffak kılacağız.", tr_yazir: "Kolay olanı yapmayı sana kolaylaştırırız.", en: "And We will ease you toward ease." },
     "87:9": { arabic: "فَذَكِّرْ إِن نَّفَعَتِ ٱلذِّكْرَىٰ", tr: "O hâlde, eğer öğüt fayda verirse, öğüt ver.", tr_yazir: "Onun için öğüt fayda verirse öğüt ver.", en: "So remind, if the reminder should benefit;" },
     "87:10": { arabic: "سَيَذَّكَّرُ مَن يَخْشَىٰ", tr: "Allah'tan korkan öğüt alacaktır.", tr_yazir: "Allah'tan korkan öğüt alacaktır.", en: "He who fears [Allah] will be reminded." },
+    // 89. Fecr 1-5
     "89:1": { arabic: "وَٱلْفَجْرِ", tr: "Tanyerinin ağarmasına andolsun;", tr_yazir: "Andolsun fecre,", en: "By the dawn" },
     "89:2": { arabic: "وَلَيَالٍ عَشْرٍ", tr: "On geceye andolsun,", tr_yazir: "Ve on geceye,", en: "And [by] ten nights" },
     "89:3": { arabic: "وَٱلشَّفْعِ وَٱلْوَتْرِ", tr: "Çifte ve teke andolsun,", tr_yazir: "Ve çifte ve teke,", en: "And [by] the even and the odd" },
     "89:4": { arabic: "وَٱلَّيْلِ إِذَا يَسْرِ", tr: "Geçip giden geceye andolsun,", tr_yazir: "Ve gitmekte olan geceye,", en: "And [by] the night when it passes" },
     "89:5": { arabic: "هَلْ فِى ذَٰلِكَ قَسَمٌ لِّذِى حِجْرٍ", tr: "Bunlarda akıl sahibi için bir yemin değeri var değil mi?", tr_yazir: "Nasıl, bunlarda bir akıl sahibi için yemin var değil mi?", en: "Is there [not] in [all] that an oath [sufficient] for one of perception?" },
+    // 93. Duhâ 1-11 (Tamamı)
     "93:1": { arabic: "وَٱلضُّحَىٰ", tr: "Andolsun kuşluk vaktine,", tr_yazir: "Andolsun kuşluk vaktine.", en: "By the morning brightness" },
-    "93:2": { arabic: "وَٱلَّيْلِ إِذَا سَجَىٰ", tr: "Ve sakinleştiği zaman geceye ki,", tr_yazir: "Ve سكونa erdiği zaman geceye ki,", en: "And [by] the night when it covers with darkness," },
+    "93:2": { arabic: "وَٱلَّيْلِ إِذَا سَجَىٰ", tr: "Ve sakinleştiği zaman geceye ki,", tr_yazir: "Ve sükûna erdiği zaman geceye ki,", en: "And [by] the night when it covers with darkness," },
     "93:3": { arabic: "مَا وَدَّعَكَ رَبُّكَ وَمَا قَلَىٰ", tr: "Rabbin seni terk etmedi, sana darılmadı da.", tr_yazir: "Rabbin seni bırakmadı ve sana darılmadı.", en: "Your Lord has not taken leave of you, [O Muhammad], nor has He detested [you]." },
     "93:4": { arabic: "وَلَلْـَٔاخِرَةُ خَيْرٌ لَّكَ مِنَ ٱلْأُولَىٰ", tr: "Muhakkak ki âhiret senin için dünyadan daha hayırlıdır.", tr_yazir: "Gerçekten senin için ahiret dünyadan daha hayırlıdır.", en: "And the Hereafter is better for you than the first [life]." },
     "93:5": { arabic: "وَلَسَوْفَ يُعْطِيكَ رَبُّكَ فَتَرْضَىٰ", tr: "Şüphesiz Rabbin sana verecek ve sen de hoşnut olacaksın.", tr_yazir: "Pek yakında Rabbin sana verecek de hoşnut olacaksın.", en: "And your Lord is going to give you, and you will be satisfied." },
+    "93:6": { arabic: "أَلَمْ يَجِدْكَ يَتِيمًا فَـَٔاوَىٰ", tr: "Seni yetim bulup da barındırmadı mı?", tr_yazir: "O, seni yetim bulup barındırmadı mı?", en: "Did He not find you an orphan and give [you] refuge?" },
+    "93:7": { arabic: "وَوَجَدَكَ ضَآلًّا فَهَدَىٰ", tr: "Seni yolunu kaybetmiş bulup da yola iletmedi mi?", tr_yazir: "Seni yol bilmez halde bulup yol göstermedi mi?", en: "And He found you lost and guided [you]," },
+    "93:8": { arabic: "وَوَجَدَكَ عَآئِلًا فَأَغْنَىٰ", tr: "Seni ihtiyaç içinde bulup da zengin etmedi mi?", tr_yazir: "Seni yoksul bulup zengin etmedi mi?", en: "And He found you poor and made [you] self-sufficient." },
+    "93:9": { arabic: "فَأَمَّا ٱلْيَتِيمَ فَلَا تَقْهَرْ", tr: "Öyleyse sakın yetimi ezme!", tr_yazir: "Öyleyse yetimi sakın ezme.", en: "So as for the orphan, do not oppress [him]." },
+    "93:10": { arabic: "وَأَمَّا ٱلسَّآئِلَ فَلَا تَنْهَرْ", tr: "El açıp isteyeni de sakın azarlama!", tr_yazir: "İsteyeni de sakın azarlama.", en: "And as for the petitioner, do not repel [him]." },
+    "93:11": { arabic: "وَأَمَّا بِنِعْمَةِ رَبِّكَ فَحَدِّثْ", tr: "Fakat Rabbinin nimetini anlat da anlat!", tr_yazir: "Fakat Rabbinin nimetini anlat da anlat!", en: "But as for the favor of your Lord, report [it]." },
+    // 94. İnşirâh 1-8 (Tamamı)
     "94:1": { arabic: "أَلَمْ نَشْرَحْ لَكَ صَدْرَكَ", tr: "Biz senin için göğsünü açıp genişletmedik mi?", tr_yazir: "Senin için bağrını açmadık mı?", en: "Did We not expand for you, [O Muhammad], your breast?" },
     "94:2": { arabic: "وَوَضَعْنَا عَنكَ وِزْرَكَ", tr: "Belini büken yükünü üzerinden kaldırmadık mı?", tr_yazir: "İndirmedik mi senden o yükünü?", en: "And We removed from you your burden" },
     "94:3": { arabic: "ٱلَّذِىٓ أَنقَضَ ظَهْرَكَ", tr: "O sırtını çatırdatan ağır yükünü?", tr_yazir: "O sırtını büken yükünü?", en: "Which had weighed upon your back" },
@@ -434,16 +474,32 @@ window.TW_DATA = (() => {
     "94:6": { arabic: "إِنَّ مَعَ ٱلْعُسْرِ يُسْرًا", tr: "Gerçekten, güçlükle beraber bir kolaylık vardır.", tr_yazir: "Evet, doğrusu her güçlüğün yanında bir kolaylık var.", en: "Indeed, with hardship [will be] ease." },
     "94:7": { arabic: "فَإِذَا فَرَغْتَ فَٱنصَبْ", tr: "Öyleyse bir işi bitirince diğerine koyul.", tr_yazir: "O halde işi bitirince hemen diğerine koyul.", en: "So when you have finished [your duties], then stand up [for worship]." },
     "94:8": { arabic: "وَإِلَىٰ رَبِّكَ فَٱرْغَب", tr: "Ve yalnız Rabbine yönelip doğrul.", tr_yazir: "Ve ancak Rabbine yönel.", en: "And to your Lord direct [your] longing." },
+    // 103. Asr 1-3
     "103:1": { arabic: "وَٱلْعَصْرِ", tr: "Asra yemin olsun ki,", tr_yazir: "Asr'a yemin olsun ki,", en: "By time," },
     "103:2": { arabic: "إِنَّ ٱلْإِنسَـٰنَ لَفِى خُسْرٍ", tr: "İnsan gerçekten ziyan içindedir.", tr_yazir: "Gerçekten insan ziyandadır.", en: "Indeed, mankind is in loss," },
     "103:3": { arabic: "إِلَّا ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّـٰلِحَـٰتِ وَتَوَاصَوْا۟ بِٱلْحَقِّ وَتَوَاصَوْا۟ بِٱلصَّبْرِ", tr: "Ancak iman edip salih ameller işleyenler, birbirlerine hakkı ve sabrı tavsiye edenler başka.", tr_yazir: "Ancak iman edip salih ameller işleyenler, birbirlerine hakkı tavsiye edenler ve sabrı tavsiye edenler müstesna.", en: "Except for those who have believed and done righteous deeds." },
+    // 108. Kevser 1-3
     "108:1": { arabic: "إِنَّآ أَعْطَيْنَـٰكَ ٱلْكَوْثَرَ", tr: "Şüphesiz biz sana Kevser'i verdik.", tr_yazir: "Muhakkak biz sana Kevser'i verdik.", en: "Indeed, We have granted you, [O Muhammad], al-Kawthar." },
     "108:2": { arabic: "فَصَلِّ لِرَبِّكَ وَٱنْحَرْ", tr: "O hâlde Rabbin için namaz kıl ve kurban kes.", tr_yazir: "Öyleyse Rabbin için namaz kıl ve kurban kes.", en: "So pray to your Lord and sacrifice [to Him alone]." },
     "108:3": { arabic: "إِنَّ شَانِئَكَ هُوَ ٱلْأَبْتَرُ", tr: "Doğrusu sana buğzeden, soyu kesik olanın ta kendisidir.", tr_yazir: "Muhakkak ki sonu kesik olan, sana buğzedendir.", en: "Indeed, your enemy is the one cut off." },
+    // 112. İhlâs 1-4
     "112:1": { arabic: "قُلْ هُوَ ٱللَّهُ أَحَدٌ", tr: "De ki: O, Allah'tır, bir tektir.", tr_yazir: "De ki: O Allah bir tektir.", en: "Say, 'He is Allah, [who is] One," },
     "112:2": { arabic: "ٱللَّهُ ٱلصَّمَدُ", tr: "Allah Samed'dir (Her şey O'na muhtaçtır; O, hiçbir şeye muhtaç değildir).", tr_yazir: "Allah Samed'dir.", en: "Allah, the Eternal Refuge." },
-    "112:3": { arabic: "لَمْ يَلِدْ وَلَمْ يُولَدْ", tr: "O'ndan çocuk olmamıştır (Kimsenin babası değildir). Kendisi de doğmamıştır.", tr_yazir: "Doğurmadı ve doğurulmadı.", en: "He neither begets nor is born," },
-    "112:4": { arabic: "وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ", tr: "Hiçbir şey O'na denk ve benzer değildir.", tr_yazir: "O'na bir denk de olmadı.", en: "Nor is there to Him any equivalent.'" }
+    "112:3": { arabic: "لَمْ يَلِدْ وَلَمْ يُولَدْ", tr: "O'ndan çocuk olmamıştır. Kendisi de doğmamıştır.", tr_yazir: "Doğurmadı ve doğurulmadı.", en: "He neither begets nor is born," },
+    "112:4": { arabic: "وَلَمْ يَكُن لَّهُۥ كُفُوًا أَحَدٌۢ", tr: "Hiçbir şey O'na denk ve benzer değildir.", tr_yazir: "O'na bir denk de olmadı.", en: "Nor is there to Him any equivalent.'" },
+    // 113. Felak 1-5
+    "113:1": { arabic: "قُلْ أَعُوذُ بِرَبِّ ٱلْفَلَقِ", tr: "De ki: Sabahın Rabbine sığınırım;", tr_yazir: "De ki: Sığınırım o sabahın Rabbine,", en: "Say, 'I seek refuge in the Lord of daybreak" },
+    "113:2": { arabic: "مِن شَرِّ مَا خَلَقَ", tr: "Yarattığı şeylerin şerrinden,", tr_yazir: "Yarattığı şeylerin şerrinden,", en: "From the evil of that which He created" },
+    "113:3": { arabic: "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ", tr: "Karanlığı çöktüğü zaman gecenin şerrinden,", tr_yazir: "Karanlığı çöktüğü zaman gecenin şerrinden,", en: "And from the evil of darkness when it settles" },
+    "113:4": { arabic: "وَمِن شَرِّ ٱلنَّفَّـٰثَـٰتِ فِى ٱلْعُقَدِ", tr: "Düğümlere üfleyenlerin şerrinden,", tr_yazir: "Düğümlere üfürüp büyü yapanların şerrinden,", en: "And from the evil of the blowers in knots" },
+    "113:5": { arabic: "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ", tr: "Ve haset ettiği zaman hasetçinin şerrinden.", tr_yazir: "Ve kıskandığı vakit kıskanç kişinin şerrinden.", en: "And from the evil of an envier when he envies.'" },
+    // 114. Nâs 1-6
+    "114:1": { arabic: "قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ", tr: "De ki: İnsanların Rabbine sığınırım;", tr_yazir: "De ki: Sığınırım insanların Rabbine,", en: "Say, 'I seek refuge in the Lord of mankind," },
+    "114:2": { arabic: "مَلِكِ ٱلنَّاسِ", tr: "İnsanların Melikine (mutlak hükümdarına),", tr_yazir: "İnsanların hükümdarına,", en: "The Sovereign of mankind," },
+    "114:3": { arabic: "إِلَـٰهِ ٱلنَّاسِ", tr: "İnsanların İlâhına,", tr_yazir: "İnsanların ilâhına,", en: "The God of mankind," },
+    "114:4": { arabic: "مِن شَرِّ ٱلْوَسْوَاسِ ٱلْخَنَّاسِ", tr: "Sinsi vesvesecinin şerrinden,", tr_yazir: "O sinsi vesvesecinin şerrinden,", en: "From the evil of the retreating whisperer" },
+    "114:5": { arabic: "ٱلَّذِى يُوَسْوِسُ فِى صُدُورِ ٱلنَّاسِ", tr: "O ki, insanların göğüslerine vesvese verir;", tr_yazir: "O ki insanların göğüslerine vesvese verir,", en: "Who whispers [evil] into the breasts of mankind -" },
+    "114:6": { arabic: "مِنَ ٱلْجِنَّةِ وَٱلنَّاسِ", tr: "Gerek cinlerden, gerek insanlardan.", tr_yazir: "Gerek cinlerden, gerek insanlardan.", en: "From among the jinn and mankind.'" }
   };
 
   return {

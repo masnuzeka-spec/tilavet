@@ -1,7 +1,8 @@
 "use strict";
 
 window.TW_STORAGE = (() => {
-  const SETTINGS_KEY = "tilawah_world_settings_v4";
+  const SETTINGS_KEY = "tilawah_world_settings_v5";
+  const LEGACY_V4_KEY = "tilawah_world_settings_v4";
   const LEGACY_V3_KEY = "tilawah_world_settings_v3";
   const LEGACY_PREFS_KEY = "tilawah_world_preferences_v1";
   const DB_NAME = "TilawahWorldGalleryDB";
@@ -10,9 +11,9 @@ window.TW_STORAGE = (() => {
   const AYAH_STORE = "ayah_cache";
 
   const DEFAULT_SETTINGS = {
-    // A. Genel
+    // A. Genel (Varsayılan tema: Siyah & Altın, Varsayılan oran: 9:16!)
     uiLang: "tr",
-    uiTheme: "emerald",
+    uiTheme: "black", // "black" (Siyah & Altın - Varsayılan) | "emerald" (Derin Zümrüt) | "midnight" (Gece Mavisi)
     autoSave: true,
     hapticEnabled: true,
     uiMode: "simple",
@@ -21,30 +22,33 @@ window.TW_STORAGE = (() => {
     stylePresetId: "stil_dere",
     // 2. Kesit & 3. Hâfız
     surahNo: 87,
-    ayahStart: 2,
-    ayahEnd: 10,
+    ayahStart: 1,
+    ayahEnd: 5,
     reciterId: "MaherAlMuaiqly128kbps",
-    bismillahMode: "separate",
-    // 4. Zemin & Hareket
+    bismillahMode: "separate", // "separate" | "first_only" | "strip"
+    // 4. Zemin & Hareket & İnce Ayar
     zeminId: "vid_forest_stream",
     zeminCategory: "Tümü",
     recentZeminIds: ["vid_forest_stream", "vid_rain_window", "vid_mosque_dawn", "live_fire_hearth"],
-    photoMotion: "pan", // "still" (Durgun) | "zoom_in" (Yaklaş) | "zoom_out" (Uzaklaş) | "pan" (Kaydır)
-    // 5. Ortam & Ses
+    photoMotion: "pan", // "still" | "zoom_in" | "zoom_out" | "pan"
+    bgZoom: 100,
+    bgPanX: 0,
+    bgPanY: 0,
+    videoTrimStart: 0,
+    videoTrimEnd: 0,
+    // 5. Ortam & Ses & Zamanlama
     reciterVol: 100,
     ambientType: "none",
     ambientVol: 20,
     bgVideoVol: 0,
     videoAudioMode: "muted",
-    videoTrimStart: 0,
-    videoTrimEnd: 0,
     gaplessTrimSec: 0.14,
     fadeOutEnd: "on",
     audioFailPolicy: "block",
-    // 6. Metin (Font, Meal Yazısı, Renk Daireleri, Okunaklılık, Konum)
+    // 6. Metin (Font, Meal Yazısı, Renk Daireleri + Özel Renk, Okunaklılık, Konum, Boyut, Gölge, Harf Aralığı)
     arabicFont: "Amiri",
     arabicLetterSpacing: 0,
-    mealStyle: "zarif", // "sade" | "kitap" | "klasik" | "italik" | "zarif" | "edebi"
+    mealStyle: "zarif",
     mealFont: "Cormorant Garamond",
     mealWeight: 600,
     mealItalic: true,
@@ -54,56 +58,55 @@ window.TW_STORAGE = (() => {
     arabicColorName: "Fildişi",
     mealColor: "#E8C978",
     mealColorName: "Zer",
-    textReadability: "plain", // "shadow" (Gölge) | "outline" (Kontur) | "box" (Kutu) | "plain" (Yalın)
-    textPosition: "center", // "top" (Üst) | "center" (Orta) | "bottom" (Alt)
+    textReadability: "shadow", // "shadow" | "outline" | "box" | "plain"
+    textPosition: "center", // "top" | "center" | "bottom"
     textShadow: 14,
-    textBackdrop: "none",
-    // 7. Görünüm (Gösterim, Meal Kaynağı, Geçiş & Kelime Kelime Vurgu, Köşe Yazısı)
-    subtitleMode: "tr", // "tr" (Arapça ve meal) | "none" (Yalnız Arapça) | "meal_only" (Yalnız meal) | "blank" (Yazısız) | "en" | "both"
-    mealEdition: "tr.diyanet", // "tr.diyanet" (Diyanet İşleri) | "tr.yazir" (Elmalılı Hamdi Yazır) | "tr.vakfi" (Diyanet Vakfı)
-    transitionMode: "word_highlight", // "word_highlight" (Vurgulu) | "fade" (Belirerek) | "soft" (Yumuşak) | "slide" (Süzülme)
+    // 7. Görünüm (Gösterim, Meal Kaynağı, Vurgulu Geçiş, Video İçi Süre Şeridi, Video İçi Sûre Başlık Şeridi, Köşe Yazısı)
+    subtitleMode: "tr", // "tr" | "none" | "meal_only" | "blank" | "both"
+    mealEdition: "tr.diyanet", // "tr.diyanet" | "tr.yazir" | "tr.vakfi"
+    transitionMode: "word_highlight", // "word_highlight" | "fade" | "soft" | "slide"
+    inVideoProgressBar: "bottom", // "bottom" (Alt Kenarda İnce Altın Şerit) | "under_text" (Âyet Altı Çubuk) | "top" (Üst Kenar) | "off" (Kapalı)
+    inVideoSurahHeader: "both", // "both" (Hem Ortada Sûre Şeridi Hem Sol Üst Köşe) | "center_banner" (Ortada Klasik Şerit) | "corner_only" (Sadece Sol Üst Köşe) | "off" (Gizle)
     cornerShowSurah: true,
     cornerShowAyahs: true,
     cornerShowReciter: true,
-    // 8. Filtre (Parlaklık, Sıcaklık, Karartma, Bulanıklık, Sinema Şeridi)
-    bgBrightnessOffset: 5, // -50 .. +50 (0 = %100 parlaklık)
+    // 8. Filtre (Parlaklık, Sıcaklık, Karartma + Kilit, Bulanıklık, Sinema Şeridi, Vignette, Parçacık + Yoğunluk)
+    bgBrightnessOffset: 5,
     bgBrightness: 105,
-    bgWarmth: 0, // -50 (Soğuk) .. +50 (Sıcak)
-    bgDim: 50,
+    bgWarmth: 0,
+    bgDim: 48,
     lockBgDim: true,
     bgBlur: 0,
     cinemaBars: false,
     vignette: "on",
     visualEffect: "none",
     effectIntensity: 50,
-    bgZoom: 100,
-    bgPanX: 0,
-    bgPanY: 0,
-    kenBurns: "on",
     safeZoneVisible: false,
-    // 9. Kapak
-    coverAyahNo: 7, // Seçili kesitteki hangi ayet kapakta gösterilsin
-    coverLargeSurah: true, // "Sûre adı büyük" toggle
-    coverFirstFrame: "on", // "Videoyla birlikte kaydet"
+    // 9. Kapak (Tam Birleşik: 9 Şablon + Kapağın Âyeti Daireleri + Sûre Adı Büyük + Özel Başlık/Alt Başlık + Boyut Ölçeği + Konum + Hassas X/Y + Kapak Zemini)
+    coverTemplateId: "sebat_hat",
+    coverAyahNo: 1,
+    coverLargeSurah: true,
+    coverFirstFrame: "on",
     coverPreviewMode: "ayah",
-    coverTemplateId: "minimal_center",
     coverTitle: "",
     coverSubtitle: "",
-    coverPos: "center",
-    coverScale: 100,
-    coverBgOverride: "same",
-    // 10. Biçim & İmza
-    platformRatio: "16:9",
+    coverPos: "center", // "upper" | "center" | "lower"
+    coverOffsetY: 0, // -35 .. +35 (%)
+    coverOffsetX: 0, // -30 .. +30 (%)
+    coverScale: 100, // 60 .. 160 (%)
+    coverBgOverride: "same", // "same" | "dark_gold" | "emerald" | "midnight" | "pure_black"
+    // 10. Biçim & İmza & Çıktı (Varsayılan Biçim: 9:16!)
+    platformRatio: "9:16",
     resolution: 1080,
     bitrateMbps: 6,
     exportEngine: "auto",
     fileNameFormat: "surah_ayah",
     captionPlatform: "reels",
     showSignature: true,
-    logoPos: "top-right",
-    logoScale: 95,
+    logoPos: "top-right", // "top-right" | "top-left" | "bottom-center" | "floating" | "hidden"
+    logoScale: 100,
     logoOpacity: 90,
-    watermarkText: "Tilawah",
+    watermarkText: "Tilawah World",
     // Favoriler & Ön Ayarlar
     favoriteAyahs: [...(window.TW_DATA ? window.TW_DATA.KNOWN_EXCERPTS : [])],
     userPresets: []
@@ -114,7 +117,7 @@ window.TW_STORAGE = (() => {
   function loadSettings() {
     let merged = { ...DEFAULT_SETTINGS };
     try {
-      for (const key of [LEGACY_PREFS_KEY, LEGACY_V3_KEY, SETTINGS_KEY]) {
+      for (const key of [LEGACY_PREFS_KEY, LEGACY_V3_KEY, LEGACY_V4_KEY, SETTINGS_KEY]) {
         const raw = localStorage.getItem(key);
         if (raw) {
           const parsed = JSON.parse(raw);
@@ -124,6 +127,11 @@ window.TW_STORAGE = (() => {
             }
           });
         }
+      }
+      // If migrating from older keys before v5, enforce user's requested v5 defaults (9:16 & black theme) unless v5 was already saved
+      if (!localStorage.getItem(SETTINGS_KEY)) {
+        merged.platformRatio = "9:16";
+        merged.uiTheme = "black";
       }
     } catch (_) {}
     return merged;
@@ -155,6 +163,7 @@ window.TW_STORAGE = (() => {
   function resetSettingsToDefault() {
     try {
       localStorage.removeItem(SETTINGS_KEY);
+      localStorage.removeItem(LEGACY_V4_KEY);
       localStorage.removeItem(LEGACY_V3_KEY);
       localStorage.removeItem(LEGACY_PREFS_KEY);
     } catch (_) {}
@@ -269,19 +278,8 @@ window.TW_STORAGE = (() => {
     for (let a = startAyah; a <= endAyah; a++) {
       const key = `${surahNo}:${a}`;
       let found = null;
-      if (db) {
-        found = await new Promise((resolve) => {
-          try {
-            const tx = db.transaction(AYAH_STORE, "readonly");
-            const req = tx.objectStore(AYAH_STORE).get(key);
-            req.onsuccess = () => resolve(req.result || null);
-            req.onerror = () => resolve(null);
-          } catch (_) {
-            resolve(null);
-          }
-        });
-      }
-      if (!found && seed[key]) {
+      // Prefer verified clean seed if available, or IndexedDB entry
+      if (seed[key]) {
         found = {
           key,
           surahNo,
@@ -293,6 +291,17 @@ window.TW_STORAGE = (() => {
           tr_vakfi: seed[key].tr_vakfi || seed[key].tr,
           en: seed[key].en
         };
+      } else if (db) {
+        found = await new Promise((resolve) => {
+          try {
+            const tx = db.transaction(AYAH_STORE, "readonly");
+            const req = tx.objectStore(AYAH_STORE).get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+          } catch (_) {
+            resolve(null);
+          }
+        });
       }
       if (found) {
         results.push(found);
@@ -330,7 +339,7 @@ window.TW_STORAGE = (() => {
     return {
       galleryCount,
       galleryMB: (galleryBytes / (1024 * 1024)).toFixed(2),
-      cachedAyahCount: cachedAyahCount + seedCount
+      cachedAyahCount: Math.max(seedCount, cachedAyahCount + seedCount)
     };
   }
 

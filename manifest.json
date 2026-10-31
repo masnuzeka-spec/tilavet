@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#08110E",
-  "theme_color": "#08110E",
+  "background_color": "#070809",
+  "theme_color": "#070809",
   "categories": ["multimedia", "education", "lifestyle"],
   "icons": [
     { "src": "icons/icon-72.png", "sizes": "72x72", "type": "image/png", "purpose": "any" },
