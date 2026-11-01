@@ -468,8 +468,9 @@
   function syncVideoTrimControlsUI() {
     const startSec = Math.max(0, Number(state.videoTrimStart) || 0);
     const endSec = Math.max(0, Number(state.videoTrimEnd) || 0);
-    const dur = Math.max(0, Math.round(activeBgVideoDuration || 0));
-
+    const dur = (Number.isFinite(activeBgVideoDuration) && activeBgVideoDuration > 0)
+  ? Math.round(activeBgVideoDuration)
+  : 0;
     const inpStart = document.getElementById("inpTrimStartMMSS");
     const inpEnd = document.getElementById("inpTrimEndMMSS");
     if (inpStart && document.activeElement !== inpStart) {
@@ -567,11 +568,21 @@
       vid.playbackRate = Number(state.bgVideoSpeed) || 1.0;
       vid.muted = (state.videoAudioMode === "muted" || state.bgVideoVol <= 0);
       vid.src = srcUrl;
-      vid.onloadedmetadata = () => {
-        activeBgVideoDuration = vid.duration || item.duration || 0;
-        if (activeBgVideoDuration > 0 && !item.duration) {
-          item.duration = activeBgVideoDuration;
-          saveGalleryItem(item);
+      const refreshVidDuration = () => {
+  const validDur = (Number.isFinite(vid.duration) && vid.duration > 0) ? vid.duration : (item.duration || 0);
+  if (validDur > 0) {
+    activeBgVideoDuration = validDur;
+    if (!item.duration) {
+      item.duration = validDur;
+      saveGalleryItem(item);
+    }
+    syncVideoTrimControlsUI();
+    renderZeminGrid();
+  }
+};
+vid.ondurationchange = refreshVidDuration;
+vid.onloadedmetadata = () => {
+  refreshVidDuration();
         }
         vid.playbackRate = Number(state.bgVideoSpeed) || 1.0;
         const tStart = Math.max(0, Number(state.videoTrimStart) || 0);
@@ -3334,7 +3345,7 @@ Okuyan Hâfız: ${reciterMeta.name}`;
 
     // ZEMİN — Sub-tab 2: Dakika:Saniye (00:30 – 01:45) Video Range Controls
     const applyNewTrimRange = async (newStart, newEnd, seekTarget) => {
-      const dur = activeBgVideoDuration || 0;
+      const dur = (Number.isFinite(activeBgVideoDuration) && activeBgVideoDuration > 0) ? activeBgVideoDuration : 0;
       let s = Math.max(0, Math.round(newStart));
       let e = Math.max(0, Math.round(newEnd));
       if (dur > 0) {
