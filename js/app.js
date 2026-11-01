@@ -583,7 +583,7 @@
 vid.ondurationchange = refreshVidDuration;
 vid.onloadedmetadata = () => {
   refreshVidDuration();
-        }
+        
         vid.playbackRate = Number(state.bgVideoSpeed) || 1.0;
         const tStart = Math.max(0, Number(state.videoTrimStart) || 0);
         if (tStart > 0 && tStart < vid.duration) {
