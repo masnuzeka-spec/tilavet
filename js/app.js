@@ -47,7 +47,9 @@
     resetMasterGain,
     startAmbientSound,
     stopAmbientSound,
-    loadSingleAyahAudio
+    loadSingleAyahAudio,
+    playAyahItem,
+    stopActiveAyahPlayback
   } = window.TW_AUDIO;
 
   const {
@@ -90,8 +92,10 @@
     elapsedTime: 0,
     totalDuration: 0,
     lastExportBlob: null,
+    lastExportObjectUrl: null,
     lastExportExt: "mp4",
     lastExportMime: "video/mp4",
+    lastExportCleanMime: "video/mp4",
     fontsReady: false
   };
 
@@ -2090,6 +2094,7 @@
   function stopPlaybackAndRecording(isAbort = true) {
     sessionAborted = isAbort;
     clearPlaybackTimers();
+    stopActiveAyahPlayback();
 
     if (activeAudioElement) {
       try {
@@ -2117,7 +2122,12 @@
     releaseScreenWakeLock();
 
     if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      try { mediaRecorder.stop(); } catch (_) {}
+      try {
+        if (!isAbort && mediaRecorder.state === "recording") {
+          mediaRecorder.requestData();
+        }
+        mediaRecorder.stop();
+      } catch (_) {}
     }
 
     state.isPlaying = false;
@@ -2138,6 +2148,76 @@
     }
   }
 
+  function showExportReadyModal() {
+    if (!state.lastExportBlob) return;
+    const modal = document.getElementById("exportReadyModal");
+    const vid = document.getElementById("exportPreviewVideo");
+    const meta = document.getElementById("lblExportModalMeta");
+    const lnk = document.getElementById("lnkModalDownloadVideo");
+
+    if (state.lastExportObjectUrl) {
+      try { URL.revokeObjectURL(state.lastExportObjectUrl); } catch (_) {}
+    }
+    state.lastExportObjectUrl = URL.createObjectURL(state.lastExportBlob);
+    const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
+    const sizeMB = (state.lastExportBlob.size / (1024 * 1024)).toFixed(2);
+
+    if (vid) {
+      vid.src = state.lastExportObjectUrl;
+      vid.load();
+    }
+    if (meta) {
+      meta.textContent = `${fileName} · ${sizeMB} MB · ${state.platformRatio} (${state.resolution}p)`;
+    }
+    if (lnk) {
+      lnk.href = state.lastExportObjectUrl;
+      lnk.download = fileName;
+    }
+    if (modal) {
+      modal.classList.add("show");
+    }
+  }
+
+  async function shareExportedVideo() {
+    if (!state.lastExportBlob) {
+      showToast("Önce '🎬 Oluştur' düğmesiyle videoyu hazırlayın.");
+      return;
+    }
+    const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
+    const cleanMime = state.lastExportCleanMime || (state.lastExportExt === "mp4" ? "video/mp4" : "video/webm");
+    const caption = (document.getElementById("txtSocialCaption") && document.getElementById("txtSocialCaption").value) || "";
+
+    if (navigator.share) {
+      try {
+        const file = new File([state.lastExportBlob], fileName, {
+          type: cleanMime,
+          lastModified: Date.now()
+        });
+        // Try sharing file + text first; if browser only accepts file alone, fallback to files-only share
+        try {
+          await navigator.share({
+            files: [file],
+            title: fileName,
+            text: caption
+          });
+          return;
+        } catch (err1) {
+          if (err1 && err1.name === "AbortError") return;
+          await navigator.share({
+            files: [file]
+          });
+          return;
+        }
+      } catch (err2) {
+        if (err2 && err2.name === "AbortError") return;
+      }
+    }
+
+    // Fallback if Web Share API for files is unsupported in this browser/WebView
+    downloadExportedVideo();
+    showToast("Tarayıcınız doğrudan dosya paylaşımını desteklemiyor; video cihazınıza indirildi.");
+  }
+
   async function startStudioSession(recordMode = false) {
     if (!state.versesLoaded || state.verses.length === 0) {
       showToast("Bu âyet metni henüz yüklenmedi.");
@@ -2148,6 +2228,9 @@
       return;
     }
 
+    // Unlock AudioContext immediately on user tap before any await!
+    const { mixDest } = ensureAudioGraph(state, activeBgVideo);
+
     await ensureFontsLoaded();
     stopPlaybackAndRecording(true);
 
@@ -2157,7 +2240,6 @@
     const chkPrev = document.getElementById("chkPreviewCoverNow");
     if (chkPrev) chkPrev.checked = false;
 
-    // Seek Galerim background video right to chosen trimStart (e.g. 00:30) and set playbackRate!
     if (activeBgVideo) {
       try {
         activeBgVideo.playbackRate = Number(state.bgVideoSpeed) || 1.0;
@@ -2169,7 +2251,7 @@
       } catch (_) {}
     }
 
-    const { mixDest } = ensureAudioGraph(state, activeBgVideo);
+    ensureAudioGraph(state, activeBgVideo);
 
     state.isPlaying = !recordMode;
     state.isRecording = recordMode;
@@ -2204,7 +2286,10 @@
     if (recordMode) {
       state.lastExportExt = chosenFormat.ext;
       state.lastExportMime = chosenFormat.mime || "video/webm";
+      state.lastExportCleanMime = chosenFormat.cleanMime || (chosenFormat.ext === "mp4" ? "video/mp4" : "video/webm");
 
+      // Render one fresh frame before capturing stream so stream starts non-empty
+      renderStudioFrame(performance.now());
       const canvasStream = canvas.captureStream(30);
       const combinedTracks = [
         ...canvasStream.getVideoTracks(),
@@ -2228,22 +2313,23 @@
         if (ev.data && ev.data.size > 0) recordedChunks.push(ev.data);
       };
 
-      mediaRecorder.onstop = () => {
+      mediaRecorder.onstop = async () => {
         if (sessionAborted || !recorderCompletedNaturally || recordedChunks.length === 0) {
           recordedChunks = [];
           return;
         }
         const totalDurationMs = Math.max(1000, performance.now() - recordStartPerf);
-        const rawBlob = new Blob(recordedChunks, { type: state.lastExportMime });
-        const finalBlob = patchWebmDuration(rawBlob, totalDurationMs);
+        const rawBlob = new Blob(recordedChunks, { type: state.lastExportCleanMime });
+        const finalBlob = await patchWebmDuration(rawBlob, totalDurationMs, state.lastExportCleanMime);
         state.lastExportBlob = finalBlob;
 
         const btnDl = document.getElementById("btnDownloadLastVideo");
         if (btnDl) btnDl.disabled = false;
 
         const btnShare = document.getElementById("btnShareLastVideo");
-        if (btnShare && navigator.share) btnShare.style.display = "inline-flex";
+        if (btnShare) btnShare.disabled = false;
 
+        showExportReadyModal();
         downloadExportedVideo();
       };
     }
@@ -2325,67 +2411,59 @@
         return;
       }
 
-      const audioEl = state.audioElements[idx];
+      const statusItem = state.audioStatuses[idx];
       const dur = state.audioDurations[idx] || 5.0;
-      if (!audioEl) {
+      if (!statusItem) {
         stopPlaybackAndRecording(true);
         return;
       }
 
-      activeAudioElement = audioEl;
-      audioEl.currentTime = 0;
-      let advancedToNext = false;
+      if (recordMode && !recorderStarted) {
+        recorderStarted = true;
+        recordStartPerf = performance.now();
+        mediaRecorder.start(200);
+        startAmbientSound(state);
+      } else if (!recordMode && idx === 0) {
+        startAmbientSound(state);
+      }
 
+      let advancedToNext = false;
       const goNext = () => {
         if (advancedToNext || sessionAborted) return;
         advancedToNext = true;
-        audioEl.ontimeupdate = null;
-        audioEl.onended = null;
-        try { audioEl.pause(); } catch (_) {}
+        stopActiveAyahPlayback();
         playVerseAtIndex(idx + 1);
       };
 
-      audioEl.ontimeupdate = () => {
-        if (sessionAborted) return;
-        state.activeVerseElapsed = audioEl.currentTime;
-
-        let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
-        for (let i = 0; i < idx; i++) {
-          passed += Math.max(0.4, state.audioDurations[i] - state.gaplessTrimSec);
-        }
-        passed += audioEl.currentTime;
-        state.elapsedTime = passed;
-
-        document.getElementById("lblCurrentTime").textContent = formatPreciseTime(passed);
-        const pct = state.totalDuration > 0 ? Math.min(100, (passed / state.totalDuration) * 100) : 0;
-        document.getElementById("progressBarFill").style.width = `${pct}%`;
-
-        if (!isLastVerse && state.gaplessTrimSec > 0 && dur > 1.2) {
-          if (audioEl.currentTime >= dur - state.gaplessTrimSec) {
-            goNext();
-          }
-        }
-      };
-
-      audioEl.onended = () => goNext();
-
-      const playPromise = audioEl.play();
-      if (playPromise && playPromise.then) {
-        playPromise.then(() => {
+      playAyahItem(
+        statusItem,
+        (curTime, totalDur) => {
           if (sessionAborted) return;
-          if (recordMode && !recorderStarted) {
-            recorderStarted = true;
-            recordStartPerf = performance.now();
-            mediaRecorder.start(200);
-            startAmbientSound(state);
-          } else if (!recordMode && idx === 0) {
-            startAmbientSound(state);
+          state.activeVerseElapsed = curTime;
+
+          let passed = state.coverFirstFrame === "on" ? 1.2 : 0;
+          for (let i = 0; i < idx; i++) {
+            passed += Math.max(0.4, state.audioDurations[i] - state.gaplessTrimSec);
           }
-        }).catch(() => {
+          passed += curTime;
+          state.elapsedTime = passed;
+
+          document.getElementById("lblCurrentTime").textContent = formatPreciseTime(passed);
+          const pct = state.totalDuration > 0 ? Math.min(100, (passed / state.totalDuration) * 100) : 0;
+          document.getElementById("progressBarFill").style.width = `${pct}%`;
+
+          if (!isLastVerse && state.gaplessTrimSec > 0 && totalDur > 1.2) {
+            if (curTime >= totalDur - state.gaplessTrimSec) {
+              goNext();
+            }
+          }
+        },
+        () => goNext(),
+        () => {
           stopPlaybackAndRecording(true);
           showToast("Ses oynatılamadı. Lütfen tekrar dokunun.");
-        });
-      }
+        }
+      );
     };
 
     if (state.coverFirstFrame === "on") {
@@ -2424,7 +2502,8 @@
     const plat = state.captionPlatform || "reels";
 
     let tags = `#Kuran #Tilavet #${surahTag}Suresi #Ayet #Huzur #TilawahWorld #Reels #Keşfet`;
-    let header = `📖 ${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler)\n🎙️ Hâfız: ${reciterMeta.name}`;
+    let header = `📖 ${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler)
+🎙️ Hâfız: ${reciterMeta.name}`;
 
     if (plat === "tiktok") {
       tags = `#kuranıkerim #tilavet #${surahTag.toLowerCase()}suresi #ayetler #huzur #keşfet #fyp`;
@@ -2432,32 +2511,38 @@
       header = `📖 ${surahMeta[1]} Sûresi ${state.ayahStart}-${state.ayahEnd}. Âyetler | ${reciterMeta.name} #Shorts`;
       tags = `#Shorts #Kuran #Tilavet #${surahTag}Suresi #Ayet`;
     } else if (plat === "youtube") {
-      header = `${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler) - Huzur Veren Kur'ân-ı Kerîm Tilâveti\nOkuyan Hâfız: ${reciterMeta.name}`;
+      header = `${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler) - Huzur Veren Kur'ân-ı Kerîm Tilâveti
+Okuyan Hâfız: ${reciterMeta.name}`;
       tags = `#KuranıKerim #Tilavet #${surahTag}Suresi #Meal #Tefekkür`;
     } else if (plat === "whatsapp") {
-      header = `✨ *${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler)*\n🎙️ _${reciterMeta.name}_`;
+      header = `✨ *${surahMeta[1]} Sûresi (${state.ayahStart}-${state.ayahEnd}. Âyetler)*
+🎙️ _${reciterMeta.name}_`;
       tags = `🌿 _Tilawah World_`;
     }
 
     const txt = document.getElementById("txtSocialCaption");
-    if (txt) txt.value = `${header}\n\n` + (mealSnippet ? `${mealSnippet}\n\n` : "") + tags;
+    if (txt) txt.value = `${header}
+
+` + (mealSnippet ? `${mealSnippet}
+
+` : "") + tags;
   }
 
   function downloadExportedVideo() {
-    if (!state.lastExportBlob) {
-      showToast("Önce 'Oluştur' düğmesiyle video hazırlayın.");
+    if (!state.lastExportBlob || !(state.lastExportBlob instanceof Blob)) {
+      showToast("Önce '🎬 Oluştur' düğmesiyle video hazırlayın.");
       return;
     }
     const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
-    const url = URL.createObjectURL(state.lastExportBlob);
+    const dlUrl = state.lastExportObjectUrl || URL.createObjectURL(state.lastExportBlob);
     const a = document.createElement("a");
-    a.href = url;
+    a.href = dlUrl;
     a.download = fileName;
+    a.style.display = "none";
     document.body.appendChild(a);
     a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    showToast(`Video indirildi: ${fileName}`);
+    setTimeout(() => a.remove(), 400);
+    showToast(`Video hazır: ${fileName}`);
   }
 
   const TAB_TITLES = {
@@ -3061,21 +3146,27 @@
       hapticTap();
       downloadExportedVideo();
     });
-    document.getElementById("btnShareLastVideo").addEventListener("click", async () => {
+    document.getElementById("btnShareLastVideo").addEventListener("click", () => {
       hapticTap();
-      if (!state.lastExportBlob || !navigator.share) return;
-      try {
-        const fileName = formatExportFileName(state, SURAHS, RECITERS, state.lastExportExt);
-        const file = new File([state.lastExportBlob], fileName, { type: state.lastExportMime });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: "Tilawah World Video",
-            text: document.getElementById("txtSocialCaption").value,
-            files: [file]
-          });
-        }
-      } catch (_) {}
+      shareExportedVideo();
     });
+    const btnModalShare = document.getElementById("btnModalShareVideo");
+    if (btnModalShare) {
+      btnModalShare.addEventListener("click", () => {
+        hapticTap();
+        shareExportedVideo();
+      });
+    }
+    const btnCloseModal = document.getElementById("btnCloseExportModal");
+    if (btnCloseModal) {
+      btnCloseModal.addEventListener("click", () => {
+        hapticTap();
+        const modal = document.getElementById("exportReadyModal");
+        const vid = document.getElementById("exportPreviewVideo");
+        if (vid) { try { vid.pause(); } catch (_) {} }
+        if (modal) modal.classList.remove("show");
+      });
+    }
 
     // Timeline Scrubber Click
     document.getElementById("progressBarTrack").addEventListener("click", (ev) => {

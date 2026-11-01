@@ -1067,13 +1067,33 @@
       </div>
 
       <div class="export-actions-col">
-        <button id="btnShareLastVideo" type="button" class="btn btn-sm" style="display:none;">↗ Paylaş</button>
+        <button id="btnShareLastVideo" type="button" class="btn btn-sm" disabled title="Son hazırlanan videoyu paylaş">↗ Paylaş</button>
         <button id="btnDownloadLastVideo" type="button" class="btn btn-sm" disabled title="Son hazırlanan videoyu indir">⬇ İndir</button>
         <button id="btnRecordExport" type="button" class="btn btn-gold" disabled>
           <span id="lblRecordBtn">🎬 Oluştur</span>
         </button>
       </div>
     </footer>
+  </div>
+
+  <!-- Export Ready Modal (1-Tap Download & Native Share) -->
+  <div id="exportReadyModal" class="export-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+    <div class="export-modal-card">
+      <div class="export-modal-header">
+        <span id="exportModalTitle" class="export-modal-title">🎬 Videonuz Hazır!</span>
+        <button id="btnCloseExportModal" type="button" class="drawer-close-btn">Kapat ✕</button>
+      </div>
+      <video id="exportPreviewVideo" class="export-video-preview" controls playsinline></video>
+      <div id="lblExportModalMeta" class="export-modal-meta tabular-nums">MP4 Video</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        <a id="lnkModalDownloadVideo" href="#" download="Tilawah_Video.mp4" class="btn btn-gold" style="width:100%;text-decoration:none;">
+          ⬇ Videoyu Cihaza İndir
+        </a>
+        <button id="btnModalShareVideo" type="button" class="btn" style="width:100%;">
+          ↗ Paylaş (WhatsApp / Instagram / Diğer)
+        </button>
+      </div>
+    </div>
   </div>
 
   <div id="toastNotification" class="toast" role="status" aria-live="polite"></div>

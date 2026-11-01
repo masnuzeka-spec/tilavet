@@ -10,9 +10,11 @@ window.TW_AUDIO = (() => {
 
   let ambientSourceNode = null;
   let ambientAudioEl = null;
+  let activeAyahBufferNode = null;
+  let activeAyahRafId = null;
   const connectedNodes = new WeakMap();
 
-  function ensureAudioGraph(state, activeBgVideo) {
+  function getOrCreateAudioContext() {
     if (!audioCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       audioCtx = new AC();
@@ -30,6 +32,11 @@ window.TW_AUDIO = (() => {
       masterGain.connect(audioCtx.destination);
       masterGain.connect(mixDest);
     }
+    return audioCtx;
+  }
+
+  function ensureAudioGraph(state, activeBgVideo) {
+    getOrCreateAudioContext();
 
     if (audioCtx.state === "suspended") {
       audioCtx.resume().catch(() => {});
@@ -37,10 +44,11 @@ window.TW_AUDIO = (() => {
 
     masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
     masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-    reciterGain.gain.setValueAtTime((state.reciterVol || 100) / 100, audioCtx.currentTime);
-    ambientGain.gain.setValueAtTime((state.ambientVol || 0) / 100, audioCtx.currentTime);
+    reciterGain.gain.setValueAtTime((state.reciterVol ?? 100) / 100, audioCtx.currentTime);
+    ambientGain.gain.setValueAtTime((state.ambientVol ?? 0) / 100, audioCtx.currentTime);
 
-    const bgVol = state.videoAudioMode === "unmuted" ? (state.bgVideoVol || 0) / 100 : 0;
+    const isMix = state.videoAudioMode === "mix" || state.videoAudioMode === "unmuted";
+    const bgVol = isMix ? (state.bgVideoVol ?? 0) / 100 : 0;
     bgVideoGain.gain.setValueAtTime(bgVol, audioCtx.currentTime);
 
     (state.audioElements || []).forEach((aud) => {
@@ -66,23 +74,25 @@ window.TW_AUDIO = (() => {
         connectedNodes.set(videoEl, vSrc);
       } catch (_) {}
     }
-    const bgVol = state.videoAudioMode === "unmuted" ? (state.bgVideoVol || 0) / 100 : 0;
+    const isMix = state.videoAudioMode === "mix" || state.videoAudioMode === "unmuted";
+    const bgVol = isMix ? (state.bgVideoVol ?? 0) / 100 : 0;
     if (bgVideoGain) {
       bgVideoGain.gain.setValueAtTime(bgVol, audioCtx.currentTime);
     }
-    videoEl.muted = (state.videoAudioMode === "muted" || bgVol <= 0);
+    videoEl.muted = (!isMix || bgVol <= 0);
     videoEl.volume = 1.0;
   }
 
   function updateVolumes(state, activeBgVideo) {
     if (!audioCtx) return;
     const now = audioCtx.currentTime;
-    if (reciterGain) reciterGain.gain.setValueAtTime((state.reciterVol || 100) / 100, now);
-    if (ambientGain) ambientGain.gain.setValueAtTime((state.ambientVol || 0) / 100, now);
-    const bgVol = state.videoAudioMode === "unmuted" ? (state.bgVideoVol || 0) / 100 : 0;
+    if (reciterGain) reciterGain.gain.setValueAtTime((state.reciterVol ?? 100) / 100, now);
+    if (ambientGain) ambientGain.gain.setValueAtTime((state.ambientVol ?? 0) / 100, now);
+    const isMix = state.videoAudioMode === "mix" || state.videoAudioMode === "unmuted";
+    const bgVol = isMix ? (state.bgVideoVol ?? 0) / 100 : 0;
     if (bgVideoGain) bgVideoGain.gain.setValueAtTime(bgVol, now);
     if (activeBgVideo) {
-      activeBgVideo.muted = (state.videoAudioMode === "muted" || bgVol <= 0);
+      activeBgVideo.muted = (!isMix || bgVol <= 0);
     }
   }
 
@@ -101,6 +111,95 @@ window.TW_AUDIO = (() => {
     masterGain.gain.setValueAtTime(1.0, now);
   }
 
+  function stopActiveAyahPlayback() {
+    if (activeAyahRafId) {
+      cancelAnimationFrame(activeAyahRafId);
+      activeAyahRafId = null;
+    }
+    if (activeAyahBufferNode) {
+      try {
+        activeAyahBufferNode.onended = null;
+        activeAyahBufferNode.stop();
+        activeAyahBufferNode.disconnect();
+      } catch (_) {}
+      activeAyahBufferNode = null;
+    }
+  }
+
+  // Plays an ayah via WebAudio AudioBufferSourceNode (immune to mobile setTimeout gesture expiry) or HTMLAudioElement fallback
+  function playAyahItem(statusItem, onTimeUpdate, onEnded, onError) {
+    stopActiveAyahPlayback();
+    getOrCreateAudioContext();
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume().catch(() => {});
+    }
+
+    if (statusItem && statusItem.audioBuffer && audioCtx) {
+      try {
+        const src = audioCtx.createBufferSource();
+        src.buffer = statusItem.audioBuffer;
+        src.connect(reciterGain);
+        const startCtxTime = audioCtx.currentTime;
+        const dur = statusItem.duration || statusItem.audioBuffer.duration || 5.0;
+        let ended = false;
+
+        const finish = () => {
+          if (ended) return;
+          ended = true;
+          if (activeAyahRafId) {
+            cancelAnimationFrame(activeAyahRafId);
+            activeAyahRafId = null;
+          }
+          activeAyahBufferNode = null;
+          if (onEnded) onEnded();
+        };
+
+        src.onended = finish;
+        activeAyahBufferNode = src;
+        src.start(0);
+
+        const tick = () => {
+          if (ended || activeAyahBufferNode !== src) return;
+          const elapsed = Math.max(0, audioCtx.currentTime - startCtxTime);
+          if (onTimeUpdate) onTimeUpdate(elapsed, dur);
+          if (elapsed < dur) {
+            activeAyahRafId = requestAnimationFrame(tick);
+          } else {
+            finish();
+          }
+        };
+        activeAyahRafId = requestAnimationFrame(tick);
+        return true;
+      } catch (_) {}
+    }
+
+    // Fallback to HTMLAudioElement
+    const audioEl = statusItem && statusItem.audio;
+    if (!audioEl) {
+      if (onError) onError();
+      return false;
+    }
+
+    const dur = statusItem.duration || audioEl.duration || 5.0;
+    audioEl.currentTime = 0;
+    audioEl.ontimeupdate = () => {
+      if (onTimeUpdate) onTimeUpdate(audioEl.currentTime, dur);
+    };
+    audioEl.onended = () => {
+      audioEl.ontimeupdate = null;
+      audioEl.onended = null;
+      if (onEnded) onEnded();
+    };
+
+    const p = audioEl.play();
+    if (p && p.catch) {
+      p.catch(() => {
+        if (onError) onError();
+      });
+    }
+    return true;
+  }
+
   function startAmbientSound(state) {
     stopAmbientSound();
     if (!audioCtx || !state.ambientType || state.ambientType === "none" || state.ambientVol <= 0) return;
@@ -117,7 +216,7 @@ window.TW_AUDIO = (() => {
 
     startProceduralAmbient(state.ambientType);
 
-    if (fileSrc && !window.__TW_INLINE_CANVAS_MODE__) {
+    if (fileSrc && !window.__TW_INLINE_LOGO_DATA__) {
       try {
         const el = new Audio();
         el.crossOrigin = "anonymous";
@@ -140,7 +239,6 @@ window.TW_AUDIO = (() => {
     }
   }
 
-  // Synthesizes all 10 Sebat ambient sound profiles (Kırda yağmur, Koruda yağmur, Dere, Bozkır/Ağaç/Çam rüzgârı, Ocak şömine çıtırtısı, Dalga, Gece, Ney)
   function startProceduralAmbient(type) {
     if (!audioCtx) return;
     const sampleRate = audioCtx.sampleRate;
@@ -159,7 +257,6 @@ window.TW_AUDIO = (() => {
         data[i] = ((w1 + w2) * env + softAir) * 0.26;
       }
     } else if (type === "fireplace") {
-      // Warm low hearth rumble + periodic wood crackle impulses
       let last = 0;
       for (let i = 0; i < bufferSize; i++) {
         const white = Math.random() * 2 - 1;
@@ -168,7 +265,6 @@ window.TW_AUDIO = (() => {
         data[i] = last * 0.35 + crackle * 0.45;
       }
     } else if (type === "waves") {
-      // Rhythmic ocean surf (5s wave cycle)
       let b0 = 0, b1 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const t = i / sampleRate;
@@ -179,7 +275,6 @@ window.TW_AUDIO = (() => {
         data[i] = b1 * swell * 0.22;
       }
     } else if (type === "stream") {
-      // Babbling brook water modulation
       let b0 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const t = i / sampleRate;
@@ -189,7 +284,6 @@ window.TW_AUDIO = (() => {
         data[i] = b0 * ripple * 0.22;
       }
     } else {
-      // Rain & Wind varieties
       let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
       for (let i = 0; i < bufferSize; i++) {
         const t = i / sampleRate;
@@ -260,10 +354,12 @@ window.TW_AUDIO = (() => {
     const remoteUrl = `https://everyayah.com/data/${reciterId}/${padS}${padA}.mp3`;
     let playUrl = remoteUrl;
     let objectUrl = null;
+    let rawBlob = null;
 
-    if ("caches" in window) {
-      try {
-        const cache = await caches.open("tilawah-audio-7.0.0");
+    // Fetch MP3 blob (via Cache API if available, otherwise direct CORS fetch)
+    try {
+      if ("caches" in window) {
+        const cache = await caches.open("tilawah-audio-10.0.0");
         let cachedRes = await cache.match(remoteUrl);
         if (!cachedRes) {
           const netRes = await fetch(remoteUrl, { mode: "cors" });
@@ -273,13 +369,42 @@ window.TW_AUDIO = (() => {
           }
         }
         if (cachedRes && cachedRes.ok) {
-          const blob = await cachedRes.blob();
-          if (blob && blob.size > 512) {
-            objectUrl = URL.createObjectURL(blob);
-            playUrl = objectUrl;
-          }
+          rawBlob = await cachedRes.blob();
         }
+      } else {
+        const netRes = await fetch(remoteUrl, { mode: "cors" });
+        if (netRes && netRes.ok) {
+          rawBlob = await netRes.blob();
+        }
+      }
+      if (rawBlob && rawBlob.size > 512) {
+        objectUrl = URL.createObjectURL(rawBlob);
+        playUrl = objectUrl;
+      }
+    } catch (_) {}
+
+    // Also decode into WebAudio AudioBuffer so playback & MediaRecorder never suffer from mobile gesture expiry!
+    let decodedBuffer = null;
+    if (rawBlob && rawBlob.size > 512) {
+      try {
+        const ctx = getOrCreateAudioContext();
+        const arrBuf = await rawBlob.arrayBuffer();
+        decodedBuffer = await ctx.decodeAudioData(arrBuf.slice(0));
       } catch (_) {}
+    }
+
+    if (decodedBuffer && decodedBuffer.duration > 0.15) {
+      const dummyAud = new Audio();
+      if (objectUrl) dummyAud.src = playUrl;
+      return {
+        ayahNo,
+        ok: true,
+        audio: dummyAud,
+        audioBuffer: decodedBuffer,
+        objectUrl,
+        duration: decodedBuffer.duration,
+        error: null
+      };
     }
 
     return new Promise((resolve) => {
@@ -301,6 +426,7 @@ window.TW_AUDIO = (() => {
           ayahNo,
           ok: false,
           audio: aud,
+          audioBuffer: null,
           objectUrl,
           duration: 0,
           error: `${surahNo}:${ayahNo}. ayet ses bağlantısı zaman aşımına uğradı (9 sn).`
@@ -314,6 +440,7 @@ window.TW_AUDIO = (() => {
             ayahNo,
             ok: true,
             audio: aud,
+            audioBuffer: null,
             objectUrl,
             duration: d,
             error: null
@@ -323,6 +450,7 @@ window.TW_AUDIO = (() => {
             ayahNo,
             ok: false,
             audio: aud,
+            audioBuffer: null,
             objectUrl,
             duration: 0,
             error: `${surahNo}:${ayahNo}. ayet ses süresi geçersiz.`
@@ -335,6 +463,7 @@ window.TW_AUDIO = (() => {
           ayahNo,
           ok: false,
           audio: aud,
+          audioBuffer: null,
           objectUrl,
           duration: 0,
           error: `${surahNo}:${ayahNo}. ayet MP3 dosyası yüklenemedi.`
@@ -351,6 +480,8 @@ window.TW_AUDIO = (() => {
     resetMasterGain,
     startAmbientSound,
     stopAmbientSound,
-    loadSingleAyahAudio
+    loadSingleAyahAudio,
+    playAyahItem,
+    stopActiveAyahPlayback
   };
 })();
