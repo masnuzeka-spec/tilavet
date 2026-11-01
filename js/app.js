@@ -7,7 +7,6 @@
     MINIMAL_FALLBACK_CATALOG,
     STYLE_PRESETS,
     KNOWN_EXCERPTS,
-    ZEMIN_CATEGORIES,
     AMBIENT_SOUNDS,
     ARABIC_COLOR_SWATCHES,
     MEAL_COLOR_SWATCHES,
@@ -213,12 +212,33 @@
     return `${m}:${String(r).padStart(2, "0")}`;
   }
 
+  // Formats seconds into MM:SS (e.g. 30 -> "00:30", 105 -> "01:45")
+  function formatMMSS(sec) {
+    const s = Math.max(0, Math.round(Number(sec) || 0));
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+  }
+
+  // Parses "00:30", "1:45", or "90" into seconds
+  function parseMMSS(str) {
+    if (typeof str === "number") return Math.max(0, str);
+    const raw = String(str || "").trim();
+    if (!raw) return 0;
+    if (raw.includes(":")) {
+      const parts = raw.split(":").map((p) => Number(p.trim()) || 0);
+      if (parts.length === 2) return Math.max(0, parts[0] * 60 + parts[1]);
+      if (parts.length === 3) return Math.max(0, parts[0] * 3600 + parts[1] * 60 + parts[2]);
+    }
+    const num = Number(raw.replace(",", "."));
+    return Number.isFinite(num) ? Math.max(0, num) : 0;
+  }
+
   function toArabicIndicDigits(num) {
     const map = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
     return String(num).replace(/\d/g, (d) => map[Number(d)]);
   }
 
-  // Normalizes circumflex vowels (Fâtiha -> Fatiha, Yâsîn -> Yasin, Nûr -> Nur) so hashtags never lose letters!
   function normalizeHashtagWord(str) {
     if (!str) return "";
     return String(str)
@@ -230,7 +250,6 @@
       .replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ]/g, "");
   }
 
-  // Formats verse number prefix for both Turkish and English meals without duplicate numbers
   function formatVerseTextWithNumber(rawText, ayahNum, fmt) {
     if (!rawText) return "";
     const clean = String(rawText).replace(/^\s*\d+\s*[-.)\]]\s*/, "").trim();
@@ -249,11 +268,11 @@
     const hdr = document.getElementById("headerProjectSummary");
     if (hdr) hdr.textContent = `${surahMeta[1]} ${rangeStr} · ${recMeta.name}`;
 
-    // Update Cover Surah Name input placeholder
-    const inpCoverSurah = document.getElementById("inpCoverSurahName");
-    if (inpCoverSurah) {
-      inpCoverSurah.placeholder = `${surahMeta[1]} Sûresi`;
-    }
+    // Dynamic placeholders for Cover Arabic & Turkish Surah Name inputs
+    const inpCoverAr = document.getElementById("inpCoverSurahNameAr");
+    if (inpCoverAr) inpCoverAr.placeholder = surahMeta[2];
+    const inpCoverTr = document.getElementById("inpCoverSurahName");
+    if (inpCoverTr) inpCoverTr.placeholder = `${surahMeta[1]} Sûresi`;
 
     const durSec = Math.max(5, Math.round(state.totalDuration || 18));
     const estRenderSec = Math.max(3, Math.round(durSec * 0.25));
@@ -329,7 +348,6 @@
     lctx.arc(256, 256, 240, 0, Math.PI * 2);
     lctx.fill();
 
-    // Outer & inner golden rings
     lctx.lineWidth = 10;
     lctx.strokeStyle = "#E0B84C";
     lctx.stroke();
@@ -340,7 +358,6 @@
     lctx.arc(256, 256, 218, 0, Math.PI * 2);
     lctx.stroke();
 
-    // Crisp golden crescent
     lctx.fillStyle = "rgba(224, 184, 76, 0.22)";
     lctx.beginPath();
     lctx.arc(256, 256, 155, 0, Math.PI * 2);
@@ -370,12 +387,12 @@
   };
   appLogoImg.src = window.__TW_INLINE_LOGO_DATA__ || "icons/logo.png";
 
-  let catalogItems = window.__TW_INLINE_CATALOG_ITEMS__ || [...MINIMAL_FALLBACK_CATALOG];
   let galleryItems = [];
   let activeObjectUrls = [];
-  const thumbCache = new Map();
+  const styleThumbCache = new Map();
   let activeBgImage = null;
   let activeBgVideo = null;
+  let activeBgVideoDuration = 0;
 
   function revokeActiveMediaUrls() {
     while (activeObjectUrls.length > 0) {
@@ -384,65 +401,125 @@
     }
   }
 
-  async function loadExternalCatalogJson() {
-    if (window.__TW_INLINE_CATALOG_ITEMS__ && window.__TW_INLINE_CATALOG_ITEMS__.length > 2) {
-      catalogItems = window.__TW_INLINE_CATALOG_ITEMS__.filter((it) => it.type !== "image");
-      renderZeminGrid();
-      return;
-    }
-    try {
-      const res = await fetch("media/catalog.json", { cache: "no-cache" });
-      if (!res.ok) throw new Error("catalog error");
-      const data = await res.json();
-      if (data && Array.isArray(data.items) && data.items.length > 0) {
-        catalogItems = data.items.filter((it) => it.type !== "image");
-      }
-    } catch (_) {
-      if (!catalogItems || catalogItems.length === 0) {
-        catalogItems = [...MINIMAL_FALLBACK_CATALOG];
-      }
-    }
-    renderZeminGrid();
-  }
-
-  function generateProceduralThumb(palette = ["#0a111a", "#172536", "#d8b456"], label = "") {
-    const key = palette.join(",") + "|" + label;
-    if (thumbCache.has(key)) return thumbCache.get(key);
+  // Generates a typography preview card thumbnail for each of the 8 clean Styles
+  function generateStyleCardPreview(st) {
+    const key = st.id;
+    if (styleThumbCache.has(key)) return styleThumbCache.get(key);
 
     const c = document.createElement("canvas");
-    c.width = 180;
-    c.height = 320;
+    c.width = 220;
+    c.height = 300;
     const tctx = c.getContext("2d");
 
-    const g = tctx.createLinearGradient(0, 0, 0, 320);
-    g.addColorStop(0, palette[0] || "#070809");
-    g.addColorStop(0.55, palette[1] || "#141820");
-    g.addColorStop(1, palette[0] || "#070809");
+    const p = st.palette || ["#07080A", "#12151C", "#E0B84C"];
+    const g = tctx.createLinearGradient(0, 0, 0, 300);
+    g.addColorStop(0, p[0]);
+    g.addColorStop(0.5, p[1]);
+    g.addColorStop(1, p[0]);
     tctx.fillStyle = g;
-    tctx.fillRect(0, 0, 180, 320);
+    tctx.fillRect(0, 0, 220, 300);
 
-    const rad = tctx.createRadialGradient(90, 130, 6, 90, 130, 120);
-    rad.addColorStop(0, (palette[2] || "#E0B84C") + "66");
-    rad.addColorStop(1, "transparent");
-    tctx.fillStyle = rad;
-    tctx.fillRect(0, 0, 180, 320);
+    if (st.textBoxStyle === "frosted") {
+      tctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+      tctx.strokeStyle = "rgba(240, 215, 138, 0.35)";
+      tctx.lineWidth = 1.5;
+      tctx.fillRect(18, 78, 184, 128);
+      tctx.strokeRect(18, 78, 184, 128);
+    } else if (st.textBoxStyle === "dark_pill") {
+      tctx.fillStyle = "rgba(4, 5, 7, 0.85)";
+      tctx.strokeStyle = "rgba(224, 184, 76, 0.3)";
+      tctx.lineWidth = 1.5;
+      tctx.fillRect(18, 78, 184, 128);
+      tctx.strokeRect(18, 78, 184, 128);
+    }
 
-    const url = c.toDataURL("image/jpeg", 0.8);
-    thumbCache.set(key, url);
+    tctx.textAlign = "center";
+    tctx.textBaseline = "middle";
+    tctx.fillStyle = st.arabicColor || "#FFFDF7";
+    tctx.font = `bold 26px '${st.arabicFont || "Amiri"}', serif`;
+    tctx.fillText("بِسْمِ ٱللَّهِ", 110, 118);
+
+    // Highlighted word indicator
+    tctx.fillStyle = st.wordHighlightColor || "#F8E5A6";
+    tctx.fillRect(68, 138, 84, 3);
+
+    tctx.fillStyle = st.mealColor || "#E8C978";
+    tctx.font = "600 13px 'DM Sans', sans-serif";
+    tctx.fillText("1- Rahmân ve Rahîm", 110, 168);
+
+    const url = c.toDataURL("image/jpeg", 0.85);
+    styleThumbCache.set(key, url);
     return url;
   }
 
   function getAllZeminItems() {
-    return [...galleryItems, ...catalogItems];
+    return [...galleryItems, ...MINIMAL_FALLBACK_CATALOG];
   }
 
   function getZeminById(id) {
-    return getAllZeminItems().find((item) => item.id === id) || catalogItems[0] || MINIMAL_FALLBACK_CATALOG[0];
+    return getAllZeminItems().find((item) => item.id === id) || galleryItems[0] || MINIMAL_FALLBACK_CATALOG[0];
+  }
+
+  // Updates the Video Range (MM:SS + Sliders) UI whenever a video is loaded or trimmed
+  function syncVideoTrimControlsUI() {
+    const startSec = Math.max(0, Number(state.videoTrimStart) || 0);
+    const endSec = Math.max(0, Number(state.videoTrimEnd) || 0);
+    const dur = Math.max(0, Math.round(activeBgVideoDuration || 0));
+
+    const inpStart = document.getElementById("inpTrimStartMMSS");
+    const inpEnd = document.getElementById("inpTrimEndMMSS");
+    if (inpStart && document.activeElement !== inpStart) {
+      inpStart.value = formatMMSS(startSec);
+    }
+    if (inpEnd && document.activeElement !== inpEnd) {
+      inpEnd.value = endSec > 0 ? formatMMSS(endSec) : "00:00";
+    }
+
+    const rngStart = document.getElementById("rngTrimStartSec");
+    const rngEnd = document.getElementById("rngTrimEndSec");
+    const maxSlider = dur > 0 ? dur : Math.max(300, endSec, startSec + 60);
+    if (rngStart) {
+      rngStart.max = String(maxSlider);
+      rngStart.value = String(Math.min(maxSlider, Math.round(startSec)));
+    }
+    if (rngEnd) {
+      rngEnd.max = String(maxSlider);
+      rngEnd.value = String(Math.min(maxSlider, Math.round(endSec)));
+    }
+
+    const lblStart = document.getElementById("valTrimStartLabel");
+    const lblEnd = document.getElementById("valTrimEndLabel");
+    if (lblStart) lblStart.textContent = formatMMSS(startSec);
+    if (lblEnd) {
+      lblEnd.textContent = endSec > startSec ? formatMMSS(endSec) : (dur > 0 ? `Sonu (${formatMMSS(dur)})` : "Tamamı");
+    }
+
+    const lblTotal = document.getElementById("lblBgVideoTotalDur");
+    if (lblTotal) {
+      if (activeBgVideo && dur > 0) {
+        const effEnd = endSec > startSec ? Math.min(dur, endSec) : dur;
+        const clipLen = Math.max(0, effEnd - startSec);
+        lblTotal.textContent = `Toplam: ${formatMMSS(dur)} · Seçili: ${formatMMSS(startSec)}–${formatMMSS(effEnd)} (${formatMMSS(clipLen)})`;
+      } else {
+        lblTotal.textContent = "Galerim'den video seçin";
+      }
+    }
+  }
+
+  // Persists trimStart and trimEnd onto the active Galerim item in IndexedDB so each uploaded video remembers its own 00:30-01:45 range
+  async function persistActiveVideoTrimToGallery() {
+    const item = galleryItems.find((g) => g.id === state.zeminId);
+    if (item && item.type === "video") {
+      item.trimStart = state.videoTrimStart;
+      item.trimEnd = state.videoTrimEnd;
+      await saveGalleryItem(item);
+      renderZeminGrid();
+    }
   }
 
   async function selectZemin(id, isInitialRestore = false) {
     const item = getZeminById(id);
-    state.zeminId = item ? item.id : "vid_forest_stream";
+    state.zeminId = item ? item.id : "studio_dark";
 
     if (activeBgVideo) {
       try {
@@ -453,25 +530,10 @@
       activeBgVideo = null;
     }
     activeBgImage = null;
+    activeBgVideoDuration = 0;
     revokeActiveMediaUrls();
 
-    if (item && !isInitialRestore) {
-      if (!state.lockBgDim && typeof item.recommendedDarkness === "number") {
-        state.bgDim = item.recommendedDarkness;
-        const rng = document.getElementById("rngBgDim");
-        const val = document.getElementById("valBgDim");
-        if (rng) rng.value = state.bgDim;
-        if (val) val.textContent = `%${state.bgDim}`;
-      }
-    }
-
-    if (state.zeminId) {
-      state.recentZeminIds = [state.zeminId, ...(state.recentZeminIds || []).filter((x) => x !== state.zeminId)].slice(0, 12);
-    }
-
-    const trimBox = document.getElementById("videoTrimBox");
     if (item && item.type === "image") {
-      if (trimBox) trimBox.style.display = "none";
       const img = new Image();
       let srcUrl = item.src;
       if (item.blob) {
@@ -484,7 +546,10 @@
       img.onerror = () => { activeBgImage = null; };
       if (srcUrl) img.src = srcUrl;
     } else if (item && item.type === "video") {
-      if (trimBox) trimBox.style.display = "grid";
+      // Restore this video's saved trim range if present
+      if (typeof item.trimStart === "number") state.videoTrimStart = item.trimStart;
+      if (typeof item.trimEnd === "number") state.videoTrimEnd = item.trimEnd;
+
       const vid = document.createElement("video");
       let srcUrl = item.src;
       if (item.blob) {
@@ -495,25 +560,41 @@
       }
       vid.playsInline = true;
       vid.loop = true;
+      vid.playbackRate = Number(state.bgVideoSpeed) || 1.0;
       vid.muted = (state.videoAudioMode === "muted" || state.bgVideoVol <= 0);
       vid.src = srcUrl;
       vid.onloadedmetadata = () => {
-        if (state.videoTrimStart > 0 && state.videoTrimStart < vid.duration) {
-          vid.currentTime = state.videoTrimStart;
+        activeBgVideoDuration = vid.duration || item.duration || 0;
+        if (activeBgVideoDuration > 0 && !item.duration) {
+          item.duration = activeBgVideoDuration;
+          saveGalleryItem(item);
         }
+        vid.playbackRate = Number(state.bgVideoSpeed) || 1.0;
+        const tStart = Math.max(0, Number(state.videoTrimStart) || 0);
+        if (tStart > 0 && tStart < vid.duration) {
+          vid.currentTime = tStart;
+        }
+        syncVideoTrimControlsUI();
+        renderZeminGrid();
         connectBgVideoToGraph(vid, state);
         vid.play().catch(() => {});
       };
       vid.ontimeupdate = () => {
-        if (state.videoTrimEnd > state.videoTrimStart && vid.currentTime >= state.videoTrimEnd) {
-          vid.currentTime = state.videoTrimStart || 0;
+        const tStart = Math.max(0, Number(state.videoTrimStart) || 0);
+        const tEnd = Number(state.videoTrimEnd) || 0;
+        if (tEnd > tStart && vid.currentTime >= tEnd) {
+          vid.currentTime = tStart;
+          if (vid.paused && (state.isPlaying || state.isRecording)) {
+            vid.play().catch(() => {});
+          }
+        } else if (tStart > 0 && vid.currentTime < tStart - 0.25) {
+          vid.currentTime = tStart;
         }
       };
       activeBgVideo = vid;
-    } else {
-      if (trimBox) trimBox.style.display = "none";
     }
 
+    syncVideoTrimControlsUI();
     renderZeminGrid();
     if (!isInitialRestore) persistState();
   }
@@ -527,13 +608,10 @@
       const card = document.createElement("div");
       card.className = "zemin-card" + (state.stylePresetId === st.id ? " active" : "");
 
-      const zItem = getZeminById(st.zeminId);
       const img = document.createElement("img");
       img.className = "zemin-thumb";
       img.alt = st.name;
-      const fb = generateProceduralThumb(st.palette, st.name);
-      img.src = (zItem && (zItem.thumbDataUrl || zItem.thumb)) || fb;
-      img.onerror = () => { img.onerror = null; img.src = fb; };
+      img.src = generateStyleCardPreview(st);
 
       const badge = document.createElement("span");
       badge.className = "zemin-badge";
@@ -547,18 +625,14 @@
       card.appendChild(badge);
       card.appendChild(label);
 
-      card.addEventListener("click", async () => {
+      card.addEventListener("click", () => {
         hapticTap();
         state.stylePresetId = st.id;
-        state.zeminId = st.zeminId;
-        state.ambientType = st.ambientType;
-        if (st.ambientType !== "none" && state.ambientVol === 0) state.ambientVol = st.ambientVol || 20;
-        if (!state.lockBgDim) state.bgDim = st.bgDim;
-        state.bgWarmth = st.bgWarmth;
-        state.visualEffect = st.visualEffect;
+        if (!state.lockBgDim && typeof st.bgDim === "number") state.bgDim = st.bgDim;
+        if (typeof st.bgWarmth === "number") state.bgWarmth = st.bgWarmth;
         if (st.arabicFont) state.arabicFont = st.arabicFont;
-        state.arabicColor = st.arabicColor;
-        state.mealColor = st.mealColor;
+        if (st.arabicColor) state.arabicColor = st.arabicColor;
+        if (st.mealColor) state.mealColor = st.mealColor;
         if (st.enMealColor) state.enMealColor = st.enMealColor;
         if (st.wordHighlightColor) state.wordHighlightColor = st.wordHighlightColor;
         if (st.wordHighlightStyle) state.wordHighlightStyle = st.wordHighlightStyle;
@@ -566,12 +640,8 @@
         applyMealStyleById(st.mealStyle, false);
 
         syncAllControlsFromState();
-        await selectZemin(st.zeminId, true);
-        if (state.isPlaying || state.isRecording) {
-          startAmbientSound(state);
-        }
         persistState();
-        showToast(`"${st.name}" stili uygulandı.`);
+        showToast(`"${st.name}" yazı ve atmosfer stili uygulandı.`);
       });
 
       grid.appendChild(card);
@@ -656,67 +726,49 @@
     });
   }
 
-  function renderZeminCategories() {
-    const wrap = document.getElementById("zeminCategoryChips");
-    if (!wrap) return;
-    wrap.innerHTML = "";
-
-    ZEMIN_CATEGORIES.forEach((cat) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "chip" + (state.zeminCategory === cat ? " active" : "");
-      const label = cat === "Galerim" && galleryItems.length > 0 ? `Galerim (${galleryItems.length})` : cat;
-      btn.textContent = label;
-      btn.addEventListener("click", () => {
-        hapticTap();
-        state.zeminCategory = cat;
-        renderZeminCategories();
-        renderZeminGrid();
-      });
-      wrap.appendChild(btn);
-    });
-  }
-
+  // Renders ONLY the user's Galerim items + the single clean Sade Stüdyo Zemini card
   function renderZeminGrid() {
     const grid = document.getElementById("zeminGrid");
     if (!grid) return;
     grid.innerHTML = "";
 
-    const all = getAllZeminItems();
-    const cat = state.zeminCategory || "Tümü";
-
-    const filtered = all.filter((item) => {
-      if (cat === "Tümü") return true;
-      if (cat === "Galerim") return item.category === "Galerim";
-      if (cat === "Son Kullanılanlar") return (state.recentZeminIds || []).includes(item.id);
-      return item.category === cat;
-    });
-
-    if (filtered.length === 0) {
-      const empty = document.createElement("div");
-      empty.style.cssText = "grid-column: 1 / -1; text-align:center; padding:16px 8px; color:var(--text-muted); font-size:11.5px;";
-      empty.textContent = cat === "Galerim"
-        ? "Galerinizde henüz video veya görsel yok. Sağ üstteki '+ Galerim' düğmesiyle cihazınızdan ekleyebilirsiniz."
-        : "Bu kategoride sahne bulunamadı.";
-      grid.appendChild(empty);
-      return;
+    const lblTitle = document.getElementById("lblGalleryCountTitle");
+    if (lblTitle) {
+      lblTitle.textContent = galleryItems.length > 0
+        ? `GALERİM (${galleryItems.length} MEDYA YÜKLENDİ)`
+        : "GALERİM (KENDİ VİDEO & GÖRSELLERİM)";
     }
 
-    filtered.forEach((item) => {
+    const items = getAllZeminItems();
+
+    items.forEach((item) => {
       const card = document.createElement("div");
       card.className = "zemin-card" + (item.id === state.zeminId ? " active" : "");
 
       const img = document.createElement("img");
       img.className = "zemin-thumb";
       img.alt = item.name;
-      img.loading = "lazy";
-      const fallbackUrl = generateProceduralThumb(item.palette, item.name);
-      img.src = item.thumbDataUrl || item.thumb || fallbackUrl;
+      const fallbackUrl = generateStyleCardPreview(STYLE_PRESETS[0]);
+      img.src = item.thumbDataUrl || fallbackUrl;
       img.onerror = () => { img.onerror = null; img.src = fallbackUrl; };
 
       const badge = document.createElement("span");
       badge.className = "zemin-badge";
-      badge.textContent = item.type === "video" ? "VİDEO" : item.category === "Galerim" ? "GALERİM" : "CANLI";
+      if (item.type === "video") {
+        const ts = Number(item.trimStart) || 0;
+        const te = Number(item.trimEnd) || 0;
+        if (ts > 0 || te > 0) {
+          badge.textContent = `✂️ ${formatMMSS(ts)}–${te > 0 ? formatMMSS(te) : "Son"}`;
+        } else if (item.duration) {
+          badge.textContent = `VİDEO · ${formatMMSS(item.duration)}`;
+        } else {
+          badge.textContent = "VİDEO";
+        }
+      } else if (item.type === "image") {
+        badge.textContent = "GÖRSEL";
+      } else {
+        badge.textContent = "VARSAYILAN";
+      }
 
       const label = document.createElement("div");
       label.className = "zemin-label";
@@ -726,7 +778,7 @@
       card.appendChild(badge);
       card.appendChild(label);
 
-      if (item.category === "Galerim") {
+      if (item.id !== "studio_dark") {
         const delBtn = document.createElement("button");
         delBtn.type = "button";
         delBtn.className = "zemin-del-btn";
@@ -736,9 +788,8 @@
           hapticTap();
           await deleteGalleryItem(item.id);
           galleryItems = await getAllGalleryItems();
-          renderZeminCategories();
           if (state.zeminId === item.id) {
-            await selectZemin("vid_forest_stream");
+            await selectZemin(galleryItems[0] ? galleryItems[0].id : "studio_dark");
           } else {
             renderZeminGrid();
           }
@@ -868,13 +919,11 @@
     if (shouldPersist) persistState();
   }
 
-  // Timeline Strip with [🖼 Kapak] Pill at Index 0 + Ayah Blocks
   function renderAyahTimelineStrip() {
     const strip = document.getElementById("ayahTimelineStrip");
     if (!strip) return;
     strip.innerHTML = "";
 
-    // 1. Always render [🖼 Kapak] pill first so user can switch between Cover & Ayah view with 1 tap!
     const coverBtn = document.createElement("button");
     coverBtn.type = "button";
     const isCoverActive = state.coverPreviewMode === "cover";
@@ -1013,7 +1062,7 @@
     });
   }
 
-  async function createCompactThumbFromMedia(blob) {
+  async function createCompactThumbAndMetaFromMedia(blob) {
     const isVideo = blob.type && blob.type.startsWith("video/");
     const tempUrl = URL.createObjectURL(blob);
     try {
@@ -1031,17 +1080,19 @@
         const srcH = img.naturalHeight || 1280;
         const s = Math.max(280 / srcW, 498 / srcH);
         tc.getContext("2d").drawImage(img, (280 - srcW * s) / 2, (498 - srcH * s) / 2, srcW * s, srcH * s);
-        return tc.toDataURL("image/jpeg", 0.72);
+        return { thumbDataUrl: tc.toDataURL("image/jpeg", 0.75), duration: 0 };
       } else {
         const vid = document.createElement("video");
         vid.muted = true;
         vid.playsInline = true;
         vid.src = tempUrl;
         await new Promise((res) => {
-          vid.onloadeddata = () => { vid.currentTime = 0.2; };
+          vid.onloadeddata = () => {
+            vid.currentTime = Math.min(0.5, (vid.duration || 1) * 0.1);
+          };
           vid.onseeked = res;
           vid.onerror = res;
-          setTimeout(res, 1500);
+          setTimeout(res, 1800);
         });
         const tc = document.createElement("canvas");
         tc.width = 280;
@@ -1050,10 +1101,10 @@
         const vh = vid.videoHeight || 1280;
         const s = Math.max(280 / vw, 498 / vh);
         tc.getContext("2d").drawImage(vid, (280 - vw * s) / 2, (498 - vh * s) / 2, vw * s, vh * s);
-        return tc.toDataURL("image/jpeg", 0.72);
+        return { thumbDataUrl: tc.toDataURL("image/jpeg", 0.75), duration: Math.round(vid.duration || 0) };
       }
     } catch (_) {
-      return generateProceduralThumb(["#0b1d16", "#163829", "#d8b456"], "Galerim");
+      return { thumbDataUrl: generateStyleCardPreview(STYLE_PRESETS[0]), duration: 0 };
     } finally {
       URL.revokeObjectURL(tempUrl);
     }
@@ -1061,17 +1112,20 @@
 
   async function processUploadedFile(file) {
     const isVideo = file.type.startsWith("video/");
-    const thumbDataUrl = await createCompactThumbFromMedia(file);
+    const meta = await createCompactThumbAndMetaFromMedia(file);
     return {
       id: "gal_" + Date.now() + "_" + Math.random().toString(36).slice(2, 6),
       name: file.name.replace(/\.[^.]+$/, "").slice(0, 22),
       type: isVideo ? "video" : "image",
       category: "Galerim",
       blob: file,
-      thumbDataUrl,
-      recommendedDarkness: 42,
+      thumbDataUrl: meta.thumbDataUrl,
+      duration: meta.duration,
+      trimStart: 0,
+      trimEnd: 0,
+      recommendedDarkness: 40,
       defaultEffect: "none",
-      palette: ["#0c1821", "#1b3a4b", "#d8b456"]
+      palette: ["#07080A", "#12151C", "#E0B84C"]
     };
   }
 
@@ -1283,7 +1337,6 @@
   const canvas = document.getElementById("studioCanvas");
   const ctx = canvas.getContext("2d");
 
-  // Snap Guide state during touch/mouse dragging on canvas
   let isDraggingCanvasText = false;
   let snapGuideX = false;
   let snapGuideY = false;
@@ -1333,7 +1386,7 @@
     context.restore();
   }
 
-  // Unified Cover Scene with Editable Surah Name, Size Scale, and X/Y Offsets
+  // Unified Cover Scene — Zero Duplicate "Sûre" & Independent Arabic/Turkish Surah Name Controls!
   function drawUnifiedCoverScene(w, h, scaleFactor) {
     const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
@@ -1405,17 +1458,25 @@
       ctx.fillText(topBadgeText.toUpperCase(), centerX, centerY - 148 * cScale);
     }
 
-    // 2. Surah Calligraphy & Editable Turkish Surah Name
+    // 2. Clean Arabic & Turkish Surah Names (No forced "سُورَةُ" repetition, both independently editable & toggleable!)
+    const showArSurah = state.coverShowArSurah !== false;
+    const showTrSurah = state.coverShowTrSurah !== false;
+    const surahDisplayAr = (state.coverSurahNameAr || "").trim() || surahMeta[2];
     const surahDisplayTr = (state.coverSurahName || "").trim() || `${surahMeta[1]} Sûresi`;
-    const surahArSize = state.coverLargeSurah ? Math.round(52 * cScale) : Math.round(36 * cScale);
-    ctx.fillStyle = tpl.accent || "#F0D78A";
-    ctx.font = `700 ${surahArSize}px 'Amiri', serif`;
-    ctx.fillText(`سُورَةُ ${surahMeta[2]}`, centerX, centerY - 98 * cScale);
 
-    const surahTrSize = state.coverLargeSurah ? Math.round(24 * cScale) : Math.round(18 * cScale);
-    ctx.fillStyle = "#FFFDF7";
-    ctx.font = `700 ${surahTrSize}px 'DM Sans', sans-serif`;
-    ctx.fillText(`${surahDisplayTr} · ${reciterMeta.name}`, centerX, centerY - 52 * cScale);
+    if (showArSurah && surahDisplayAr) {
+      const surahArSize = state.coverLargeSurah ? Math.round(52 * cScale) : Math.round(36 * cScale);
+      ctx.fillStyle = tpl.accent || "#F0D78A";
+      ctx.font = `700 ${surahArSize}px 'Amiri', serif`;
+      ctx.fillText(surahDisplayAr, centerX, centerY - (showTrSurah ? 98 : 68) * cScale);
+    }
+
+    if (showTrSurah && surahDisplayTr) {
+      const surahTrSize = state.coverLargeSurah ? Math.round(23 * cScale) : Math.round(18 * cScale);
+      ctx.fillStyle = "#FFFDF7";
+      ctx.font = `700 ${surahTrSize}px 'DM Sans', sans-serif`;
+      ctx.fillText(`${surahDisplayTr} · ${reciterMeta.name}`, centerX, centerY - (showArSurah ? 52 : 68) * cScale);
+    }
 
     // Ornamental divider line
     ctx.strokeStyle = "rgba(240, 215, 138, 0.45)";
@@ -1453,7 +1514,6 @@
     ctx.restore();
   }
 
-  // Draws Top-Left Corner Info + Centered Surah Header + High-DPI 512px Logo Signature (Zero Collision with Bottom Progress Bar!)
   function drawOverlaysAndLogo(w, h, scaleFactor, t, verse) {
     const padX = 28 * scaleFactor;
     const topBarPad = state.inVideoProgressBar === "top" ? 18 * scaleFactor : 0;
@@ -1468,7 +1528,6 @@
     ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
     ctx.shadowBlur = 8 * scaleFactor;
 
-    // 1. Top-Left Corner Info Badge
     const showCorner =
       (state.inVideoSurahHeader === "both" || state.inVideoSurahHeader === "corner_only") &&
       (state.cornerShowSurah || state.cornerShowAyahs || state.cornerShowReciter);
@@ -1497,7 +1556,6 @@
       }
     }
 
-    // 2. Centered Classic Surah & Ayah Header Strip inside video ("Fâtiha Sûresi · 1. Âyet")
     const showCenterBanner =
       verse &&
       state.coverPreviewMode !== "cover" &&
@@ -1512,7 +1570,6 @@
       ctx.fillText(`${surahMeta[1]} Sûresi · ${verse.numberInSurah}. Âyet`, w / 2, bannerY);
     }
 
-    // 3. Crisp 512px Logo & Signature Watermark — Automatically lifts above bottom progress bar when bottom-center is active!
     if (state.showSignature && state.logoPos !== "hidden") {
       const lScale = (state.logoScale || 100) / 100;
       const iconSize = Math.round(28 * lScale * scaleFactor);
@@ -1541,7 +1598,6 @@
           ctx.fillText(text, leftX + iconSize + 8 * scaleFactor, midY);
         }
       } else {
-        // bottom-center or floating: if inVideoProgressBar === "bottom", lift bottom-center logo safely above the progress bar!
         const totalW = iconSize + (text ? 8 * scaleFactor + tw : 0);
         const cx = state.logoPos === "floating" ? w * 0.5 + Math.sin(t * 0.45) * (w * 0.22) : w * 0.5;
         const bottomProgressClearance = (state.inVideoProgressBar === "bottom") ? (34 * scaleFactor) : 0;
@@ -1562,7 +1618,6 @@
     ctx.restore();
   }
 
-  // In-Video Progress Bar (Süre İlerleme Şeridi directly inside the exported video!)
   function drawInVideoProgressBar(w, h, scaleFactor, underTextY) {
     const mode = state.inVideoProgressBar || "bottom";
     if (mode === "off") return;
@@ -1617,7 +1672,6 @@
     ctx.restore();
   }
 
-  // Word-by-Word Highlight with Custom Highlight Color & 3 Styles (glow, underline, pill_scale)
   function drawArabicLinesWithWordHighlight(ctx, verse, maxTextW, centerX, startY, lineH, arPx, scaleFactor, activeWordGlobalIdx, highlightEnabled) {
     const rawWords = (verse.arabic || "").trim().split(/\s+/).filter(Boolean);
     const ayahBadge = `\uFD3F${toArabicIndicDigits(verse.numberInSurah)}\uFD3E`;
@@ -1730,15 +1784,16 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    // 1. Background (Always draw procedural fallback if media isn't ready so canvas is NEVER black!)
+    // 1. Background: Galerim video/image if loaded, otherwise clean pure Studio Backdrop
     const currentZemin = getZeminById(state.zeminId);
+    const activeStyle = STYLE_PRESETS.find((s) => s.id === state.stylePresetId) || STYLE_PRESETS[0];
     const mediaEl = activeBgVideo || activeBgImage;
     let mediaDrawn = false;
     if (mediaEl) {
       mediaDrawn = drawBackgroundMediaWithFilters(ctx, mediaEl, Boolean(activeBgVideo), w, h, t, state);
     }
     if (!mediaDrawn) {
-      drawProceduralScene(ctx, w, h, t, dt, currentZemin);
+      drawProceduralScene(ctx, w, h, t, dt, currentZemin, activeStyle);
     }
 
     // 2. Darkness
@@ -1845,7 +1900,6 @@
       const centerY = baseCenterY + ((state.textOffsetY || 0) / 100) * h;
       let cursorY = centerY - totalBlockH / 2;
 
-      // Optional Frosted or Dark Text Box
       if (state.textBoxStyle !== "none") {
         const boxPadX = 26 * scaleFactor;
         const boxPadY = 22 * scaleFactor;
@@ -1863,7 +1917,6 @@
         cursorY += bismillahH;
       }
 
-      // Draw Arabic with Word-by-Word Highlight + Timing Offset
       if (showAr) {
         ctx.direction = "rtl";
         ctx.font = `700 ${arPx}px '${state.arabicFont}', serif`;
@@ -1931,7 +1984,6 @@
 
       if (gapTrEn > 0) cursorY += gapTrEn;
 
-      // Draw English Meal with Independent Color, Size, and Verse Number Prefix!
       if (showEn && enLines.length > 0) {
         ctx.font = `500 ${enPx}px 'DM Sans', sans-serif`;
         ctx.fillStyle = state.enMealColor || "#CBD5E1";
@@ -1965,10 +2017,10 @@
       ctx.restore();
     }
 
-    // 7. In-Video Progress Bar (Süre İlerleme Şeridi directly inside the video!)
+    // 7. In-Video Progress Bar
     drawInVideoProgressBar(w, h, scaleFactor, lastContentBottomY);
 
-    // 8. Magnetic Gold Center Snap Guides while Touch/Mouse Dragging on Preview
+    // 8. Magnetic Gold Center Snap Guides while Dragging
     if (isDraggingCanvasText && !state.isRecording) {
       ctx.save();
       ctx.strokeStyle = "rgba(248, 229, 166, 0.82)";
@@ -2105,6 +2157,18 @@
     const chkPrev = document.getElementById("chkPreviewCoverNow");
     if (chkPrev) chkPrev.checked = false;
 
+    // Seek Galerim background video right to chosen trimStart (e.g. 00:30) and set playbackRate!
+    if (activeBgVideo) {
+      try {
+        activeBgVideo.playbackRate = Number(state.bgVideoSpeed) || 1.0;
+        const tStart = Math.max(0, Number(state.videoTrimStart) || 0);
+        if (tStart < (activeBgVideo.duration || 99999)) {
+          activeBgVideo.currentTime = tStart;
+        }
+        activeBgVideo.play().catch(() => {});
+      } catch (_) {}
+    }
+
     const { mixDest } = ensureAudioGraph(state, activeBgVideo);
 
     state.isPlaying = !recordMode;
@@ -2126,7 +2190,6 @@
       updateStageBadge("recording", "Kaydediliyor...");
     } else {
       updateStageBadge("ready", "Önizleniyor");
-      // Auto clean UI after 2s during preview playback
       const hideId = setTimeout(() => {
         if (state.isPlaying && wrap) wrap.classList.add("clean-ui");
       }, 2000);
@@ -2352,7 +2415,6 @@
     }
   }
 
-  // Social Media Caption & Hashtag Generator with Circumflex Fix (#FatihaSuresi, #YasinSuresi)
   function updateSocialCaptionText() {
     const surahMeta = SURAHS.find((s) => s[0] === state.surahNo) || SURAHS[0];
     const reciterMeta = RECITERS.find((r) => r.id === state.reciterId) || RECITERS[0];
@@ -2399,15 +2461,15 @@
   }
 
   const TAB_TITLES = {
-    stil: "STİL — 16 SEÇKİN GÖRSEL KOMBİNASYON",
+    stil: "STİL — 8 SADE TİPOGRAFİ VE ATMOSFER STİLİ",
     kesit: "KESİT — SÛRE ARAMA VE ÂYET ARALIĞI",
     hafiz: "HÂFIZ — KIRAAT İMAMI SEÇİMİ",
-    zemin: "ZEMİN — HAREKETLİ SAHNELER VE GALERİM",
+    zemin: "ZEMİN — SADECE GALERİM & VİDEO ARALIĞI (00:30–01:45)",
     ortam: "ORTAM — DOĞA, YAĞMUR VE MİKSER",
     metin: "METİN — ARAPÇA, TÜRKÇE, İNGİLİZCE VE VURGU",
     gorunum: "GÖRÜNÜM — DÜZEN, SÜRE ŞERİDİ VE KONUM",
     filtre: "FİLTRE — KARARTMA, BULANIKLIK VE EFEKT",
-    kapak: "KAPAK — ŞABLON, SÛRE ADI, BOYUT VE KONUM",
+    kapak: "KAPAK — ŞABLON, ARAPÇA/TÜRKÇE SÛRE ADI VE KONUM",
     bicim: "BİÇİM — ORAN, KALİTE, LOGO VE PAYLAŞIM"
   };
 
@@ -2511,7 +2573,6 @@
     }
   }
 
-  // Fits #canvasWrap to exact pixel dimensions matching the active aspect ratio (9:16, 4:5, 1:1, 16:9) inside #stageArea
   function fitCanvasWrapToStage() {
     const stage = document.getElementById("stageArea");
     const wrap = document.getElementById("canvasWrap");
@@ -2588,8 +2649,17 @@
     setTxt("valBgPanX", `${state.bgPanX}%`);
     setVal("rngBgPanY", state.bgPanY);
     setTxt("valBgPanY", `${state.bgPanY}%`);
-    setVal("inpVideoTrimStart", state.videoTrimStart);
-    setVal("inpVideoTrimEnd", state.videoTrimEnd);
+    setChk("chkBgMirror", state.bgMirror);
+    setChk("chkVideoSmoothLoop", state.videoSmoothLoop !== false);
+
+    document.querySelectorAll("#bgVideoSpeedGroup .sebat-opt-btn").forEach((b) => {
+      b.classList.toggle("active", Number(b.dataset.vspeed) === Number(state.bgVideoSpeed || 1));
+    });
+
+    setVal("rngZeminVideoVol", state.bgVideoVol || 0);
+    setTxt("valZeminVideoVol", state.bgVideoVol > 0 ? `%${state.bgVideoVol}` : "%0 (Sessiz)");
+
+    syncVideoTrimControlsUI();
 
     setVal("selBismillahMode", state.bismillahMode);
 
@@ -2693,6 +2763,9 @@
     setChk("chkCoverLargeSurah", state.coverLargeSurah);
     setChk("chkCoverWithVideo", state.coverFirstFrame === "on");
     setChk("chkPreviewCoverNow", state.coverPreviewMode === "cover");
+    setChk("chkCoverShowArSurah", state.coverShowArSurah !== false);
+    setChk("chkCoverShowTrSurah", state.coverShowTrSurah !== false);
+    setVal("inpCoverSurahNameAr", state.coverSurahNameAr || "");
     setVal("inpCoverSurahName", state.coverSurahName || "");
     setVal("inpCoverTitle", state.coverTitle);
     setVal("inpCoverSubtitle", state.coverSubtitle);
@@ -2732,7 +2805,6 @@
     }
   }
 
-  // Injects - / + Stepper Buttons around every range input & binds Tap-to-Reset on value pills
   function enhanceSlidersWithSteppersAndReset() {
     document.querySelectorAll('input[type="range"]').forEach((rng) => {
       if (rng.parentElement && rng.parentElement.classList.contains("slider-stepper-wrap")) return;
@@ -2786,7 +2858,6 @@
     });
   }
 
-  // Direct Touch / Mouse Dragging on Canvas to Position Verse or Cover + Magnetic Center Snap
   function bindCanvasDirectTouchDrag() {
     let startClientX = 0;
     let startClientY = 0;
@@ -2799,7 +2870,6 @@
 
     canvas.addEventListener("pointerdown", (ev) => {
       if (state.isRecording) return;
-      // Ignore if clicking corner buttons
       pointerActive = true;
       movedSignificantly = false;
       startClientX = ev.clientX;
@@ -2832,7 +2902,6 @@
       let newX = Math.round(Math.max(-maxX, Math.min(maxX, startOffX + pctX)));
       let newY = Math.round(Math.max(-maxY, Math.min(maxY, startOffY + pctY)));
 
-      // Magnetic snap to 0% center
       snapGuideX = Math.abs(newX) <= 2;
       snapGuideY = Math.abs(newY) <= 2;
       if (snapGuideX) newX = 0;
@@ -2876,7 +2945,6 @@
         if (hintEl) hintEl.classList.remove("visible");
         persistState();
       } else {
-        // Short tap on canvas toggles Clean Preview UI!
         const wrap = document.getElementById("canvasWrap");
         if (wrap) wrap.classList.toggle("clean-ui");
       }
@@ -2923,7 +2991,6 @@
       setTimeout(fitCanvasWrapToStage, 230);
     });
 
-    // Clean UI Toggle in Top Header
     document.getElementById("btnToggleCleanUI").addEventListener("click", () => {
       hapticTap();
       const wrap = document.getElementById("canvasWrap");
@@ -2933,7 +3000,6 @@
       }
     });
 
-    // Header Logo Quick Theme Switch
     document.getElementById("headerLogoImg").addEventListener("click", () => {
       hapticTap();
       const themes = ["black", "emerald", "midnight"];
@@ -3023,7 +3089,7 @@
       jumpToVerseIndex(idx);
     });
 
-    // Kesit (Surah Quick Search, Surah & Ayah Selectors, -1/+1 Ayah Buttons)
+    // Kesit Controls
     document.getElementById("inpSurahSearch").addEventListener("input", async (e) => {
       state.surahSearch = e.target.value;
       populateSurahAndReciterSelectors(state.surahSearch);
@@ -3115,45 +3181,181 @@
       renderRecitersList();
     });
 
-    // Zemin (Random, Galerim Upload, Zoom/Pan, Video Trim, Direct URL)
-    document.getElementById("btnRandomZemin").addEventListener("click", () => {
-      hapticTap();
-      const all = getAllZeminItems();
-      const pick = all[Math.floor(Math.random() * all.length)];
-      if (pick) {
-        selectZemin(pick.id);
-        showToast(`Sahne: ${pick.name}`);
-      }
-    });
-
+    // ZEMİN — Galerim Upload, Clear, Direct URL
     document.getElementById("inpUploadMedia").addEventListener("change", async (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
       showToast("Medya Galerim'e ekleniyor...");
       let lastId = null;
+      let lastIsVideo = false;
       for (const f of files) {
         try {
           const item = await processUploadedFile(f);
           await saveGalleryItem(item);
           lastId = item.id;
+          lastIsVideo = (item.type === "video");
         } catch (_) {}
       }
       galleryItems = await getAllGalleryItems();
-      state.zeminCategory = "Galerim";
-      renderZeminCategories();
       if (lastId) await selectZemin(lastId);
       refreshStorageStatsUI();
-      showToast("Medya Galerim'e eklendi.");
+      if (lastIsVideo) {
+        showToast("Video yüklendi! '✂️ Video Aralığı' sekmesinden dakika:saniye seçebilirsiniz.");
+      } else {
+        showToast("Görsel Galerim'e eklendi.");
+      }
     });
 
     document.getElementById("btnClearGallery").addEventListener("click", async () => {
       hapticTap();
       await clearAllGallery();
       galleryItems = [];
-      renderZeminCategories();
-      await selectZemin("vid_forest_stream");
+      await selectZemin("studio_dark");
       refreshStorageStatsUI();
-      showToast("Kişisel galeriniz temizlendi.");
+      showToast("Galerim temizlendi.");
+    });
+
+    document.getElementById("btnAddDirectMediaUrl").addEventListener("click", async () => {
+      const url = (document.getElementById("inpDirectMediaUrl").value || "").trim();
+      if (!url) {
+        showToast("Lütfen geçerli bir video veya görsel URL'si girin.");
+        return;
+      }
+      const isVid = /\.(mp4|webm|mov)(\?|$)/i.test(url);
+      const item = {
+        id: "url_" + Date.now(),
+        name: "URL Medya",
+        type: isVid ? "video" : "image",
+        src: url,
+        category: "Galerim",
+        trimStart: 0,
+        trimEnd: 0,
+        recommendedDarkness: 40,
+        defaultEffect: "none",
+        palette: ["#07080A", "#12151C", "#E0B84C"]
+      };
+      await saveGalleryItem(item);
+      galleryItems = await getAllGalleryItems();
+      await selectZemin(item.id);
+      document.getElementById("inpDirectMediaUrl").value = "";
+      showToast("URL medyası Galerim'e eklendi.");
+    });
+
+    // ZEMİN — Sub-tab 2: Dakika:Saniye (00:30 – 01:45) Video Range Controls
+    const applyNewTrimRange = async (newStart, newEnd, seekTarget) => {
+      const dur = activeBgVideoDuration || 0;
+      let s = Math.max(0, Math.round(newStart));
+      let e = Math.max(0, Math.round(newEnd));
+      if (dur > 0) {
+        s = Math.min(Math.max(0, dur - 1), s);
+        if (e > 0) e = Math.min(dur, Math.max(s + 1, e));
+      } else if (e > 0 && e <= s) {
+        e = s + 1;
+      }
+
+      state.videoTrimStart = s;
+      state.videoTrimEnd = e;
+      syncVideoTrimControlsUI();
+
+      if (activeBgVideo) {
+        try {
+          if (seekTarget === "end" && e > 0) {
+            activeBgVideo.currentTime = Math.max(s, e - 0.5);
+          } else {
+            activeBgVideo.currentTime = s;
+          }
+        } catch (_) {}
+      }
+
+      await persistActiveVideoTrimToGallery();
+      persistState();
+    };
+
+    document.getElementById("inpTrimStartMMSS").addEventListener("change", (ev) => {
+      const parsed = parseMMSS(ev.target.value);
+      applyNewTrimRange(parsed, state.videoTrimEnd, "start");
+      showToast(`Başlangıç: ${formatMMSS(state.videoTrimStart)}`);
+    });
+
+    document.getElementById("inpTrimEndMMSS").addEventListener("change", (ev) => {
+      const parsed = parseMMSS(ev.target.value);
+      applyNewTrimRange(state.videoTrimStart, parsed, "end");
+      showToast(state.videoTrimEnd > 0 ? `Bitiş: ${formatMMSS(state.videoTrimEnd)}` : "Bitiş: Videonun sonu");
+    });
+
+    document.getElementById("rngTrimStartSec").addEventListener("input", (ev) => {
+      const s = Number(ev.target.value) || 0;
+      applyNewTrimRange(s, state.videoTrimEnd, "start");
+    });
+
+    document.getElementById("rngTrimEndSec").addEventListener("input", (ev) => {
+      const e = Number(ev.target.value) || 0;
+      applyNewTrimRange(state.videoTrimStart, e, "end");
+    });
+
+    document.getElementById("btnSetTrimStartNow").addEventListener("click", () => {
+      hapticTap();
+      if (!activeBgVideo) {
+        showToast("Önce Galerim'den bir video yükleyin veya seçin.");
+        return;
+      }
+      const cur = Math.floor(activeBgVideo.currentTime || 0);
+      applyNewTrimRange(cur, state.videoTrimEnd, "start");
+      showToast(`Başlangıç ${formatMMSS(cur)} olarak ayarlandı.`);
+    });
+
+    document.getElementById("btnSetTrimEndNow").addEventListener("click", () => {
+      hapticTap();
+      if (!activeBgVideo) {
+        showToast("Önce Galerim'den bir video yükleyin veya seçin.");
+        return;
+      }
+      const cur = Math.ceil(activeBgVideo.currentTime || 0);
+      applyNewTrimRange(state.videoTrimStart, Math.max(state.videoTrimStart + 1, cur), "end");
+      showToast(`Bitiş ${formatMMSS(state.videoTrimEnd)} olarak ayarlandı.`);
+    });
+
+    document.getElementById("btnResetTrimRange").addEventListener("click", () => {
+      hapticTap();
+      applyNewTrimRange(0, 0, "start");
+      showToast("Video aralığı sıfırlandı (tamamı kullanılacak).");
+    });
+
+    document.getElementById("chkVideoSmoothLoop").addEventListener("change", (e) => {
+      state.videoSmoothLoop = e.target.checked;
+      persistState();
+    });
+
+    // ZEMİN — Sub-tab 3: Video Speed, Own Audio, Mirror, Zoom & Pan
+    document.querySelectorAll("#bgVideoSpeedGroup .sebat-opt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        hapticTap();
+        state.bgVideoSpeed = Number(btn.dataset.vspeed) || 1.0;
+        document.querySelectorAll("#bgVideoSpeedGroup .sebat-opt-btn").forEach((b) => b.classList.toggle("active", b === btn));
+        if (activeBgVideo) {
+          try { activeBgVideo.playbackRate = state.bgVideoSpeed; } catch (_) {}
+        }
+        persistState();
+        showToast(`Video hızı: ${state.bgVideoSpeed}x`);
+      });
+    });
+
+    document.getElementById("rngZeminVideoVol").addEventListener("input", (e) => {
+      const v = Number(e.target.value) || 0;
+      state.bgVideoVol = v;
+      state.videoAudioMode = v > 0 ? "mix" : "muted";
+      document.getElementById("valZeminVideoVol").textContent = v > 0 ? `%${v}` : "%0 (Sessiz)";
+      document.getElementById("rngBgVideoVol").value = String(v);
+      document.getElementById("valBgVideoVol").textContent = `%${v}`;
+      document.getElementById("selVideoAudioMode").value = state.videoAudioMode;
+      updateVolumes(state, activeBgVideo);
+      persistState();
+    });
+
+    document.getElementById("chkBgMirror").addEventListener("change", (e) => {
+      state.bgMirror = e.target.checked;
+      persistState();
+      showToast(state.bgMirror ? "Yatay ayna modu açık" : "Yatay ayna modu kapalı");
     });
 
     document.getElementById("rngBgZoom").addEventListener("input", (e) => {
@@ -3171,39 +3373,6 @@
       document.getElementById("valBgPanY").textContent = `${state.bgPanY}%`;
       persistState();
     });
-    document.getElementById("inpVideoTrimStart").addEventListener("change", (e) => {
-      state.videoTrimStart = Math.max(0, Number(e.target.value) || 0);
-      persistState();
-    });
-    document.getElementById("inpVideoTrimEnd").addEventListener("change", (e) => {
-      state.videoTrimEnd = Math.max(0, Number(e.target.value) || 0);
-      persistState();
-    });
-    document.getElementById("btnAddDirectMediaUrl").addEventListener("click", async () => {
-      const url = (document.getElementById("inpDirectMediaUrl").value || "").trim();
-      if (!url) {
-        showToast("Lütfen geçerli bir video URL'si girin.");
-        return;
-      }
-      const isVid = /\.(mp4|webm|mov)(\?|$)/i.test(url);
-      const item = {
-        id: "url_" + Date.now(),
-        name: "URL Medya",
-        type: isVid ? "video" : "image",
-        src: url,
-        category: "Galerim",
-        recommendedDarkness: 42,
-        defaultEffect: "none",
-        palette: ["#0c1524", "#1b2d48", "#d8b456"]
-      };
-      await saveGalleryItem(item);
-      galleryItems = await getAllGalleryItems();
-      state.zeminCategory = "Galerim";
-      renderZeminCategories();
-      await selectZemin(item.id);
-      document.getElementById("inpDirectMediaUrl").value = "";
-      showToast("URL medyası Galerim'e eklendi.");
-    });
 
     // Ortam & Ses
     document.getElementById("rngAmbientVol").addEventListener("input", (e) => {
@@ -3220,12 +3389,21 @@
     });
     document.getElementById("selVideoAudioMode").addEventListener("change", (e) => {
       state.videoAudioMode = e.target.value;
+      if (state.videoAudioMode === "mix" && state.bgVideoVol === 0) {
+        state.bgVideoVol = 35;
+      }
+      document.getElementById("rngZeminVideoVol").value = String(state.bgVideoVol);
+      document.getElementById("valZeminVideoVol").textContent = state.bgVideoVol > 0 ? `%${state.bgVideoVol}` : "%0 (Sessiz)";
       updateVolumes(state, activeBgVideo);
       persistState();
     });
     document.getElementById("rngBgVideoVol").addEventListener("input", (e) => {
       state.bgVideoVol = Number(e.target.value);
+      if (state.bgVideoVol > 0) state.videoAudioMode = "mix";
       document.getElementById("valBgVideoVol").textContent = `%${state.bgVideoVol}`;
+      document.getElementById("rngZeminVideoVol").value = String(state.bgVideoVol);
+      document.getElementById("valZeminVideoVol").textContent = state.bgVideoVol > 0 ? `%${state.bgVideoVol}` : "%0 (Sessiz)";
+      document.getElementById("selVideoAudioMode").value = state.videoAudioMode;
       updateVolumes(state, activeBgVideo);
       persistState();
     });
@@ -3334,7 +3512,7 @@
       persistState();
     });
 
-    // Metin — Subtab 4: Okunan Kelime Vurgusu Rengi, Stili & Senkron İnce Ayarı
+    // Metin — Subtab 4: Okunan Kelime Vurgusu
     document.querySelectorAll("#wordHighlightGroup .sebat-opt-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         hapticTap();
@@ -3488,7 +3666,14 @@
       persistState();
     });
 
-    // Kapak (Editable Surah Name, Scale, X/Y Offsets, Titles)
+    // Kapak (Editable Arabic & Turkish Surah Name + Visibility Checkboxes)
+    document.getElementById("inpCoverSurahNameAr").addEventListener("input", (e) => {
+      state.coverSurahNameAr = e.target.value;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
+      persistState();
+    });
     document.getElementById("inpCoverSurahName").addEventListener("input", (e) => {
       state.coverSurahName = e.target.value;
       state.coverPreviewMode = "cover";
@@ -3496,12 +3681,32 @@
       renderAyahTimelineStrip();
       persistState();
     });
+    document.getElementById("chkCoverShowArSurah").addEventListener("change", (e) => {
+      state.coverShowArSurah = e.target.checked;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
+      persistState();
+    });
+    document.getElementById("chkCoverShowTrSurah").addEventListener("change", (e) => {
+      state.coverShowTrSurah = e.target.checked;
+      state.coverPreviewMode = "cover";
+      document.getElementById("chkPreviewCoverNow").checked = true;
+      renderAyahTimelineStrip();
+      persistState();
+    });
     document.getElementById("btnResetCoverSurahName").addEventListener("click", () => {
       hapticTap();
+      state.coverSurahNameAr = "";
       state.coverSurahName = "";
+      state.coverShowArSurah = true;
+      state.coverShowTrSurah = true;
+      document.getElementById("inpCoverSurahNameAr").value = "";
       document.getElementById("inpCoverSurahName").value = "";
+      document.getElementById("chkCoverShowArSurah").checked = true;
+      document.getElementById("chkCoverShowTrSurah").checked = true;
       persistState();
-      showToast("Kapak sûre adı varsayılana sıfırlandı.");
+      showToast("Kapak Arapça ve Türkçe sûre adı sıfırlandı.");
     });
 
     document.getElementById("chkCoverLargeSurah").addEventListener("change", (e) => {
@@ -3701,7 +3906,7 @@
       const def = resetSettingsToDefault();
       Object.assign(state, def);
       syncAllControlsFromState();
-      await selectZemin(state.zeminId, true);
+      await selectZemin(galleryItems[0] ? galleryItems[0].id : "studio_dark", true);
       await loadVersesAndPreloadAudio();
       showToast("Tüm ayarlar varsayılana (9:16 & Siyah Tema) sıfırlandı.");
     });
@@ -3713,7 +3918,7 @@
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "tilawah-world-ayarlar-v6.json";
+      a.download = "tilawah-world-ayarlar-v7.json";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -3734,7 +3939,6 @@
       }
     });
 
-    // ResizeObserver on Stage Area so 9:16 / 4:5 / 1:1 / 16:9 box is always exact
     const stageAreaEl = document.getElementById("stageArea");
     if (stageAreaEl && window.ResizeObserver) {
       const ro = new ResizeObserver(() => fitCanvasWrapToStage());
@@ -3779,9 +3983,7 @@
   (async function bootstrap() {
     await initDB().catch(() => {});
     galleryItems = await getAllGalleryItems();
-    await loadExternalCatalogJson();
 
-    renderZeminCategories();
     syncAllControlsFromState();
     bindEvents();
     fitCanvasWrapToStage();
@@ -3794,7 +3996,11 @@
       if (splash) splash.classList.add("hidden");
     }, 450);
 
-    await selectZemin(state.zeminId || "vid_forest_stream", true);
+    // If user has uploaded Galerim items and zeminId matches one (or default to first Galerim item if present)
+    const initialZeminId = galleryItems.some((g) => g.id === state.zeminId)
+      ? state.zeminId
+      : (galleryItems[0] ? galleryItems[0].id : "studio_dark");
+    await selectZemin(initialZeminId, true);
     await loadVersesAndPreloadAudio();
     await refreshStorageStatsUI();
     initServiceWorker();

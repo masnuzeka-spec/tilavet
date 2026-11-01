@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#060709" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="description" content="Tilawah World — Profesyonel Kur'ân-ı Kerîm Tilâveti Video Stüdyosu. 9:16 Reels, Shorts, TikTok ve YouTube için kelime vurgulu tilâvet videoları üretin." />
+  <meta name="description" content="Tilawah World — Profesyonel Kur'ân-ı Kerîm Tilâveti Video Stüdyosu. Kendi videolarınızla 9:16 Reels, Shorts, TikTok ve YouTube için kelime vurgulu tilâvet videoları üretin." />
   <title>Tilawah World — Kur'ân Tilâveti Video Stüdyosu</title>
 
   <link rel="manifest" href="manifest.json" />
@@ -38,7 +38,7 @@
       <button id="btnSwReload" type="button" class="btn btn-gold btn-sm">Yenile</button>
     </div>
 
-    <!-- Top Studio Header (Reels Safe-Zone Removed; Clean Preview Toggle Added) -->
+    <!-- Top Studio Header -->
     <header class="app-header">
       <div class="header-left">
         <img id="headerLogoImg" src="icons/logo.png" alt="Tilawah World" class="brand-logo-mini" title="Temayı Değiştir (Siyah / Zümrüt / Gece)" />
@@ -108,23 +108,23 @@
       <div id="ayahTimelineStrip" class="ayah-timeline-strip"></div>
     </section>
 
-    <!-- Contextual Tool Drawer (Compact & Sub-Tabbed) -->
+    <!-- Contextual Tool Drawer -->
     <section id="toolDrawer" class="tool-drawer" aria-label="Stüdyo Ayar Çekmecesi">
       <div class="drawer-top-bar">
-        <span id="drawerTitle" class="drawer-title">STİL — 16 SEÇKİN GÖRSEL KOMBİNASYON</span>
+        <span id="drawerTitle" class="drawer-title">STİL — 8 SADE TİPOGRAFİ VE ATMOSFER STİLİ</span>
         <button id="btnCloseDrawer" type="button" class="drawer-close-btn">Gizle ▾</button>
       </div>
 
       <div class="drawer-body">
-        <!-- 1. STİL (16 Curated Studio Presets) -->
+        <!-- 1. STİL (8 Clean Typography & Studio Atmosphere Styles — Zero Geometric/Gradient Shapes!) -->
         <div id="tab-stil" class="tab-pane active">
           <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">
-            Tek dokunuşla sahneyi, ortam sesini, hat yazı tipini, renkleri ve kelime vurgusunu uyumlu şekilde ayarlar:
+            Galerim'den yüklediğiniz arka plan videosunu değiştirmeden; hat yazı tipini, meal renklerini, kelime vurgusunu ve metin kutusunu tek dokunuşla ayarlar:
           </div>
           <div id="stylePresetGrid" class="zemin-grid"></div>
         </div>
 
-        <!-- 2. KESİT (Surah Quick Search + +/-1 Ayah Buttons + Known Excerpts) -->
+        <!-- 2. KESİT -->
         <div id="tab-kesit" class="tab-pane">
           <div class="glass-card">
             <div class="field-label">
@@ -183,61 +183,137 @@
           <div id="recitersListWrap" class="sebat-list"></div>
         </div>
 
-        <!-- 4. ZEMİN (Sadece Hareketli Video & Canlı Sahneler + Galerim; Pexels ve Sabit Görseller Kaldırıldı!) -->
+        <!-- 4. ZEMİN (SADECE GALERİM + Dakika:Saniye 00:30-01:45 Video Kırpma + Hız + Ayna + Kendi Sesi!) -->
         <div id="tab-zemin" class="tab-pane">
-          <div style="display:flex;gap:6px;align-items:center;justify-content:space-between;">
-            <div id="zeminCategoryChips" class="chip-scroll" style="flex:1;"></div>
-            <button id="btnRandomZemin" type="button" class="btn btn-sm" title="Rastgele Hareketli Sahne">🎲</button>
-            <label for="inpUploadMedia" class="btn btn-gold btn-sm" style="cursor:pointer;margin:0;flex-shrink:0;">
-              + Galerim
-              <input id="inpUploadMedia" type="file" accept="video/*,image/*" multiple style="display:none;" />
-            </label>
+          <div class="subtab-bar" data-subtab-group="zemin">
+            <button type="button" class="subtab-btn active" data-subtab="zemin-galeri">📂 Galerim</button>
+            <button type="button" class="subtab-btn" data-subtab="zemin-kesit">✂️ Video Aralığı (00:30–01:45)</button>
+            <button type="button" class="subtab-btn" data-subtab="zemin-konum">📐 Hız &amp; Konum</button>
           </div>
 
-          <div id="zeminGrid" class="zemin-grid"></div>
-
-          <!-- Sahne & Galerim İnce Ayarları -->
-          <div class="glass-card">
-            <div class="field-label">Sahne Yakınlaştırma &amp; Konum İnce Ayarı</div>
-            <div class="slider-row">
-              <div class="slider-header">
-                <span>Yakınlaştırma (Zoom)</span>
-                <span id="valBgZoom" class="slider-val" data-reset-target="rngBgZoom" data-reset-val="100" title="Sıfırlamak için dokunun">1.00x</span>
+          <!-- Zemin Sub-tab 1: Sadece Galerim -->
+          <div id="subtab-zemin-galeri" class="subtab-pane active" data-subtab-group="zemin">
+            <div class="glass-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">
+                <span class="field-label" id="lblGalleryCountTitle">GALERİM (KENDİ VİDEO &amp; GÖRSELLERİM)</span>
+                <div style="display:flex;gap:6px;">
+                  <label for="inpUploadMedia" class="btn btn-gold btn-sm" style="cursor:pointer;margin:0;">
+                    + Video / Görsel Yükle
+                    <input id="inpUploadMedia" type="file" accept="video/*,image/*" multiple style="display:none;" />
+                  </label>
+                  <button id="btnClearGallery" type="button" class="btn btn-danger btn-sm" title="Galerim'deki yüklemeleri temizle">Temizle</button>
+                </div>
               </div>
-              <input id="rngBgZoom" type="range" min="100" max="180" step="2" value="100" />
+
+              <div id="zeminGrid" class="zemin-grid"></div>
+
+              <div style="display:flex;gap:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);">
+                <input id="inpDirectMediaUrl" type="url" class="input-box" placeholder="Veya doğrudan MP4 video / görsel URL yapıştırın..." />
+                <button id="btnAddDirectMediaUrl" type="button" class="btn btn-sm">Ekle</button>
+              </div>
             </div>
-            <div class="grid-2">
+          </div>
+
+          <!-- Zemin Sub-tab 2: Dakika:Saniye (00:30 - 01:45) Video Aralığı Seçici -->
+          <div id="subtab-zemin-kesit" class="subtab-pane" data-subtab-group="zemin">
+            <div class="glass-card">
+              <div class="field-label">
+                <span>✂️ Video Zaman Aralığı (Örn: 00:30 – 01:45)</span>
+                <span id="lblBgVideoTotalDur" style="color:var(--gold-bright);">Video bekleniyor</span>
+              </div>
+
+              <div style="font-size:11px;color:var(--text-muted);">
+                Galerim'den yüklediğiniz videonun istediğiniz dakika ve saniye aralığını arka plan olarak kullanın:
+              </div>
+
+              <div class="grid-2">
+                <div>
+                  <label for="inpTrimStartMMSS" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Başlangıç (Dk:Sn)</label>
+                  <input id="inpTrimStartMMSS" type="text" class="input-box tabular-nums" value="00:00" placeholder="Örn: 00:30" />
+                </div>
+                <div>
+                  <label for="inpTrimEndMMSS" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Bitiş (Dk:Sn · 00:00=Sonu)</label>
+                  <input id="inpTrimEndMMSS" type="text" class="input-box tabular-nums" value="00:00" placeholder="Örn: 01:45" />
+                </div>
+              </div>
+
               <div class="slider-row">
                 <div class="slider-header">
-                  <span>Yatay Kaydırma (X)</span>
-                  <span id="valBgPanX" class="slider-val" data-reset-target="rngBgPanX" data-reset-val="0" title="Sıfırlamak için dokunun">0%</span>
+                  <span>Başlangıç Noktası Kaydırıcısı</span>
+                  <span id="valTrimStartLabel" class="slider-val" data-reset-target="rngTrimStartSec" data-reset-val="0">00:00</span>
                 </div>
-                <input id="rngBgPanX" type="range" min="-35" max="35" step="1" value="0" />
+                <input id="rngTrimStartSec" type="range" min="0" max="300" step="1" value="0" />
               </div>
+
               <div class="slider-row">
                 <div class="slider-header">
-                  <span>Dikey Kaydırma (Y)</span>
-                  <span id="valBgPanY" class="slider-val" data-reset-target="rngBgPanY" data-reset-val="0" title="Sıfırlamak için dokunun">0%</span>
+                  <span>Bitiş Noktası Kaydırıcısı (0 = Videonun Sonu)</span>
+                  <span id="valTrimEndLabel" class="slider-val" data-reset-target="rngTrimEndSec" data-reset-val="0">Tamamı</span>
                 </div>
-                <input id="rngBgPanY" type="range" min="-35" max="35" step="1" value="0" />
+                <input id="rngTrimEndSec" type="range" min="0" max="300" step="1" value="0" />
               </div>
-            </div>
 
-            <div id="videoTrimBox" class="grid-2" style="display:none;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);">
-              <div>
-                <label for="inpVideoTrimStart" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video Başlangıç (sn)</label>
-                <input id="inpVideoTrimStart" type="number" min="0" max="600" step="0.5" value="0" class="input-box tabular-nums" />
+              <div class="sebat-btn-group">
+                <button id="btnSetTrimStartNow" type="button" class="btn btn-sm" style="flex:1;">⏱ Şu Anı Başlangıç Yap</button>
+                <button id="btnSetTrimEndNow" type="button" class="btn btn-sm" style="flex:1;">⏱ Şu Anı Bitiş Yap</button>
+                <button id="btnResetTrimRange" type="button" class="btn btn-sm">↺ Tamamı</button>
               </div>
-              <div>
-                <label for="inpVideoTrimEnd" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Video Bitiş (0=Tamamı)</label>
-                <input id="inpVideoTrimEnd" type="number" min="0" max="600" step="0.5" value="0" class="input-box tabular-nums" />
-              </div>
-            </div>
 
-            <div style="display:flex;gap:6px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.06);">
-              <input id="inpDirectMediaUrl" type="url" class="input-box" placeholder="Galerim için doğrudan MP4 URL yapıştırın..." />
-              <button id="btnAddDirectMediaUrl" type="button" class="btn btn-sm">Ekle</button>
-              <button id="btnClearGallery" type="button" class="btn btn-danger btn-sm" title="Galerim'deki yüklemeleri temizle">Temizle</button>
+              <label class="toggle-row">
+                <span>Seçili aralık başa dönerken yumuşak geçiş yap</span>
+                <input id="chkVideoSmoothLoop" type="checkbox" class="switch-chk" checked />
+              </label>
+            </div>
+          </div>
+
+          <!-- Zemin Sub-tab 3: Video Hızı, Kendi Sesi, Ayna & Konum -->
+          <div id="subtab-zemin-konum" class="subtab-pane" data-subtab-group="zemin">
+            <div class="glass-card">
+              <div class="field-label">Arka Plan Videosu Hızı (Ağır Çekim / Normal)</div>
+              <div class="sebat-btn-group" id="bgVideoSpeedGroup">
+                <button type="button" class="sebat-opt-btn" data-vspeed="0.5">0.5x Ağır</button>
+                <button type="button" class="sebat-opt-btn" data-vspeed="0.75">0.75x Yavaş</button>
+                <button type="button" class="sebat-opt-btn active" data-vspeed="1">1.0x Normal</button>
+                <button type="button" class="sebat-opt-btn" data-vspeed="1.25">1.25x Hızlı</button>
+              </div>
+
+              <div class="slider-row" style="margin-top:2px;">
+                <div class="slider-header">
+                  <span>Videonun Kendi Sesini Kullan (Kayda Girer)</span>
+                  <span id="valZeminVideoVol" class="slider-val" data-reset-target="rngZeminVideoVol" data-reset-val="0">%0 (Sessiz)</span>
+                </div>
+                <input id="rngZeminVideoVol" type="range" min="0" max="100" step="5" value="0" />
+              </div>
+
+              <label class="toggle-row">
+                <span>↔ Videoyu / Görseli Yatay Çevir (Ayna Modu)</span>
+                <input id="chkBgMirror" type="checkbox" class="switch-chk" />
+              </label>
+
+              <div class="slider-row">
+                <div class="slider-header">
+                  <span>Yakınlaştırma (Zoom)</span>
+                  <span id="valBgZoom" class="slider-val" data-reset-target="rngBgZoom" data-reset-val="100">1.00x</span>
+                </div>
+                <input id="rngBgZoom" type="range" min="100" max="180" step="2" value="100" />
+              </div>
+
+              <div class="grid-2">
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Yatay Kaydırma (X)</span>
+                    <span id="valBgPanX" class="slider-val" data-reset-target="rngBgPanX" data-reset-val="0">0%</span>
+                  </div>
+                  <input id="rngBgPanX" type="range" min="-35" max="35" step="1" value="0" />
+                </div>
+                <div class="slider-row">
+                  <div class="slider-header">
+                    <span>Dikey Kaydırma (Y)</span>
+                    <span id="valBgPanY" class="slider-val" data-reset-target="rngBgPanY" data-reset-val="0">0%</span>
+                  </div>
+                  <input id="rngBgPanY" type="range" min="-35" max="35" step="1" value="0" />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -248,7 +324,7 @@
             <div class="slider-row">
               <div class="slider-header">
                 <span>Ortam Sesi Seviyesi</span>
-                <span id="valAmbientVol" class="slider-val" data-reset-target="rngAmbientVol" data-reset-val="22" title="Sıfırlamak için dokunun">%22</span>
+                <span id="valAmbientVol" class="slider-val" data-reset-target="rngAmbientVol" data-reset-val="22">%22</span>
               </div>
               <input id="rngAmbientVol" type="range" min="0" max="100" step="1" value="22" />
             </div>
@@ -261,7 +337,7 @@
             <div class="slider-row">
               <div class="slider-header">
                 <span>Hâfız Kıraat Ses Seviyesi</span>
-                <span id="valReciterVol" class="slider-val" data-reset-target="rngReciterVol" data-reset-val="100" title="Sıfırlamak için dokunun">%100</span>
+                <span id="valReciterVol" class="slider-val" data-reset-target="rngReciterVol" data-reset-val="100">%100</span>
               </div>
               <input id="rngReciterVol" type="range" min="20" max="100" step="2" value="100" />
             </div>
@@ -270,16 +346,16 @@
               <div>
                 <label for="selVideoAudioMode" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Zemin Videosu Sesi</label>
                 <select id="selVideoAudioMode" class="select-box">
-                  <option value="muted">Sessiz (Önerilen)</option>
+                  <option value="muted">Sessiz</option>
                   <option value="mix">Kıraatle Miksle (Kayda Girer)</option>
                 </select>
               </div>
               <div class="slider-row" style="justify-content:flex-end;">
                 <div class="slider-header">
                   <span>Zemin Video Sesi</span>
-                  <span id="valBgVideoVol" class="slider-val" data-reset-target="rngBgVideoVol" data-reset-val="35">%35</span>
+                  <span id="valBgVideoVol" class="slider-val" data-reset-target="rngBgVideoVol" data-reset-val="0">%0</span>
                 </div>
-                <input id="rngBgVideoVol" type="range" min="0" max="100" step="5" value="35" />
+                <input id="rngBgVideoVol" type="range" min="0" max="100" step="5" value="0" />
               </div>
             </div>
 
@@ -573,15 +649,15 @@
           </div>
         </div>
 
-        <!-- 8. FİLTRE (Sinema Barı Kaldırıldı — Tam Ekran Görüntü!) -->
+        <!-- 8. FİLTRE -->
         <div id="tab-filtre" class="tab-pane">
           <div class="glass-card">
             <div class="slider-row">
               <div class="slider-header">
                 <span>Karartma (Okunabilirlik İçin)</span>
-                <span id="valBgDim" class="slider-val" data-reset-target="rngBgDim" data-reset-val="45">%45</span>
+                <span id="valBgDim" class="slider-val" data-reset-target="rngBgDim" data-reset-val="40">%40</span>
               </div>
-              <input id="rngBgDim" type="range" min="0" max="85" step="1" value="45" />
+              <input id="rngBgDim" type="range" min="0" max="85" step="1" value="40" />
             </div>
 
             <label class="toggle-row">
@@ -638,14 +714,14 @@
           </div>
         </div>
 
-        <!-- 9. KAPAK (Hap Alt Sekmeli: [Şablon & Yazılar] · [Boyut & Konum]) -->
+        <!-- 9. KAPAK (Arapça & Türkçe Sûre Adı Ayrı Düzenleme + Mükerrer "Sûre" Engelleme!) -->
         <div id="tab-kapak" class="tab-pane">
           <div class="subtab-bar" data-subtab-group="kapak">
-            <button type="button" class="subtab-btn active" data-subtab="kapak-text">Şablon &amp; Yazılar</button>
+            <button type="button" class="subtab-btn active" data-subtab="kapak-text">Şablon &amp; Sûre Adı</button>
             <button type="button" class="subtab-btn" data-subtab="kapak-pos">Boyut &amp; Konum</button>
           </div>
 
-          <!-- Sub-tab 1: Şablon & Yazılar (Kapakta Sûre Adı Düzeltme Eklendi!) -->
+          <!-- Sub-tab 1: Şablon & Arapça/Türkçe Sûre Adı Düzenleme -->
           <div id="subtab-kapak-text" class="subtab-pane active" data-subtab-group="kapak">
             <div class="glass-card">
               <div class="field-label">Kapak Şablonu (9 Tasarım)</div>
@@ -654,11 +730,28 @@
               <div class="field-label" style="margin-top:2px;">Kapağın Âyeti</div>
               <div id="coverAyahCircles" class="circle-num-row tabular-nums"></div>
 
-              <div>
-                <label for="inpCoverSurahName" style="font-size:10px;color:var(--text-muted);display:block;margin-bottom:2px;">Kapak Sûre Adı (İstediğiniz Gibi Düzenleyin)</label>
-                <div style="display:flex;gap:6px;">
-                  <input id="inpCoverSurahName" type="text" class="input-box" placeholder="Örn: Fâtiha Sûresi" />
-                  <button id="btnResetCoverSurahName" type="button" class="btn btn-sm" title="Varsayılan sûre adına sıfırla">Sıfırla</button>
+              <div class="grid-2">
+                <div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                    <label for="inpCoverSurahNameAr" style="font-size:10px;color:var(--text-muted);">Arapça Sûre Adı</label>
+                    <label style="font-size:10px;color:var(--gold-light);display:flex;align-items:center;gap:3px;cursor:pointer;">
+                      <input id="chkCoverShowArSurah" type="checkbox" checked /> Göster
+                    </label>
+                  </div>
+                  <input id="inpCoverSurahNameAr" type="text" dir="rtl" class="input-box" style="font-family:'Amiri',serif;font-size:15px;" placeholder="الفاتحة" />
+                </div>
+
+                <div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+                    <label for="inpCoverSurahName" style="font-size:10px;color:var(--text-muted);">Türkçe Sûre Adı</label>
+                    <label style="font-size:10px;color:var(--gold-light);display:flex;align-items:center;gap:3px;cursor:pointer;">
+                      <input id="chkCoverShowTrSurah" type="checkbox" checked /> Göster
+                    </label>
+                  </div>
+                  <div style="display:flex;gap:4px;">
+                    <input id="inpCoverSurahName" type="text" class="input-box" placeholder="Fâtiha Sûresi" />
+                    <button id="btnResetCoverSurahName" type="button" class="btn btn-sm" title="Arapça ve Türkçe sûre adını varsayılana sıfırla">↺</button>
+                  </div>
                 </div>
               </div>
 
@@ -743,7 +836,7 @@
           </div>
         </div>
 
-        <!-- 10. BİÇİM (Hap Alt Sekmeli: [Boyut & Kalite] · [Logo & İmza] · [Ön Ayar & Paylaş]) -->
+        <!-- 10. BİÇİM -->
         <div id="tab-bicim" class="tab-pane">
           <div class="subtab-bar" data-subtab-group="bicim">
             <button type="button" class="subtab-btn active" data-subtab="bicim-res">Boyut &amp; Kalite</button>
@@ -820,7 +913,7 @@
             </div>
           </div>
 
-          <!-- Sub-tab 2: Logo & İmza (512px Yüksek Çözünürlüklü & Süre Şeridiyle Çakışmaz!) -->
+          <!-- Sub-tab 2: Logo & İmza -->
           <div id="subtab-bicim-logo" class="subtab-pane" data-subtab-group="bicim">
             <div class="glass-card">
               <label class="toggle-row">

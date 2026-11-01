@@ -1,15 +1,15 @@
 "use strict";
 
 window.TW_STORAGE = (() => {
-  const SETTINGS_KEY = "tilawah_world_settings_v6";
+  const SETTINGS_KEY = "tilawah_world_settings_v7";
   const DB_NAME = "TilawahWorldDB_v3";
   const DB_VERSION = 3;
   const STORE_GALLERY = "gallery";
   const STORE_VERSES = "verses";
 
   const DEFAULT_SETTINGS = {
-    // 1. Stil
-    stylePresetId: "stil_dere",
+    // 1. Stil (Sade ve Asil Tipografi & Atmosfer Stilleri)
+    stylePresetId: "stil_klasik_altin",
     // 2. Kesit (Sûre & Âyet)
     surahNo: 1,
     ayahStart: 1,
@@ -17,22 +17,24 @@ window.TW_STORAGE = (() => {
     // 3. Hâfız & Kıraat
     reciterId: "MaherAlMuaiqly128kbps",
     bismillahMode: "separate", // "separate" | "first_only" | "strip"
-    // 4. Zemin & İnce Ayar (Sadece Hareketli Sahneler + Galerim)
-    zeminId: "vid_forest_stream",
-    zeminCategory: "Tümü",
-    recentZeminIds: ["vid_forest_stream", "vid_rain_window", "vid_mosque_dawn", "vid_golden_mihrab"],
-    photoMotion: "pan", // "still" | "zoom_in" | "zoom_out" | "pan" (Galerim yüklemeleri için)
+    // 4. Zemin (Sadece Galerim + Video Dakika:Saniye Kesit Seçici & Hız/Ayna)
+    zeminId: "studio_dark",
+    zeminCategory: "Galerim",
+    photoMotion: "pan", // "still" | "zoom_in" | "zoom_out" | "pan"
     bgZoom: 100,
     bgPanX: 0,
     bgPanY: 0,
+    bgMirror: false,
+    bgVideoSpeed: 1.0, // 0.5 | 0.75 | 1.0 | 1.25
+    videoSmoothLoop: true,
     videoTrimStart: 0,
     videoTrimEnd: 0,
     // 5. Ortam & Ses & Zaman
-    ambientType: "stream",
+    ambientType: "none",
     ambientVol: 22,
     reciterVol: 100,
     videoAudioMode: "muted", // "muted" | "mix"
-    bgVideoVol: 35,
+    bgVideoVol: 0,
     gaplessTrimSec: 0.25,
     smoothFadeOut: "on",
     audioFailPolicy: "strict", // "strict" | "text_only"
@@ -72,19 +74,22 @@ window.TW_STORAGE = (() => {
     // 8. Filtre
     bgBrightnessOffset: 0, // -40 .. +40
     bgWarmth: 0, // -50 .. +50
-    bgDim: 45, // 0 .. 85
+    bgDim: 40, // 0 .. 85
     lockBgDim: false,
     bgBlur: 0, // 0 .. 20
     visualEffect: "none", // "none" | "rain" | "snow" | "dust" | "sparks" | "stars"
     effectIntensity: 65,
     vignette: "on",
-    // 9. Kapak (Detaylı Boyut, Konum, Sûre Adı Düzeltme & Başlık Ayarları)
+    // 9. Kapak (Arapça & Türkçe Sûre Adı Düzeltme, Boyut & Konum)
     coverTemplateId: "sebat_hat",
     coverAyahNo: 1,
     coverLargeSurah: true,
     coverFirstFrame: "on",
     coverPreviewMode: "ayah", // "ayah" | "cover"
+    coverSurahNameAr: "",
     coverSurahName: "",
+    coverShowArSurah: true,
+    coverShowTrSurah: true,
     coverTitle: "",
     coverSubtitle: "",
     coverScale: 100, // 60% .. 160%
@@ -121,9 +126,11 @@ window.TW_STORAGE = (() => {
           merged[k] = parsed[k];
         }
       }
-      // If an old static photo ID was stored, fall back to animated forest stream video
-      if (typeof merged.zeminId === "string" && merged.zeminId.startsWith("media_")) {
-        merged.zeminId = "vid_forest_stream";
+      if (
+        typeof merged.zeminId === "string" &&
+        (merged.zeminId.startsWith("media_") || merged.zeminId.startsWith("vid_") || merged.zeminId.startsWith("live_"))
+      ) {
+        merged.zeminId = "studio_dark";
       }
       return merged;
     } catch (_) {
@@ -154,7 +161,7 @@ window.TW_STORAGE = (() => {
 
   function initDB() {
     if (dbInstance) return Promise.resolve(dbInstance);
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (!window.indexedDB) {
         resolve(null);
         return;
@@ -268,7 +275,6 @@ window.TW_STORAGE = (() => {
       const k = `${surahNo}:${a}`;
       let found = null;
 
-      // Always prefer verified clean OFFLINE_VERSE_SEED first
       if (seed[k]) {
         found = {
           numberInSurah: a,
